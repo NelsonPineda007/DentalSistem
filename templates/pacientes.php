@@ -193,9 +193,10 @@
     include 'components/modal_base.php'; 
 ?>
 
-<script src="/DentistaPHP/static/js/utils/reportes.js"></script>
-<script src="/DentistaPHP/static/js/utils/paginadorTabla.js"></script>
-<script src="/DentistaPHP/static/js/PacientesControlador.js"></script>
+<script src="../static/js/utils/paginadorTabla.js"></script>
+<script src="../static/js/utils/reportes.js"></script>
+<script src="../static/js/PacientesControlador.js"></script>
+<script src="../static/js/paginacion.js" defer></script>
 
 </body>
 </html>
