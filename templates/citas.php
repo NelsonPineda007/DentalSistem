@@ -23,10 +23,10 @@
                 Recordatorios
             </button>
 
-            <button class="bg-blue-800 hover:bg-blue-900 text-white px-5 py-3 rounded-xl shadow-lg shadow-blue-900/20 font-semibold flex items-center gap-2 transition-all active:scale-95">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                Calendario
-            </button>
+<button onclick="window.location.href='calendar.php'" class="bg-blue-800 hover:bg-blue-900 text-white px-5 py-3 rounded-xl shadow-lg shadow-blue-900/20 font-semibold flex items-center gap-2 transition-all active:scale-95">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+    Calendario
+</button>
         </div>
     </div>
 
@@ -187,6 +187,7 @@
 <script src="../static/js/utils/paginadorTabla.js"></script>
 <script src="../static/js/utils/reportes.js"></script>
 <script src="../static/js/CitasControlador.js"></script>
+<script src="../static/js/paginacion.js" defer></script>
 
 </body>
 </html>
