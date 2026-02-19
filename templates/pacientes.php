@@ -3,8 +3,8 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<main class="flex-1 p-8 bg-[#f8fafc] h-screen flex flex-col overflow-hidden">
-    
+<main class="flex-1 p-8 bg-[#f8fafc] h-screen flex flex-col overflow-y-auto"> 
+
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 flex-shrink-0">
         <div>
             <h2 class="text-3xl font-bold text-slate-800">Pacientes</h2>
@@ -24,10 +24,10 @@
             <input type="text" id="searchInput" placeholder="Buscar por nombre, expediente o teléfono..." 
                 class="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-xl text-slate-700 focus:ring-2 focus:ring-blue-800/20 focus:bg-white transition-all outline-none placeholder:text-slate-400 font-medium">
         </div>
-        <select class="px-4 py-3 bg-slate-50 rounded-xl text-slate-600 font-medium focus:ring-2 focus:ring-blue-800/20 outline-none cursor-pointer border-none min-w-[180px]">
-            <option>Todos los estados</option>
-            <option>Activos</option>
-            <option>Inactivos</option>
+        <select id="filterEstado" class="px-4 py-3 bg-slate-50 rounded-xl text-slate-600 font-medium focus:ring-2 focus:ring-blue-800/20 outline-none cursor-pointer border-none min-w-[180px]">
+            <option value="">Todos los estados</option>
+            <option value="1">Activos</option>
+            <option value="0">Inactivos</option>
         </select>
     </div>
 
