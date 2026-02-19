@@ -18,7 +18,7 @@
                     </button>
                 </div>
 
-                <div class="px-4 py-6 sm:p-6 bg-slate-50/50 max-h-[70vh] overflow-y-auto">
+                <div class="px-4 py-6 sm:p-6 bg-slate-50/50 max-h-[70vh] overflow-y-auto custom-scrollbar">
                      <?php 
                         // Aquí se imprimirá el contenido HTML específico de cada página
                         if(isset($modalContent)) echo $modalContent; 
@@ -26,9 +26,13 @@
                 </div>
 
                 <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100 gap-2">
-                    <button type="button" id="btnGuardar" onclick="guardarDatos()" class="inline-flex w-full justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-900 sm:ml-3 sm:w-auto transition-all shadow-blue-900/20">
-                        Guardar
+                    
+                    <button type="button" id="btnGuardar" 
+                        onclick="<?php echo isset($saveFunction) ? $saveFunction : 'guardarDatos()'; ?>" 
+                        class="inline-flex w-full justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-900 sm:ml-3 sm:w-auto transition-all shadow-blue-900/20 active:scale-95">
+                        <?php echo isset($saveLabel) ? $saveLabel : 'Guardar'; ?>
                     </button>
+
                     <button type="button" onclick="closeModal('<?php echo $modalID; ?>')" class="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-all">
                         Cancelar
                     </button>
