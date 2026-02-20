@@ -82,7 +82,7 @@
             </div>
         </div>
 
-        <button
+        <button onclick="window.location.href='login.php'"
             class="w-full flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-blue-100 py-2.5 px-4 rounded-xl shadow-xl shadow-blue-900/30 transition font-semibold">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
