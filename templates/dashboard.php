@@ -145,7 +145,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
 <script src="../static/js/charts.js" defer></script>
-<script src="../static/js/paginacion.js" defer></script>
 <script src="../static/js/horacolor.js" defer></script>
 
 </body>
