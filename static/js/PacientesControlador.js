@@ -97,13 +97,36 @@ function inicializarPaginador() {
 }
 
 function configurarBusqueda() {
-    const input = document.getElementById("searchInput");
-    if (!input) return;
-    input.addEventListener("input", (e) => {
-        const term = e.target.value.toLowerCase();
-        miPaginador.setData(pacientesDB.filter(p => (p.nombre + " " + p.apellido).toLowerCase().includes(term) || p.expediente.toLowerCase().includes(term)));
-    });
+    const searchInput = document.getElementById("searchInput");
+    const filterEstado = document.getElementById("filterEstado");
+
+    function aplicarFiltros() {
+        const term = searchInput ? searchInput.value.toLowerCase() : '';
+        const estado = filterEstado ? filterEstado.value : '';
+
+        const filtrados = pacientesDB.filter(p => {
+            // 1. Validar si coincide con el texto
+            const coincideTexto = (p.nombre + " " + p.apellido).toLowerCase().includes(term) || 
+                                  p.expediente.toLowerCase().includes(term);
+            
+            // 2. Validar si coincide con el select de estado
+            let coincideEstado = true;
+            if (estado !== "") {
+                coincideEstado = p.activo === parseInt(estado);
+            }
+
+            // Debe cumplir ambas condiciones
+            return coincideTexto && coincideEstado;
+        });
+
+        miPaginador.setData(filtrados);
+    }
+
+    // Escuchamos ambos eventos
+    if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
+    if (filterEstado) filterEstado.addEventListener("change", aplicarFiltros);
 }
+
 
 function configurarTabsModal() {
     document.querySelectorAll(".tab-btn").forEach((tab) => {

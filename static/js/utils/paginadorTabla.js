@@ -1,35 +1,23 @@
 /**
  * Clase Paginador Universal Inteligente
- * Soporta modo 'auto' para ajuste vertical responsive
  */
 class PaginadorTabla {
   constructor(data, itemsPorPagina, config) {
     this.data = data;
     this.paginaActual = 1;
     this.config = config;
-    this.containerId = config.containerId || "tableContainer"; // ID del contenedor padre
+    this.containerId = config.containerId || "tableContainer";
 
-    // Elementos DOM (Busca dentro del contenedor si es posible, o globalmente)
     this.tbody = document.getElementById(config.tableBodyId);
     const container = document.getElementById(this.containerId);
 
-    // Selectores universales (funcionan con el table_base.php)
-    this.btnPrev = container
-      ? container.querySelector(".btn-prev")
-      : document.getElementById("btnPrev");
-    this.btnNext = container
-      ? container.querySelector(".btn-next")
-      : document.getElementById("btnNext");
-    this.infoText = container
-      ? container.querySelector(".pagination-info")
-      : document.getElementById("paginationInfo");
+    this.btnPrev = container ? container.querySelector(".btn-prev") : document.getElementById("btnPrev");
+    this.btnNext = container ? container.querySelector(".btn-next") : document.getElementById("btnNext");
+    this.infoText = container ? container.querySelector(".pagination-info") : document.getElementById("paginationInfo");
 
-    // Configuración de items
     this.isAuto = itemsPorPagina === "auto";
     this.manualItems = typeof itemsPorPagina === "number" ? itemsPorPagina : 5;
-    this.itemsPorPagina = this.isAuto
-      ? this.calcularItemsAuto()
-      : this.manualItems;
+    this.itemsPorPagina = this.isAuto ? 3 : this.manualItems;
 
     this.init();
   }
@@ -38,47 +26,54 @@ class PaginadorTabla {
     if (this.btnPrev) this.btnPrev.addEventListener("click", () => this.prev());
     if (this.btnNext) this.btnNext.addEventListener("click", () => this.next());
 
-    // Si es automático, activamos el sensor de tamaño
     if (this.isAuto) {
-      let resizeTimer;
-      window.addEventListener("resize", () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-          this.recalcularYRenderizar();
-        }, 200);
-      });
+      // Usamos el contenedor padre del tbody (el div con overflow) para medir el espacio real
+      const scrollContainer = this.tbody ? this.tbody.parentElement.parentElement : null;
+      
+      if (scrollContainer) {
+        const observer = new ResizeObserver(() => {
+          window.requestAnimationFrame(() => {
+            this.recalcularYRenderizar(scrollContainer);
+          });
+        });
+        observer.observe(scrollContainer);
+      }
     }
 
     this.render();
   }
 
-  calcularItemsAuto() {
-    const container = document.getElementById(this.containerId);
-    if (!container) return 5;
+  calcularItemsAuto(scrollContainer) {
+    if (!scrollContainer) return 3;
 
-    // Medidas estándar de tu diseño (header ~60px, footer ~80px, row ~76px)
-    const headerHeight = 60;
-    const footerHeight = 80;
-    const rowHeight = 76;
+    // 1. Altura total disponible en el div scrolleable
+    const availableHeight = scrollContainer.clientHeight;
+    
+    // 2. Altura del thead
+    const thead = scrollContainer.querySelector('thead');
+    const theadHeight = thead ? thead.offsetHeight : 55;
 
-    const availableHeight =
-      container.clientHeight - headerHeight - footerHeight;
-    const items = Math.floor(availableHeight / rowHeight);
+    // 3. Altura de cada fila (fija)
+    const rowHeight = 75;
 
-    return items > 2 ? items : 2; // Mínimo 2 filas
+    // 4. Espacio para las filas = Alto total - Alto del Thead
+    const spaceForRows = availableHeight - theadHeight;
+    
+    // 5. ¿Cuántas caben?
+    const items = Math.floor(spaceForRows / rowHeight);
+
+    return items > 3 ? items : 3;
   }
 
-  recalcularYRenderizar() {
+  recalcularYRenderizar(scrollContainer) {
     if (!this.isAuto) return;
-    const nuevosItems = this.calcularItemsAuto();
+    
+    const nuevosItems = this.calcularItemsAuto(scrollContainer);
 
-    // Solo renderizar si cambió la cantidad para no parpadear
     if (nuevosItems !== this.itemsPorPagina) {
       this.itemsPorPagina = nuevosItems;
-      // Ajustar página actual si nos salimos del rango
-      const totalPaginas = Math.ceil(this.data.length / this.itemsPorPagina);
-      if (this.paginaActual > totalPaginas)
-        this.paginaActual = totalPaginas || 1;
+      const totalPaginas = this.getTotalPaginas();
+      if (this.paginaActual > totalPaginas) this.paginaActual = totalPaginas || 1;
       this.render();
     }
   }
@@ -109,10 +104,18 @@ class PaginadorTabla {
     const end = start + this.itemsPorPagina;
     const itemsPagina = this.data.slice(start, end);
 
+    // 1. Datos reales
     itemsPagina.forEach((item) => {
       const rowHTML = this.config.renderRow(item);
       this.tbody.insertAdjacentHTML("beforeend", rowHTML);
     });
+
+    // 2. Filas fantasma
+    const emptyRowsCount = this.itemsPorPagina - itemsPagina.length;
+    for(let i = 0; i < emptyRowsCount; i++) {
+        // La clase h-[75px] es OBLIGATORIA aquí para que el cálculo coincida con la realidad
+        this.tbody.insertAdjacentHTML("beforeend", `<tr class="h-[75px] pointer-events-none border-b border-transparent"><td colspan="100%"></td></tr>`);
+    }
 
     this.updateButtons();
     this.updateInfo(start + 1, Math.min(end, total), total);
@@ -125,10 +128,8 @@ class PaginadorTabla {
       this.btnPrev.style.opacity = this.paginaActual === 1 ? "0.5" : "1";
     }
     if (this.btnNext) {
-      this.btnNext.disabled =
-        this.paginaActual >= totalPaginas || totalPaginas === 0;
-      this.btnNext.style.opacity =
-        this.paginaActual >= totalPaginas ? "0.5" : "1";
+      this.btnNext.disabled = this.paginaActual >= totalPaginas || totalPaginas === 0;
+      this.btnNext.style.opacity = this.paginaActual >= totalPaginas ? "0.5" : "1";
     }
   }
 
