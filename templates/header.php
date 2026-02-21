@@ -11,6 +11,9 @@
 
     <link rel="stylesheet" href="../static/css/nav.css">
 
+    
+<script src="../static/js/paginacion.js" defer></script>
+
 </head>
 
 <body class="bg-gray-100 h-screen flex overflow-hidden">
