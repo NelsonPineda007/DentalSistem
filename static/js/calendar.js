@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const esHoy = dia === hoy.getDate() && m === hoy.getMonth() && a === hoy.getFullYear();
 
         const celda = document.createElement('div');
-        celda.className = `bg-white p-2 flex flex-col transition-colors min-h-[130px] ${esMesDiferente ? 'text-slate-400 bg-slate-50/50' : 'text-slate-700'}`;
+        celda.className = `bg-white p-1 md:p-2 flex flex-col transition-colors min-h-[100px] md:min-h-[130px] ${esMesDiferente ? 'text-slate-400 bg-slate-50/50' : 'text-slate-700'}`;
         
         celda.addEventListener('dragover', (e) => { e.preventDefault(); celda.classList.add('bg-blue-50'); });
         celda.addEventListener('dragleave', () => { celda.classList.remove('bg-blue-50'); });
@@ -109,17 +109,17 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const divHeader = document.createElement('div');
-        divHeader.className = "flex justify-end mb-2 pointer-events-none"; 
+        divHeader.className = "flex justify-end mb-1 md:mb-2 pointer-events-none"; 
         
         const numeroDia = document.createElement('span');
-        numeroDia.className = `text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full ${esHoy ? 'bg-blue-800 text-white shadow-md' : ''}`;
+        numeroDia.className = `text-xs md:text-sm font-semibold w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-full ${esHoy ? 'bg-blue-800 text-white shadow-md' : ''}`;
         numeroDia.textContent = dia;
         
         divHeader.appendChild(numeroDia);
         celda.appendChild(divHeader);
 
         const contenedorNotas = document.createElement('div');
-        contenedorNotas.className = 'flex flex-col gap-1.5 overflow-y-auto max-h-full custom-scrollbar pr-1';
+        contenedorNotas.className = 'flex flex-col gap-1.5 md:gap-2 overflow-y-auto max-h-full custom-scrollbar pr-0.5 md:pr-1';
         
         if (notas[fechaFormateada]) {
             notas[fechaFormateada].forEach(nota => {
@@ -137,19 +137,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                badge.className = `${colorFondo} text-white p-2 rounded-md shadow-sm cursor-grab active:cursor-grabbing transition-all flex flex-col group relative`;
+                // Ajuste visual clave: Padding "p-2", texto más grande "text-xs md:text-sm" y "line-clamp-2"
+                badge.className = `${colorFondo} text-white p-2 rounded-md shadow-sm cursor-grab active:cursor-grabbing transition-all flex flex-col group relative overflow-hidden`;
                 
                 badge.innerHTML = `
                     <div class="flex justify-between items-start gap-1">
-                        <span class="text-xs font-bold truncate">${nota.titulo}</span>
-                        <div class="flex items-center gap-1">
-                            <span class="text-[10px] font-semibold opacity-90 whitespace-nowrap group-hover:hidden">${nota.hora || '--:--'}</span>
+                        <span class="text-[11px] md:text-sm font-bold line-clamp-2 leading-tight">${nota.titulo}</span>
+                        <div class="flex items-center gap-1 shrink-0 mt-0.5">
+                            <span class="text-[10px] md:text-xs font-semibold opacity-90 whitespace-nowrap group-hover:hidden">${nota.hora || '--:--'}</span>
                             <button class="btn-eliminar-calendario hidden group-hover:block text-white hover:text-red-200 transition-colors" title="Borrar">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
                     </div>
-                    ${nota.detalles ? `<span class="text-[10px] truncate opacity-90 mt-0.5">${nota.detalles}</span>` : ''}
+                    ${nota.detalles ? `<span class="text-[10px] md:text-xs line-clamp-2 opacity-90 mt-1 leading-tight">${nota.detalles}</span>` : ''}
                 `;
                 
                 badge.title = `Título: ${nota.titulo}\nHora: ${nota.hora || 'Sin asignar'}\nTipo: ${nota.tipo}`;
@@ -202,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contadorNotasMes.textContent = notasDelMes.length;
         
         if (notasDelMes.length === 0) {
-            listaNotasMes.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-slate-400 mt-10"><p class="text-sm font-medium">Sin registros este mes</p></div>`;
+            listaNotasMes.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-slate-400 mt-10"><p class="text-sm font-medium text-center px-4">Sin registros este mes</p></div>`;
             return;
         }
 
@@ -233,8 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
             card.innerHTML = `
                 <div class="absolute left-0 top-0 bottom-0 w-1.5 ${colorPunto}"></div>
                 <div class="pl-2">
-                    <div class="flex justify-between items-start mb-1.5">
-                        <span class="font-bold text-slate-800 text-xs">${dia} ${meses[mesActual].substring(0,3)}</span>
+                    <div class="flex justify-between items-start mb-1.5 gap-2">
+                        <span class="font-bold text-slate-800 text-xs shrink-0">${dia} ${meses[mesActual].substring(0,3)}</span>
                         <div class="flex items-center gap-2">
                             <span class="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">${nota.hora || 'Todo el día'}</span>
                             <button class="btn-eliminar-lateral text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Eliminar registro">
@@ -244,9 +245,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <p class="font-bold text-slate-700 text-sm leading-tight pr-4">${nota.titulo}</p>
                     ${nota.detalles ? `<p class="text-xs text-slate-500 mt-1 line-clamp-2">${nota.detalles}</p>` : ''}
-                    <div class="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex justify-between">
-                        <span>${nota.tipo}</span>
-                        <span>${nota.estado || ''}</span>
+                    <div class="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex justify-between gap-2">
+                        <span class="truncate">${nota.tipo}</span>
+                        <span class="truncate text-right">${nota.estado || ''}</span>
                     </div>
                 </div>
             `;
@@ -274,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. MINI CALENDARIO
     // ==========================================
     function renderizarMiniCalendario() {
+        if(!miniGrid) return;
         miniGrid.innerHTML = '';
         miniTitulo.textContent = `${meses[miniMesActual]} ${miniAnioActual}`;
 
@@ -341,9 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (drawerOverlay) drawerOverlay.addEventListener('click', cerrarDrawer);
     botonesCancelarDrawer.forEach(btn => btn.addEventListener('click', cerrarDrawer));
 
-    // Sistema Robusto de Pestañas (Diseño original)
-    const defaultTabClass = "flex-1 pb-3 pt-4 text-sm font-bold text-slate-400 hover:text-slate-600 border-b-2 border-transparent transition-colors text-center";
-    const activeTabClass = "flex-1 pb-3 pt-4 text-sm font-bold text-blue-800 border-b-2 border-blue-800 transition-colors text-center";
+    // Sistema Robusto de Pestañas
+    const defaultTabClass = "flex-1 pb-3 pt-4 text-xs md:text-sm font-bold text-slate-400 hover:text-slate-600 border-b-2 border-transparent transition-colors text-center";
+    const activeTabClass = "flex-1 pb-3 pt-4 text-xs md:text-sm font-bold text-blue-800 border-b-2 border-blue-800 transition-colors text-center";
 
     function resetearPestanas() {
         const tabs = [tabRecordatorio, tabNota, tabAgenda];
@@ -477,23 +479,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const dibujarTarjeta = (nota, colorBorde, colorTexto) => {
             const el = document.createElement('div');
-            el.className = `bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:border-${colorBorde} hover:shadow-md transition-all relative group`;
+            el.className = `bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:border-${colorBorde} hover:shadow-md transition-all relative group`;
             
             const dPart = nota.fecha.split('-');
-            const textoFecha = `${dPart[2]} de ${meses[parseInt(dPart[1])-1]}`; // Mostramos dia y mes sin año para ahorrar espacio
+            const textoFecha = `${dPart[2]} de ${meses[parseInt(dPart[1])-1]}`; 
 
             el.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${textoFecha}</span>
-                    <div class="flex items-center gap-2">
-                        ${nota.hora ? `<span class="text-[10px] font-bold bg-slate-50 text-slate-500 px-2 py-0.5 rounded border border-slate-100">${nota.hora}</span>` : ''}
+                <div class="flex justify-between items-start mb-2 gap-2">
+                    <span class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">${textoFecha}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        ${nota.hora ? `<span class="text-[9px] md:text-[10px] font-bold bg-slate-50 text-slate-500 px-2 py-0.5 rounded border border-slate-100">${nota.hora}</span>` : ''}
                         <button class="btn-eliminar-agenda text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Eliminar registro">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
                     </div>
                 </div>
-                <p class="font-bold text-slate-800 text-[15px] leading-tight text-${colorTexto} pr-2">${nota.titulo}</p>
-                ${nota.detalles ? `<p class="text-xs text-slate-500 mt-2 line-clamp-2">${nota.detalles}</p>` : ''}
+                <p class="font-bold text-slate-800 text-sm md:text-[15px] leading-tight text-${colorTexto} pr-2">${nota.titulo}</p>
+                ${nota.detalles ? `<p class="text-[11px] md:text-xs text-slate-500 mt-2 line-clamp-2">${nota.detalles}</p>` : ''}
             `;
 
             // Lógica de borrar individualmente desde la agenda
@@ -515,13 +517,13 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (arrRecordatorios.length === 0) {
-            listaAgendaRecordatorios.innerHTML = `<p class="text-sm text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">No hay recordatorios este mes.</p>`;
+            listaAgendaRecordatorios.innerHTML = `<p class="text-[11px] md:text-sm text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">No hay recordatorios este mes.</p>`;
         } else {
             arrRecordatorios.forEach(nota => listaAgendaRecordatorios.appendChild(dibujarTarjeta(nota, 'amber-300', 'amber-700')));
         }
 
         if (arrNotas.length === 0) {
-            listaAgendaNotas.innerHTML = `<p class="text-sm text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">No hay notas guardadas este mes.</p>`;
+            listaAgendaNotas.innerHTML = `<p class="text-[11px] md:text-sm text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">No hay notas guardadas este mes.</p>`;
         } else {
             arrNotas.forEach(nota => listaAgendaNotas.appendChild(dibujarTarjeta(nota, 'blue-300', 'blue-800')));
         }
