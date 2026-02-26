@@ -27,9 +27,7 @@ class PaginadorTabla {
     if (this.btnNext) this.btnNext.addEventListener("click", () => this.next());
 
     if (this.isAuto) {
-      // Usamos el contenedor padre del tbody (el div con overflow) para medir el espacio real
       const scrollContainer = this.tbody ? this.tbody.parentElement.parentElement : null;
-      
       if (scrollContainer) {
         const observer = new ResizeObserver(() => {
           window.requestAnimationFrame(() => {
@@ -39,37 +37,23 @@ class PaginadorTabla {
         observer.observe(scrollContainer);
       }
     }
-
     this.render();
   }
 
   calcularItemsAuto(scrollContainer) {
     if (!scrollContainer) return 3;
-
-    // 1. Altura total disponible en el div scrolleable
     const availableHeight = scrollContainer.clientHeight;
-    
-    // 2. Altura del thead
     const thead = scrollContainer.querySelector('thead');
     const theadHeight = thead ? thead.offsetHeight : 55;
-
-    // 3. Altura de cada fila (fija)
     const rowHeight = 75;
-
-    // 4. Espacio para las filas = Alto total - Alto del Thead
     const spaceForRows = availableHeight - theadHeight;
-    
-    // 5. ¿Cuántas caben?
     const items = Math.floor(spaceForRows / rowHeight);
-
     return items > 3 ? items : 3;
   }
 
   recalcularYRenderizar(scrollContainer) {
     if (!this.isAuto) return;
-    
     const nuevosItems = this.calcularItemsAuto(scrollContainer);
-
     if (nuevosItems !== this.itemsPorPagina) {
       this.itemsPorPagina = nuevosItems;
       const totalPaginas = this.getTotalPaginas();
@@ -104,18 +88,11 @@ class PaginadorTabla {
     const end = start + this.itemsPorPagina;
     const itemsPagina = this.data.slice(start, end);
 
-    // 1. Datos reales
+    // Dibuja solo las filas reales (SE ELIMINARON LAS FILAS FANTASMAS)
     itemsPagina.forEach((item) => {
       const rowHTML = this.config.renderRow(item);
       this.tbody.insertAdjacentHTML("beforeend", rowHTML);
     });
-
-    // 2. Filas fantasma
-    const emptyRowsCount = this.itemsPorPagina - itemsPagina.length;
-    for(let i = 0; i < emptyRowsCount; i++) {
-        // La clase h-[75px] es OBLIGATORIA aquí para que el cálculo coincida con la realidad
-        this.tbody.insertAdjacentHTML("beforeend", `<tr class="h-[75px] pointer-events-none border-b border-transparent"><td colspan="100%"></td></tr>`);
-    }
 
     this.updateButtons();
     this.updateInfo(start + 1, Math.min(end, total), total);
