@@ -18,11 +18,6 @@
                 Nueva Cita
             </button>
 
-            <button class="bg-blue-800 hover:bg-blue-900 text-white px-5 py-3 rounded-xl shadow-lg shadow-blue-900/20 font-semibold flex items-center gap-2 transition-all active:scale-95">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                Recordatorios
-            </button>
-
 <button onclick="window.location.href='calendar.php'" class="bg-blue-800 hover:bg-blue-900 text-white px-5 py-3 rounded-xl shadow-lg shadow-blue-900/20 font-semibold flex items-center gap-2 transition-all active:scale-95">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
     Calendario
@@ -77,42 +72,12 @@
         </select>
     </div>
 
-    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-[600px]">
-        <div class="overflow-x-auto flex-1">
-            <table class="w-full text-left border-collapse">
-                <thead class="sticky top-0 bg-white z-10">
-                    <tr class="bg-slate-50/80 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
-                        <th class="px-6 py-5">Fecha / Hora</th>
-                        <th class="px-6 py-5">Paciente</th>
-                        <th class="px-6 py-5">Motivo</th>
-                        <th class="px-6 py-5">Doctor</th>
-                        <th class="px-6 py-5">Estado</th>
-                        <th class="px-6 py-5">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="citasTableBody" class="divide-y divide-slate-100 text-sm text-slate-600">
-                    </tbody>
-            </table>
-        </div>
-        
-        <div class="px-8 py-5 border-t border-slate-100 flex items-center justify-between bg-white" id="paginationControls">
-            <span class="text-slate-500 text-sm font-medium" id="paginationInfo">Cargando...</span>
-            
-            <div class="flex items-center gap-3">
-                <button id="btnPrev" class="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed group">
-                    <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    Anterior
-                </button>
-                
-                <div class="h-4 w-px bg-slate-200"></div>
-                
-                <button id="btnNext" class="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed group">
-                    Siguiente
-                    <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                </button>
-            </div>
-        </div>
-    </div>
+    <?php 
+        $tableColumns = ['Fecha / Hora', 'Paciente', 'Motivo', 'Doctor', 'Estado', 'Acciones'];
+        $tableID = 'citasTableBody'; 
+        include 'components/tabla_base.php'; 
+    ?>
+
 </main>
 
 <?php ob_start(); ?>
@@ -187,7 +152,6 @@
 <script src="../static/js/utils/paginadorTabla.js"></script>
 <script src="../static/js/utils/reportes.js"></script>
 <script src="../static/js/CitasControlador.js"></script>
-<script src="../static/js/paginacion.js" defer></script>
 
 </body>
 </html>
