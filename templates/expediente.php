@@ -139,10 +139,18 @@
     <input type="hidden" name="id">
     <div class="grid grid-cols-2 gap-4">
         <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha *</label><input type="date" name="fecha" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>
-        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tratamiento *</label>
-            <select name="tratamiento" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500" required>
-                <option value="">Seleccione...</option><option value="Resina">Resina Dental</option><option value="Extracción">Extracción</option><option value="Limpieza">Limpieza Profunda</option>
-            </select>
+        <div class="relative">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tratamiento *</label>
+            <input type="hidden" name="tratamiento" id="tratamiento_hidden" required>
+            
+            <div class="relative">
+                <input type="text" id="tratamiento_search" autocomplete="off" placeholder="Buscar por nombre o código..." 
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium text-slate-700">
+                <svg class="absolute right-3 top-2.5 w-5 h-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+
+            <div id="tratamiento_dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
+                </div>
         </div>
         <div class="col-span-2"><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Diente(s) Aplicado(s)</label><input type="text" name="diente" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" placeholder="Ej: 16, 45"></div>
         <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Valor Total ($) *</label><input type="number" step="0.01" name="valor" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>

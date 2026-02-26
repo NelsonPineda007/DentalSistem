@@ -272,7 +272,8 @@ window.abrirModalEdicion = function (id) {
     form.id.value = v.id;
     form.fecha.value = v.fecha;
     // Esto es temporal por la BD falsa. Al conectar PHP leerá el ID real
-    form.tratamiento.value = v.tratamiento.includes("Resina") ? "Resina" : (v.tratamiento.includes("Extrac") ? "Extracción" : "Limpieza"); 
+    document.getElementById("tratamiento_hidden").value = v.tratamiento;
+    document.getElementById("tratamiento_search").value = v.tratamiento;    
     form.diente.value = v.diente;
     form.valor.value = v.valor;
     form.abono.value = v.abono;
@@ -314,3 +315,78 @@ window.guardarDatos = function () {
     window.closeModal("modalVisita");
     pagosPaginador.setData(pagosDB);
 };
+
+// --- 4. LÓGICA DEL BUSCADOR INTELIGENTE DE TRATAMIENTOS ---
+
+// Simulamos tu tabla 'tratamientos' de la Base de Datos
+const catalogoTratamientos = [
+    { id: 1, codigo: "LMP-01", nombre: "Limpieza Profunda (Profilaxis)", precio: 35.00 },
+    { id: 2, codigo: "RST-01", nombre: "Resina Dental Simple", precio: 50.00 },
+    { id: 3, codigo: "RST-02", nombre: "Resina Dental Compuesta", precio: 65.00 },
+    { id: 4, codigo: "EXT-01", nombre: "Extracción Simple", precio: 45.00 },
+    { id: 5, codigo: "EXT-02", nombre: "Extracción Cordal (Cirugía)", precio: 120.00 },
+    { id: 6, codigo: "END-01", nombre: "Endodoncia Unirradicular", precio: 150.00 },
+    { id: 7, codigo: "ORT-01", nombre: "Control de Ortodoncia Mensual", precio: 40.00 }
+];
+
+const inputSearch = document.getElementById('tratamiento_search');
+const inputHidden = document.getElementById('tratamiento_hidden');
+const dropdown = document.getElementById('tratamiento_dropdown');
+const inputValor = document.querySelector('input[name="valor"]');
+
+// Función para renderizar la lista
+function renderizarResultadosBuscador(filtro = "") {
+    dropdown.innerHTML = "";
+    const texto = filtro.toLowerCase();
+    
+    const filtrados = catalogoTratamientos.filter(t => 
+        t.nombre.toLowerCase().includes(texto) || t.codigo.toLowerCase().includes(texto)
+    );
+
+    if (filtrados.length === 0) {
+        dropdown.innerHTML = `<div class="p-4 text-center text-sm text-slate-400">No se encontraron tratamientos</div>`;
+        return;
+    }
+
+    filtrados.forEach(t => {
+        const item = document.createElement("div");
+        item.className = "p-3 hover:bg-blue-50 cursor-pointer transition-colors flex justify-between items-center group";
+        // Estructura de mini-tabla en cada fila
+        item.innerHTML = `
+            <div>
+                <div class="font-bold text-sm text-slate-700 group-hover:text-blue-800">${t.nombre}</div>
+                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Código: ${t.codigo}</div>
+            </div>
+            <div class="font-bold text-emerald-600 text-sm bg-emerald-50 px-2 py-1 rounded-lg">
+                $${t.precio.toFixed(2)}
+            </div>
+        `;
+        
+        // Al hacer clic en un tratamiento
+        item.addEventListener("click", () => {
+            inputSearch.value = t.nombre; // Muestra el nombre en el buscador
+            inputHidden.value = t.nombre; // Guarda el valor real para el formulario
+            inputValor.value = t.precio.toFixed(2); // ¡AUTO-RELLENA EL PRECIO!
+            dropdown.classList.add("hidden");
+        });
+        
+        dropdown.appendChild(item);
+    });
+}
+
+// Escuchadores de eventos
+inputSearch.addEventListener("focus", () => {
+    renderizarResultadosBuscador(inputSearch.value);
+    dropdown.classList.remove("hidden");
+});
+
+inputSearch.addEventListener("input", (e) => {
+    renderizarResultadosBuscador(e.target.value);
+});
+
+// Cierra el dropdown si haces clic afuera
+document.addEventListener("click", (e) => {
+    if (!inputSearch.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add("hidden");
+    }
+});
