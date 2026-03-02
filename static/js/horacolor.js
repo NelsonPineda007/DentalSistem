@@ -1,1 +1,0 @@
-//hora color para el panel/dashboard con js 
