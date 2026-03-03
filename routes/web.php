@@ -26,9 +26,8 @@ Route::get('/calendar', function () {
     return view('calendar');
 });
 
-// Esto permite entrar a /expediente/1, /expediente/2, etc.
-Route::get('/expediente/{id}', function ($id) {
-    return view('expediente');
+Route::get('/expediente', function () {
+    return view('expediente'); // Carga resources/views/expediente.blade.php
 });
 
 // Gestión de Catálogo de Tratamientos
