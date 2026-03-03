@@ -57,7 +57,7 @@
       <h2 class="text-xl font-bold text-slate-800 mb-2 text-center">¡Bienvenido de nuevo!</h2>
       <p class="text-sm text-slate-500 mb-8 text-center">Ingrese sus credenciales para acceder</p>
 
-      <form onsubmit="window.location.href='dashboard.php'; return false;" class="space-y-5">
+      <form onsubmit="window.location.href='dashboard'; return false;" class="space-y-5">
 
         <div class="animate-fade-up-3">
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Usuario</label>
