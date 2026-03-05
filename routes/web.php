@@ -39,3 +39,9 @@ Route::get('/tratamiento', function () {
 Route::get('/perfil', function () {
     return view('perfil');
 });
+
+use App\Http\Controllers\PacienteController;
+
+// Tus rutas API para los pacientes
+Route::get('/api/obtener-pacientes', [PacienteController::class, 'obtenerTodos']);
+Route::get('/api/pacientes/{id}', [PacienteController::class, 'obtenerUno']); // <- ESTA FALTABA
