@@ -14,30 +14,47 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // =========================================================================
-// 0. LÓGICA DE BACKEND (FETCH SIMULADO)
+// 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL)
 // =========================================================================
-function cargarDatosPacienteDesdeURL() {
+async function cargarDatosPacienteDesdeURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const idPaciente = urlParams.get('id');
 
     if (!idPaciente) return;
 
-    const baseDatosSimulada = [
-        { id: 1, expediente: "2024-001", nombre: "María", apellido: "González", telefono: "7777-8888", edad: "34 años", alergias: "Penicilina" },
-        { id: 2, expediente: "2024-002", nombre: "Carlos", apellido: "Martínez", telefono: "6666-7777", edad: "41 años", alergias: "" },
-        { id: 3, expediente: "2024-003", nombre: "Ana", apellido: "Rodríguez", telefono: "7888-9999", edad: "31 años", alergias: "Látex" }
-    ];
+    try {
+        // Hacemos la petición a nuestra nueva API en Laravel
+        const respuesta = await fetch(`/api/pacientes/${idPaciente}`);
+        
+        if (!respuesta.ok) {
+            throw new Error('No se pudo encontrar el paciente en la base de datos.');
+        }
 
-    const paciente = baseDatosSimulada.find(p => p.id == idPaciente);
+        // Convertimos la respuesta a JSON
+        const paciente = await respuesta.json();
 
-    if (paciente) {
+        // Inyectamos los datos reales en el HTML
         document.getElementById("exp-nombre").textContent = `${paciente.nombre} ${paciente.apellido}`;
         document.getElementById("exp-iniciales").textContent = `${paciente.nombre.charAt(0)}${paciente.apellido.charAt(0)}`;
-        document.getElementById("exp-numero").textContent = paciente.expediente;
-        document.getElementById("exp-edad").textContent = paciente.edad;
-        document.getElementById("exp-telefono").textContent = paciente.telefono;
+        document.getElementById("exp-numero").textContent = paciente.numero_expediente;
+        
+        // Calculamos la edad real basada en la fecha de nacimiento
+        if(paciente.fecha_nacimiento) {
+            const hoy = new Date();
+            const nacimiento = new Date(paciente.fecha_nacimiento);
+            let edad = hoy.getFullYear() - nacimiento.getFullYear();
+            const m = hoy.getMonth() - nacimiento.getMonth();
+            if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
+                edad--;
+            }
+            document.getElementById("exp-edad").textContent = `${edad} años`;
+        } else {
+            document.getElementById("exp-edad").textContent = "Sin fecha nac.";
+        }
+        
+        document.getElementById("exp-telefono").textContent = paciente.telefono || "Sin teléfono";
 
-        if (paciente.alergias !== "") {
+        if (paciente.alergias && paciente.alergias.trim() !== "") {
             document.getElementById("exp-alergias").classList.remove("hidden");
             document.getElementById("exp-alergias").classList.add("flex");
             document.getElementById("exp-alergia-texto").textContent = paciente.alergias;
@@ -45,6 +62,10 @@ function cargarDatosPacienteDesdeURL() {
             document.getElementById("exp-alergias").classList.add("hidden");
             document.getElementById("exp-alergias").classList.remove("flex");
         }
+
+    } catch (error) {
+        console.error("Error cargando paciente:", error);
+        document.getElementById("exp-nombre").textContent = "Error al cargar paciente";
     }
 }
 
