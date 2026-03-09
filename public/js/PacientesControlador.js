@@ -20,31 +20,21 @@ const ICONS = {
     folder: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>`
 };
 
-// --- 2. BASE DE DATOS SIMULADA ---
-let pacientesDB = [
-    { id: 1, expediente: "2024-001", nombre: "María", apellido: "González", telefono: "7777-8888", email: "maria.g@email.com", fecha_nacimiento: "1990-05-15", genero: "Femenino", direccion: "Col. San Benito", ciudad: "San Salvador", codigo_postal: "01101", contacto_nombre: "Pedro González", contacto_tel: "6666-5555", seguro: "Seguros del País", alergias: "Ninguna", cronicas: "Ninguna", medicamentos: "Ninguno", notas: "", activo: 1, citas: [{ fecha: "15/01/2024", motivo: "Revisión General", estado: "Completada" }, { fecha: "20/03/2024", motivo: "Limpieza Dental", estado: "Completada" }], tratamientos: [{ nombre: "Limpieza Dental", fecha: "15/01/2024", costo: "$35.00" }, { nombre: "Consulta General", fecha: "20/03/2024", costo: "$25.00" }] },
-    { id: 2, expediente: "2024-002", nombre: "Carlos", apellido: "Martínez", telefono: "6666-7777", email: "carlos.m@email.com", fecha_nacimiento: "1985-08-22", genero: "Masculino", direccion: "Col. Escalón", ciudad: "San Salvador", codigo_postal: "01102", contacto_nombre: "Ana Martínez", contacto_tel: "7777-9999", seguro: "Aseguradora Suiza", alergias: "Penicilina", cronicas: "Hipertensión", medicamentos: "Losartán 50mg", notas: "Paciente nervioso", activo: 0, citas: [{ fecha: "10/02/2024", motivo: "Dolor de muela", estado: "Completada" }], tratamientos: [{ nombre: "Extracción Dental", fecha: "10/02/2024", costo: "$75.00" }] },
-    { id: 3, expediente: "2024-003", nombre: "Ana", apellido: "Rodríguez", telefono: "7888-9999", email: "ana.r@email.com", fecha_nacimiento: "1995-03-10", genero: "Femenino", direccion: "Col. Miramonte", ciudad: "San Salvador", codigo_postal: "01103", contacto_nombre: "Luis Rodríguez", contacto_tel: "7888-0000", seguro: "Plan Básico", alergias: "Látex", cronicas: "Asma", medicamentos: "Salbutamol", notas: "Usar guantes de nitrilo", activo: 1, citas: [], tratamientos: [] },
-    { id: 4, expediente: "2024-004", nombre: "Jose", apellido: "Hernández", telefono: "7555-4444", fecha_nacimiento: "1988-11-30", genero: "Masculino", activo: 1, citas: [], tratamientos: [] },
-    { id: 5, expediente: "2024-005", nombre: "Sofía", apellido: "López", telefono: "6777-8888", fecha_nacimiento: "1992-07-18", genero: "Femenino", activo: 1, citas: [], tratamientos: [] },
-    { id: 6, expediente: "2024-006", nombre: "Pedro", apellido: "Ramírez", telefono: "7111-2222", fecha_nacimiento: "1990-01-01", genero: "Masculino", activo: 0, citas: [], tratamientos: [] },
-    { id: 7, expediente: "2024-007", nombre: "Lucía", apellido: "Méndez", telefono: "7000-1111", fecha_nacimiento: "1998-05-20", genero: "Femenino", activo: 1, citas: [], tratamientos: [] },
-    { id: 8, expediente: "2024-008", nombre: "Jorge", apellido: "Campos", telefono: "7222-9999", fecha_nacimiento: "1982-11-11", genero: "Masculino", activo: 1, citas: [], tratamientos: [] },
-    { id: 9, expediente: "2024-009", nombre: "Elena", apellido: "Vargas", telefono: "7888-2222", fecha_nacimiento: "1991-03-30", genero: "Femenino", activo: 1, citas: [], tratamientos: [] },
-    { id: 10, expediente: "2024-010", nombre: "Roberto", apellido: "Díaz", telefono: "7555-8888", fecha_nacimiento: "1975-09-15", genero: "Masculino", activo: 0, citas: [], tratamientos: [] },
-    { id: 11, expediente: "2024-011", nombre: "Patricia", apellido: "Rivas", telefono: "7111-7777", fecha_nacimiento: "2000-01-25", genero: "Femenino", activo: 1, citas: [], tratamientos: [] },
-    { id: 12, expediente: "2024-012", nombre: "Mario", apellido: "Castillo", telefono: "7333-4444", fecha_nacimiento: "1989-07-07", genero: "Masculino", activo: 1, citas: [], tratamientos: [] }
-];
-
+// --- 2. BASE DE DATOS (AHORA DINÁMICA) ---
+let pacientesDB = []; // Inicia vacío
 let miPaginador;
 
 // --- 3. INICIALIZACIÓN ---
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     if (typeof PaginadorTabla === "undefined") return console.error("Falta paginadorTabla.js");
 
+    // 1. Inicializamos los componentes visuales
     inicializarPaginador();
     configurarBusqueda();
     configurarTabsModal();
+
+    // 2. Traemos los datos de Laravel
+    await cargarPacientesDesdeBD();
 
     let resizeTimer;
     window.addEventListener("resize", () => {
@@ -52,6 +42,17 @@ document.addEventListener("DOMContentLoaded", () => {
         resizeTimer = setTimeout(inicializarPaginador, 200);
     });
 });
+
+// NUEVA FUNCIÓN: Conexión al Backend
+async function cargarPacientesDesdeBD() {
+    try {
+        // Usamos el cliente HTTP modular que creaste para obtener los datos
+        pacientesDB = await API.get('/api/obtener-pacientes');
+        miPaginador.setData(pacientesDB);
+    } catch (error) {
+        console.error("Error cargando pacientes:", error);
+    }
+}
 
 function calcularItemsPorPagina() {
     const container = document.getElementById("tableContainer");
@@ -66,12 +67,14 @@ function inicializarPaginador() {
         containerId: "tableContainer",
         renderRow: (p) => {
             const edad = p.fecha_nacimiento ? new Date().getFullYear() - new Date(p.fecha_nacimiento).getFullYear() : "-";
-            const estadoClass = p.activo ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200";
-            const estadoTexto = p.activo ? "Activo" : "Inactivo";
+            
+            // Adaptación para MySQL: Evaluamos el texto del estado
+            const esActivo = p.estado === 'Activo';
+            const estadoClass = esActivo ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200";
 
             return `
                 <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors h-[75px]">
-                    <td class="px-6 py-4 font-bold text-blue-800 text-sm">${p.expediente}</td>
+                    <td class="px-6 py-4 font-bold text-blue-800 text-sm">${p.numero_expediente}</td>
                     <td class="px-6 py-4">
                         <div class="flex flex-col">
                             <span class="font-bold text-slate-700 text-sm">${p.nombre} ${p.apellido}</span>
@@ -80,13 +83,12 @@ function inicializarPaginador() {
                     </td>
                     <td class="px-6 py-4 text-sm text-slate-600 font-medium">${p.telefono || "-"}</td>
                     <td class="px-6 py-4 text-sm text-slate-500">${edad} años</td>
-                    <td class="px-6 py-4"><span class="${estadoClass} text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">${estadoTexto}</span></td>
+                    <td class="px-6 py-4"><span class="${estadoClass} text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">${p.estado}</span></td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
                             <a href="expediente?id=${p.id}" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100" title="Ver Expediente">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
                             </a>
-                            
                             <button onclick="window.imprimirExpediente(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-rose-100" title="PDF">${ICONS.pdf}</button>
                             <button onclick="window.abrirModalEdicion(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all shadow-sm border border-emerald-100" title="Editar">${ICONS.edit}</button>
                             <button onclick="window.eliminarPaciente(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-slate-200" title="Eliminar">${ICONS.trash}</button>
@@ -107,27 +109,28 @@ function configurarBusqueda() {
 
     function aplicarFiltros() {
         const term = searchInput ? searchInput.value.toLowerCase() : '';
-        const estado = filterEstado ? filterEstado.value : '';
+        const estadoSelect = filterEstado ? filterEstado.value : ''; // "1", "0", o ""
 
         const filtrados = pacientesDB.filter(p => {
-            // 1. Validar si coincide con el texto
+            // 1. Búsqueda por texto (nombre, apellido, numero_expediente)
             const coincideTexto = (p.nombre + " " + p.apellido).toLowerCase().includes(term) || 
-                                  p.expediente.toLowerCase().includes(term);
+                                  p.numero_expediente.toLowerCase().includes(term);
             
-            // 2. Validar si coincide con el select de estado
+            // 2. Filtro de estado
             let coincideEstado = true;
-            if (estado !== "") {
-                coincideEstado = p.activo === parseInt(estado);
+            if (estadoSelect !== "") {
+                // Convertimos el "Activo" de MySQL a "1" o "0" para compararlo con el Select
+                const estadoReal = p.estado === 'Activo' ? "1" : "0";
+                coincideEstado = estadoReal === estadoSelect;
             }
 
-            // Debe cumplir ambas condiciones
             return coincideTexto && coincideEstado;
         });
 
+        // Tu paginador universal hace el resto de la magia
         miPaginador.setData(filtrados);
     }
 
-    // Escuchamos ambos eventos
     if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
     if (filterEstado) filterEstado.addEventListener("change", aplicarFiltros);
 }
@@ -147,6 +150,8 @@ function configurarTabsModal() {
         });
     });
 }
+
+
 
 // --- FUNCIONES GLOBALES OPTIMIZADAS ---
 
@@ -194,18 +199,25 @@ window.abrirModalEdicion = function (id) {
     Array.from(form.elements).forEach(input => {
         if(!input.name) return;
         
-        // Buscamos el nombre equivalente en la DB (o usamos el mismo si no está en el mapa)
+        // Buscamos el nombre equivalente en la DB
         const dbKey = CAMPOS_MAP[input.name] || input.name;
         
         // Si el campo existe en el paciente, lo asignamos
-        if(p[dbKey] !== undefined) {
+        if(p[dbKey] !== undefined && p[dbKey] !== null) {
             input.value = p[dbKey];
         }
     });
 
-    // Casos especiales manuales (si los hay)
-    form.id.value = p.id; // Asegurar ID
-    if(p.fecha_nacimiento) form.fecha_nacimiento.value = p.fecha_nacimiento; // Asegurar fecha
+    // --- CASOS ESPECIALES MANUALES ---
+    form.id.value = p.id; // Aseguramos el ID oculto
+    form.expediente.value = p.numero_expediente; // ¡Esto arregla tu error 422!
+    form.activo.value = p.estado === 'Activo' ? "1" : "0"; // Muestra el estado correcto
+    
+    if(p.fecha_nacimiento) {
+        // En Laravel las fechas a veces vienen con horas (ej. 2024-05-10T00:00:00.000000Z)
+        // Esto la recorta para que el input type="date" la acepte sin errores
+        form.fecha_nacimiento.value = p.fecha_nacimiento.split('T')[0]; 
+    }
 
     window.openModal("modalPacientes", "edit");
 };
@@ -248,8 +260,9 @@ window.imprimirExpediente = function (id) {
     });
 };
 
-// OPTIMIZADA: Guarda datos dinámicamente usando el mapa inverso
-window.guardarDatos = function () {
+// OPTIMIZADA: Guarda datos dinámicamente en MySQL
+// OPTIMIZADA: Guarda datos dinámicamente usando la API global
+window.guardarDatos = async function () {
     const form = document.getElementById("formPaciente");
     const formData = new FormData(form);
     const id = formData.get("id");
@@ -262,28 +275,53 @@ window.guardarDatos = function () {
         return alert("Por favor complete los campos obligatorios (*)");
     }
 
+    // Cambiar la llave del expediente al nombre real de la base de datos
+    datosForm.numero_expediente = datosForm.expediente;
+    delete datosForm.expediente;
+
     // Traducir campos del Formulario -> DB usando el mapa
     Object.keys(CAMPOS_MAP).forEach(formKey => {
         if(datosForm[formKey] !== undefined) {
             datosForm[CAMPOS_MAP[formKey]] = datosForm[formKey];
-            delete datosForm[formKey]; // Limpiar clave vieja si quieres, o dejarla
+            delete datosForm[formKey];
         }
     });
 
-    datosForm.activo = parseInt(datosForm.activo);
+    
 
-    if (id) {
-        const index = pacientesDB.findIndex((p) => p.id == id);
-        if (index !== -1) {
-            // Actualizar manteniendo datos extra (citas, etc)
-            pacientesDB[index] = { ...pacientesDB[index], ...datosForm, id: parseInt(id) };
+    // Asegurar que el estado y fechas vayan limpios
+    datosForm.estado = parseInt(datosForm.activo) === 1 ? 'Activo' : 'Inactivo';
+    if (!datosForm.fecha_nacimiento) delete datosForm.fecha_nacimiento;
+
+    try {
+        const btnGuardar = document.getElementById("btnGuardar");
+        btnGuardar.innerText = "Guardando...";
+        btnGuardar.disabled = true;
+
+        if (id) {
+            // LÓGICA DE ACTUALIZAR (PUT)
+            await API.put(`/api/pacientes/${id}`, datosForm);
+            alert("Paciente actualizado correctamente");
+        } else {
+            // LÓGICA DE CREAR NUEVO (POST)
+            await API.post('/api/guardar-paciente', datosForm);
+            alert("Paciente guardado correctamente");
         }
-    } else {
-        // Crear Nuevo
-        pacientesDB.push({ ...datosForm, id: Date.now(), citas: [], tratamientos: [] });
+
+        window.closeModal("modalPacientes");
+        form.reset();
+        
+        // Refrescar tabla
+        await cargarPacientesDesdeBD();
+
+    } catch (error) {
+        console.error("Error al guardar:", error);
+        alert("Error al guardar. Verifica la consola.");
+    } finally {
+        const btnGuardar = document.getElementById("btnGuardar");
+        btnGuardar.innerText = "Guardar";
+        btnGuardar.disabled = false;
     }
 
-    alert("Datos guardados correctamente");
-    window.closeModal("modalPacientes");
-    miPaginador.setData(pacientesDB);
+    
 };

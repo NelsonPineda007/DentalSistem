@@ -77,6 +77,7 @@ class PaginadorTabla {
     this.tbody.innerHTML = "";
     const total = this.data.length;
 
+    // Si no hay datos, mostramos mensaje de tabla vacía
     if (total === 0) {
       this.tbody.innerHTML = `<tr><td colspan="100%" class="p-8 text-center text-slate-400 font-medium">No se encontraron registros</td></tr>`;
       this.updateInfo(0, 0, 0);
@@ -88,11 +89,22 @@ class PaginadorTabla {
     const end = start + this.itemsPorPagina;
     const itemsPagina = this.data.slice(start, end);
 
-    // Dibuja solo las filas reales (SE ELIMINARON LAS FILAS FANTASMAS)
+    // 1. Dibuja solo las filas reales con datos
     itemsPagina.forEach((item) => {
       const rowHTML = this.config.renderRow(item);
       this.tbody.insertAdjacentHTML("beforeend", rowHTML);
     });
+
+    // 2. MAGIA VISUAL: FILAS FANTASMAS
+    // Si faltan items para llenar la página, dibujamos filas vacías para mantener el diseño intacto
+    const filasFaltantes = this.itemsPorPagina - itemsPagina.length;
+    for (let i = 0; i < filasFaltantes; i++) {
+      this.tbody.insertAdjacentHTML("beforeend", `
+        <tr class="border-b border-slate-50 h-[75px] bg-transparent pointer-events-none">
+            <td colspan="100%"></td>
+        </tr>
+      `);
+    }
 
     this.updateButtons();
     this.updateInfo(start + 1, Math.min(end, total), total);

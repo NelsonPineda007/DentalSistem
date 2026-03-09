@@ -42,6 +42,11 @@ Route::get('/perfil', function () {
 
 use App\Http\Controllers\PacienteController;
 
-// Tus rutas API para los pacientes
+// Rutas que ya tenías para leer:
 Route::get('/api/obtener-pacientes', [PacienteController::class, 'obtenerTodos']);
-Route::get('/api/pacientes/{id}', [PacienteController::class, 'obtenerUno']); // <- ESTA FALTABA
+Route::get('/api/pacientes/{id}', [PacienteController::class, 'obtenerUno']);
+
+//guardar
+Route::post('/api/guardar-paciente', [PacienteController::class, 'guardar']);
+//actualizar
+Route::put('/api/pacientes/{id}', [PacienteController::class, 'actualizar']);

@@ -115,6 +115,7 @@
 {{-- Scripts --}}
 <script src="{{ asset('js/utils/reportes.js') }}"></script>
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
+<script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/PacientesControlador.js') }}"></script>
 
 </body>
