@@ -46,9 +46,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 // NUEVA FUNCIÓN: Conexión al Backend
 async function cargarPacientesDesdeBD() {
     try {
-        // Usamos el cliente HTTP modular que creaste para obtener los datos
+        // Traemos el historial completo de la base de datos
         pacientesDB = await API.get('/api/obtener-pacientes');
-        miPaginador.setData(pacientesDB);
+        
+        // En lugar de meter todos los datos de golpe a la tabla, 
+        // disparamos el evento del filtro para que respete lo que dice el <select>
+        const filterEstado = document.getElementById("filterEstado");
+        if (filterEstado) {
+            filterEstado.dispatchEvent(new Event('change'));
+        } else {
+            miPaginador.setData(pacientesDB);
+        }
+        
     } catch (error) {
         console.error("Error cargando pacientes:", error);
     }
@@ -158,13 +167,30 @@ function configurarTabsModal() {
 window.openModal = function (modalID, mode = "add") {
     const modal = document.getElementById(modalID);
     const form = document.getElementById("formPaciente");
-    document.querySelector('.tab-btn[data-target="tab-personal"]').click();
+    
+    // Nos aseguramos de que siempre se abra en la primera pestaña
+    const tabPersonal = document.querySelector('.tab-btn[data-target="tab-personal"]');
+    if (tabPersonal) tabPersonal.click();
 
     if (mode === "add") {
         document.getElementById("modalTitle").innerText = "Nuevo Paciente";
         form.reset();
         form.id.value = "";
-        form.expediente.value = `2024-${String(pacientesDB.length + 1).padStart(3, "0")}`;
+        
+        // --- AQUÍ ESTÁ LA MAGIA DEL NUEVO FORMATO ---
+        // 1. Buscamos el expediente con el número más alto para evitar duplicados al eliminar
+        let maxNum = 0;
+        pacientesDB.forEach(p => {
+            if (p.numero_expediente && p.numero_expediente.startsWith('EXP-')) {
+                const num = parseInt(p.numero_expediente.replace('EXP-', ''));
+                if (num > maxNum) maxNum = num;
+            }
+        });
+        
+        // 2. Generamos el nuevo código con el formato EXP-XXX
+        form.expediente.value = `EXP-${String(maxNum + 1).padStart(3, "0")}`;
+        // ---------------------------------------------
+        
         form.ciudad.value = "San Salvador";
     } else {
         document.getElementById("modalTitle").innerText = "Editar Paciente";
@@ -172,10 +198,13 @@ window.openModal = function (modalID, mode = "add") {
     
     modal.classList.remove("hidden");
     setTimeout(() => {
-        modal.querySelector(".modal-backdrop").classList.remove("opacity-0");
+        const backdrop = modal.querySelector(".modal-backdrop");
+        if (backdrop) backdrop.classList.remove("opacity-0");
         const panel = modal.querySelector(".modal-panel");
-        panel.classList.remove("opacity-0", "translate-y-4", "sm:scale-95");
-        panel.classList.add("opacity-100", "translate-y-0", "sm:scale-100");
+        if (panel) {
+            panel.classList.remove("opacity-0", "translate-y-4", "sm:scale-95");
+            panel.classList.add("opacity-100", "translate-y-0", "sm:scale-100");
+        }
     }, 10);
 };
 
@@ -222,10 +251,21 @@ window.abrirModalEdicion = function (id) {
     window.openModal("modalPacientes", "edit");
 };
 
-window.eliminarPaciente = function (id) {
-    if (confirm("¿Eliminar expediente permanentemente?")) {
-        pacientesDB = pacientesDB.filter((p) => p.id !== id);
-        miPaginador.setData(pacientesDB);
+window.eliminarPaciente = async function (id) {
+    // 1. Un mensaje claro de lo que realmente va a pasar
+    if (confirm("¿Estás seguro de archivar este expediente?\n\nEl paciente pasará a estado 'Inactivo' y se ocultará de la lista principal, pero su historial médico y pagos se conservarán intactos.")) {
+        try {
+            // 2. Usamos el verbo DELETE, que es el estándar RESTful
+            await API.delete(`/api/pacientes/${id}`);
+            
+            // 3. Avisamos y recargamos la tabla
+            alert("Expediente archivado (Inactivo) correctamente.");
+            await cargarPacientesDesdeBD();
+            
+        } catch (error) {
+            console.error("Error al archivar:", error);
+            alert("No se pudo archivar el expediente.");
+        }
     }
 };
 
