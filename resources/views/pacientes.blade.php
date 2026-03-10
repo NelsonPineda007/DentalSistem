@@ -116,6 +116,8 @@
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
 <script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/PacientesControlador.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/utils/alertas.js') }}"></script>
 
 </body>
 </html>

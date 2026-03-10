@@ -60,3 +60,9 @@ Route::post('/api/guardar-tratamiento', [TratamientoController::class, 'guardar'
 Route::put('/api/tratamientos/{id}', [TratamientoController::class, 'actualizar']);
 Route::delete('/api/tratamientos/{id}', [TratamientoController::class, 'eliminar']);
 
+
+//EXPEDIENTE
+use App\Http\Controllers\ExpedienteController;
+Route::post('/api/expediente/{paciente_id}/guardar', [ExpedienteController::class, 'guardarFicha']);
+Route::get('/api/expediente/{paciente_id}', [ExpedienteController::class, 'obtenerFicha']); 
+

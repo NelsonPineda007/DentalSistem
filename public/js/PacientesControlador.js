@@ -2,7 +2,6 @@
 
 // --- 1. CONFIGURACIÓN Y MAPEO ---
 // Diccionario para traducir nombres de DB a nombres del Formulario HTML
-// Clave = Nombre en Formulario HTML, Valor = Nombre en pacientsDB
 const CAMPOS_MAP = {
     'contacto_emergencia_nombre': 'contacto_nombre',
     'contacto_emergencia_telefono': 'contacto_tel',
@@ -21,19 +20,17 @@ const ICONS = {
 };
 
 // --- 2. BASE DE DATOS (AHORA DINÁMICA) ---
-let pacientesDB = []; // Inicia vacío
+let pacientesDB = []; 
 let miPaginador;
 
 // --- 3. INICIALIZACIÓN ---
 document.addEventListener("DOMContentLoaded", async () => {
     if (typeof PaginadorTabla === "undefined") return console.error("Falta paginadorTabla.js");
 
-    // 1. Inicializamos los componentes visuales
     inicializarPaginador();
     configurarBusqueda();
     configurarTabsModal();
 
-    // 2. Traemos los datos de Laravel
     await cargarPacientesDesdeBD();
 
     let resizeTimer;
@@ -43,14 +40,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 });
 
-// NUEVA FUNCIÓN: Conexión al Backend
 async function cargarPacientesDesdeBD() {
     try {
-        // Traemos el historial completo de la base de datos
         pacientesDB = await API.get('/api/obtener-pacientes');
         
-        // En lugar de meter todos los datos de golpe a la tabla, 
-        // disparamos el evento del filtro para que respete lo que dice el <select>
         const filterEstado = document.getElementById("filterEstado");
         if (filterEstado) {
             filterEstado.dispatchEvent(new Event('change'));
@@ -66,7 +59,7 @@ async function cargarPacientesDesdeBD() {
 function calcularItemsPorPagina() {
     const container = document.getElementById("tableContainer");
     if (!container) return 5;
-    const items = Math.floor((container.clientHeight - 140) / 76); // 140 = header+footer aprox
+    const items = Math.floor((container.clientHeight - 140) / 76); 
     return items > 3 ? items : 3;
 }
 
@@ -77,7 +70,6 @@ function inicializarPaginador() {
         renderRow: (p) => {
             const edad = p.fecha_nacimiento ? new Date().getFullYear() - new Date(p.fecha_nacimiento).getFullYear() : "-";
             
-            // Adaptación para MySQL: Evaluamos el texto del estado
             const esActivo = p.estado === 'Activo';
             const estadoClass = esActivo ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200";
 
@@ -118,17 +110,14 @@ function configurarBusqueda() {
 
     function aplicarFiltros() {
         const term = searchInput ? searchInput.value.toLowerCase() : '';
-        const estadoSelect = filterEstado ? filterEstado.value : ''; // "1", "0", o ""
+        const estadoSelect = filterEstado ? filterEstado.value : ''; 
 
         const filtrados = pacientesDB.filter(p => {
-            // 1. Búsqueda por texto (nombre, apellido, numero_expediente)
             const coincideTexto = (p.nombre + " " + p.apellido).toLowerCase().includes(term) || 
                                   p.numero_expediente.toLowerCase().includes(term);
             
-            // 2. Filtro de estado
             let coincideEstado = true;
             if (estadoSelect !== "") {
-                // Convertimos el "Activo" de MySQL a "1" o "0" para compararlo con el Select
                 const estadoReal = p.estado === 'Activo' ? "1" : "0";
                 coincideEstado = estadoReal === estadoSelect;
             }
@@ -136,14 +125,12 @@ function configurarBusqueda() {
             return coincideTexto && coincideEstado;
         });
 
-        // Tu paginador universal hace el resto de la magia
         miPaginador.setData(filtrados);
     }
 
     if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
     if (filterEstado) filterEstado.addEventListener("change", aplicarFiltros);
 }
-
 
 function configurarTabsModal() {
     document.querySelectorAll(".tab-btn").forEach((tab) => {
@@ -160,15 +147,12 @@ function configurarTabsModal() {
     });
 }
 
-
-
 // --- FUNCIONES GLOBALES OPTIMIZADAS ---
 
 window.openModal = function (modalID, mode = "add") {
     const modal = document.getElementById(modalID);
     const form = document.getElementById("formPaciente");
     
-    // Nos aseguramos de que siempre se abra en la primera pestaña
     const tabPersonal = document.querySelector('.tab-btn[data-target="tab-personal"]');
     if (tabPersonal) tabPersonal.click();
 
@@ -177,8 +161,6 @@ window.openModal = function (modalID, mode = "add") {
         form.reset();
         form.id.value = "";
         
-        // --- AQUÍ ESTÁ LA MAGIA DEL NUEVO FORMATO ---
-        // 1. Buscamos el expediente con el número más alto para evitar duplicados al eliminar
         let maxNum = 0;
         pacientesDB.forEach(p => {
             if (p.numero_expediente && p.numero_expediente.startsWith('EXP-')) {
@@ -187,10 +169,7 @@ window.openModal = function (modalID, mode = "add") {
             }
         });
         
-        // 2. Generamos el nuevo código con el formato EXP-XXX
         form.expediente.value = `EXP-${String(maxNum + 1).padStart(3, "0")}`;
-        // ---------------------------------------------
-        
         form.ciudad.value = "San Salvador";
     } else {
         document.getElementById("modalTitle").innerText = "Editar Paciente";
@@ -217,34 +196,27 @@ window.closeModal = function (modalID) {
     setTimeout(() => modal.classList.add("hidden"), 300);
 };
 
-// OPTIMIZADA: Rellena el formulario automáticamente usando el mapa
 window.abrirModalEdicion = function (id) {
     const p = pacientesDB.find((x) => x.id === id);
     if (!p) return;
     
     const form = document.getElementById("formPaciente");
     
-    // Recorremos todos los inputs del formulario
     Array.from(form.elements).forEach(input => {
         if(!input.name) return;
         
-        // Buscamos el nombre equivalente en la DB
         const dbKey = CAMPOS_MAP[input.name] || input.name;
         
-        // Si el campo existe en el paciente, lo asignamos
         if(p[dbKey] !== undefined && p[dbKey] !== null) {
             input.value = p[dbKey];
         }
     });
 
-    // --- CASOS ESPECIALES MANUALES ---
-    form.id.value = p.id; // Aseguramos el ID oculto
-    form.expediente.value = p.numero_expediente; // ¡Esto arregla tu error 422!
-    form.activo.value = p.estado === 'Activo' ? "1" : "0"; // Muestra el estado correcto
+    form.id.value = p.id; 
+    form.expediente.value = p.numero_expediente; 
+    form.activo.value = p.estado === 'Activo' ? "1" : "0"; 
     
     if(p.fecha_nacimiento) {
-        // En Laravel las fechas a veces vienen con horas (ej. 2024-05-10T00:00:00.000000Z)
-        // Esto la recorta para que el input type="date" la acepte sin errores
         form.fecha_nacimiento.value = p.fecha_nacimiento.split('T')[0]; 
     }
 
@@ -252,19 +224,25 @@ window.abrirModalEdicion = function (id) {
 };
 
 window.eliminarPaciente = async function (id) {
-    // 1. Un mensaje claro de lo que realmente va a pasar
-    if (confirm("¿Estás seguro de archivar este expediente?\n\nEl paciente pasará a estado 'Inactivo' y se ocultará de la lista principal, pero su historial médico y pagos se conservarán intactos.")) {
+    // LLAMAMOS AL NUEVO SISTEMA DE ALERTAS
+    const confirmado = await Alerta.eliminar(
+        "¿Archivar Expediente?", 
+        "El paciente pasará a estado Inactivo y se ocultará de la lista principal, pero su historial médico se conservará intacto.",
+        "Sí, archivar",
+        "Cancelar"
+    );
+
+    if (confirmado) {
         try {
-            // 2. Usamos el verbo DELETE, que es el estándar RESTful
             await API.delete(`/api/pacientes/${id}`);
             
-            // 3. Avisamos y recargamos la tabla
-            alert("Expediente archivado (Inactivo) correctamente.");
+            // TOAST DE ÉXITO
+            Alerta.exito("¡Archivado!", "Expediente archivado correctamente.");
             await cargarPacientesDesdeBD();
             
         } catch (error) {
             console.error("Error al archivar:", error);
-            alert("No se pudo archivar el expediente.");
+            Alerta.error("Hubo un problema", "No se pudo archivar el expediente.");
         }
     }
 };
@@ -300,26 +278,21 @@ window.imprimirExpediente = function (id) {
     });
 };
 
-// OPTIMIZADA: Guarda datos dinámicamente en MySQL
-// OPTIMIZADA: Guarda datos dinámicamente usando la API global
 window.guardarDatos = async function () {
     const form = document.getElementById("formPaciente");
     const formData = new FormData(form);
     const id = formData.get("id");
     
-    // Convertir FormData a Objeto simple
     let datosForm = Object.fromEntries(formData.entries());
 
-    // Validar requeridos
+    // VALIDACIÓN CON EL NUEVO SISTEMA DE ALERTAS
     if (!datosForm.nombre || !datosForm.apellido || !datosForm.telefono) {
-        return alert("Por favor complete los campos obligatorios (*)");
+        return Alerta.advertencia("Campos incompletos", "Por favor completa los campos obligatorios (*).");
     }
 
-    // Cambiar la llave del expediente al nombre real de la base de datos
     datosForm.numero_expediente = datosForm.expediente;
     delete datosForm.expediente;
 
-    // Traducir campos del Formulario -> DB usando el mapa
     Object.keys(CAMPOS_MAP).forEach(formKey => {
         if(datosForm[formKey] !== undefined) {
             datosForm[CAMPOS_MAP[formKey]] = datosForm[formKey];
@@ -327,9 +300,6 @@ window.guardarDatos = async function () {
         }
     });
 
-    
-
-    // Asegurar que el estado y fechas vayan limpios
     datosForm.estado = parseInt(datosForm.activo) === 1 ? 'Activo' : 'Inactivo';
     if (!datosForm.fecha_nacimiento) delete datosForm.fecha_nacimiento;
 
@@ -339,29 +309,27 @@ window.guardarDatos = async function () {
         btnGuardar.disabled = true;
 
         if (id) {
-            // LÓGICA DE ACTUALIZAR (PUT)
             await API.put(`/api/pacientes/${id}`, datosForm);
-            alert("Paciente actualizado correctamente");
+            // TOAST DE ACTUALIZACIÓN
+            Alerta.exito("¡Actualizado!", "El expediente se actualizó correctamente.");
         } else {
-            // LÓGICA DE CREAR NUEVO (POST)
             await API.post('/api/guardar-paciente', datosForm);
-            alert("Paciente guardado correctamente");
+            // TOAST DE CREACIÓN
+            Alerta.exito("¡Guardado!", "El nuevo paciente ha sido registrado.");
         }
 
         window.closeModal("modalPacientes");
         form.reset();
         
-        // Refrescar tabla
         await cargarPacientesDesdeBD();
 
     } catch (error) {
         console.error("Error al guardar:", error);
-        alert("Error al guardar. Verifica la consola.");
+        // TOAST DE ERROR
+        Alerta.error("Error del servidor", "No se pudo guardar la información.");
     } finally {
         const btnGuardar = document.getElementById("btnGuardar");
         btnGuardar.innerText = "Guardar";
         btnGuardar.disabled = false;
     }
-
-    
 };
