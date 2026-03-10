@@ -40,13 +40,23 @@ Route::get('/perfil', function () {
     return view('perfil');
 });
 
+//PACIENTES
 use App\Http\Controllers\PacienteController;
-
-// Rutas que ya tenías para leer:
 Route::get('/api/obtener-pacientes', [PacienteController::class, 'obtenerTodos']);
 Route::get('/api/pacientes/{id}', [PacienteController::class, 'obtenerUno']);
-
 //guardar
 Route::post('/api/guardar-paciente', [PacienteController::class, 'guardar']);
 //actualizar
 Route::put('/api/pacientes/{id}', [PacienteController::class, 'actualizar']);
+//soft delete
+Route::delete('/api/pacientes/{id}', [PacienteController::class, 'eliminar']);
+
+
+//TRATAMIENTOS
+use App\Http\Controllers\TratamientoController;
+Route::get('/api/categorias-tratamientos', [TratamientoController::class, 'obtenerCategorias']);
+Route::get('/api/obtener-tratamientos', [TratamientoController::class, 'obtenerTodos']);
+Route::post('/api/guardar-tratamiento', [TratamientoController::class, 'guardar']);
+Route::put('/api/tratamientos/{id}', [TratamientoController::class, 'actualizar']);
+Route::delete('/api/tratamientos/{id}', [TratamientoController::class, 'eliminar']);
+

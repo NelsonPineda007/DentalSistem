@@ -10,7 +10,9 @@ class PacienteController extends Controller
     // 1. Esta trae a TODOS los pacientes (Para tu pantalla de tabla general)
     public function obtenerTodos()
     {
-        $pacientes = Paciente::where('estado', 'Activo')->get();
+        // En lugar de filtrar por 'Activo', usamos all() para traer el historial completo
+        $pacientes = Paciente::all(); 
+        
         return response()->json($pacientes);
     }
 
@@ -70,6 +72,24 @@ class PacienteController extends Controller
         return response()->json([
             'mensaje' => 'Paciente actualizado exitosamente',
             'paciente' => $paciente
+        ]);
+    }
+
+    // NUEVA FUNCIÓN: Borrado Lógico (Soft Delete)
+    public function eliminar($id)
+    {
+        $paciente = Paciente::find($id);
+
+        if (!$paciente) {
+            return response()->json(['mensaje' => 'Paciente no encontrado'], 404);
+        }
+
+        // En lugar de usar $paciente->delete(), hacemos el borrado lógico
+        $paciente->estado = 'Inactivo';
+        $paciente->save();
+
+        return response()->json([
+            'mensaje' => 'Paciente archivado con éxito'
         ]);
     }
 }
