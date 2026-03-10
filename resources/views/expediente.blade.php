@@ -112,13 +112,17 @@
             </div>
         </div>
 
-        <div id="tab-historia" class="tab-content hidden h-full">
+<div id="tab-historia" class="tab-content hidden h-full">
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 gap-6">
                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Motivo de Consulta</label><textarea id="hc_motivo" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 bg-slate-50"></textarea></div>
                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Síntomas Reportados</label><textarea id="hc_sintomas" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500"></textarea></div>
                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Examen Clínico / Observaciones</label><textarea id="hc_observaciones" rows="3" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500"></textarea></div>
                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Diagnóstico Presuntivo</label><textarea id="hc_diagnostico" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500"></textarea></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Prescripciones / Receta</label><textarea id="hc_prescripciones" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 bg-emerald-50/30"></textarea></div>
+                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Prescripciones / Receta</label><textarea id="hc_prescripciones" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 bg-emerald-50/30"></textarea></div>                
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Próxima Cita Recomendada</label>
+                    <input type="date" id="hc_proxima_cita" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-slate-50 text-sm font-medium text-slate-700">
+                </div>
             </div>
         </div>
 
@@ -185,8 +189,12 @@
     'modalContent' => View::yieldContent('modal_content')
 ])
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/utils/alertas.js') }}"></script>
+<script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
 <script src="{{ asset('js/expedienteControlador.js') }}"></script>
+
 
 </body>
 </html>

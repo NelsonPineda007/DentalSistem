@@ -171,6 +171,8 @@
 <script src="{{ asset('js/utils/api.js') }}"></script> {{-- Cliente API Global --}}
 <script src="{{ asset('js/charts.js') }}"></script> 
 <script src="{{ asset('js/tratamientosControlador.js') }}"></script>
-
+{{-- CDN de SweetAlert2 y Alertas --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/utils/alertas.js') }}"></script>
 </body>
 </html>

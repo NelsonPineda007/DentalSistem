@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // =========================================================================
-// 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL)
+// 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL Y CARGA DE ODONTOGRAMA)
 // =========================================================================
 async function cargarDatosPacienteDesdeURL() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -38,7 +38,7 @@ async function cargarDatosPacienteDesdeURL() {
         document.getElementById("exp-iniciales").textContent = `${paciente.nombre.charAt(0)}${paciente.apellido.charAt(0)}`;
         document.getElementById("exp-numero").textContent = paciente.numero_expediente;
         
-        // Calculamos la edad real basada en la fecha de nacimiento
+        // Calculamos la edad real
         if(paciente.fecha_nacimiento) {
             const hoy = new Date();
             const nacimiento = new Date(paciente.fecha_nacimiento);
@@ -61,6 +61,64 @@ async function cargarDatosPacienteDesdeURL() {
         } else {
             document.getElementById("exp-alergias").classList.add("hidden");
             document.getElementById("exp-alergias").classList.remove("flex");
+        }
+
+try {
+            const resFicha = await fetch(`/api/expediente/${idPaciente}`);
+            if (resFicha.ok) {
+                const ficha = await resFicha.json();
+                
+                if (ficha.odontograma) {
+                    // 1. Pintar Diagnóstico Anatómico
+                    if (ficha.odontograma.diagnostico) {
+                        Object.entries(ficha.odontograma.diagnostico).forEach(([numero, estado]) => {
+                            const diente = document.querySelector(`#tab-odontograma div[data-numero="${numero}"]`);
+                            if (diente) {
+                                let estadoActual = diente.getAttribute('data-estado') || 'sano';
+                                while(estadoActual !== estado) {
+                                    window.toggleColorDienteAnatomico(diente);
+                                    estadoActual = diente.getAttribute('data-estado');
+                                }
+                            }
+                        });
+                    }
+
+                    // 2. Pintar Operatoria
+                    if (ficha.odontograma.operatoria) {
+                        Object.entries(ficha.odontograma.operatoria).forEach(([numero, carasCargadas]) => {
+                            const dienteOper = document.querySelector(`#oper-c1 [data-numero="${numero}"], #oper-c2 [data-numero="${numero}"], #oper-c3 [data-numero="${numero}"], #oper-c4 [data-numero="${numero}"]`);
+                            if (dienteOper) {
+                                const carasDOM = dienteOper.querySelectorAll('.cara-circulo');
+                                carasDOM.forEach((cara, index) => {
+                                    const estadoGuardado = carasCargadas[index];
+                                    if (estadoGuardado !== 'sano') {
+                                        cara.setAttribute('data-estado', estadoGuardado);
+                                        if (estadoGuardado === 'caries') cara.setAttribute('fill', '#f43f5e');
+                                        else if (estadoGuardado === 'restaurado') cara.setAttribute('fill', '#3b82f6');
+                                        else if (estadoGuardado === 'ausente') cara.setAttribute('fill', '#1e293b');
+                                    }
+                                });
+                            }
+                        });
+                    }
+
+                    // 3. NUEVO: Rellenar textos de Prótesis y Endodoncia
+                    if (ficha.odontograma.detalles_extra) {
+                        const extra = ficha.odontograma.detalles_extra;
+                        if(document.getElementById('prot_color')) document.getElementById('prot_color').value = extra.prot_color || '';
+                        if(document.getElementById('prot_guia')) document.getElementById('prot_guia').value = extra.prot_guia || '';
+                        if(document.getElementById('prot_molde')) document.getElementById('prot_molde').value = extra.prot_molde || '';
+                        if(document.getElementById('prot_acrilico')) document.getElementById('prot_acrilico').checked = extra.prot_acrilico || false;
+                        if(document.getElementById('prot_porcelana')) document.getElementById('prot_porcelana').checked = extra.prot_porcelana || false;
+                        if(document.getElementById('endo_diente')) document.getElementById('endo_diente').value = extra.endo_diente || '';
+                        if(document.getElementById('endo_vitalidad')) document.getElementById('endo_vitalidad').value = extra.endo_vitalidad || '';
+                        if(document.getElementById('endo_provisional')) document.getElementById('endo_provisional').value = extra.endo_provisional || '';
+                        if(document.getElementById('endo_trabajo')) document.getElementById('endo_trabajo').value = extra.endo_trabajo || '';
+                    }
+                }
+            }
+        } catch (errorFicha) {
+            console.error("Error al cargar el odontograma:", errorFicha);
         }
 
     } catch (error) {
@@ -245,7 +303,7 @@ function renderizarOdontogramaOperatoria() {
 
 
 // =========================================================================
-// MÚLTIPLES TRATAMIENTOS: Lógica del Carrito de Compras en Modal
+// 3. MÚLTIPLES TRATAMIENTOS: Lógica del Carrito de Compras en Modal
 // =========================================================================
 
 const catalogoTratamientos = [
@@ -349,7 +407,7 @@ if(inputSearch) {
 }
 
 // =========================================================================
-// LÓGICA DE TABLA DE PAGOS Y EVENTOS DEL MODAL
+// 4. LÓGICA DE TABLA DE PAGOS Y EVENTOS DEL MODAL
 // =========================================================================
 let pagosDB = [
     { id: 1, fecha: "2024-02-15", tratamiento: "Resina Dental Simple", diente: "16", valor: 50.00, abono: 50.00, saldo: 0.00 },
@@ -492,20 +550,97 @@ window.guardarDatos = function () {
 };
 
 // =========================================================================
-// 5. GENERACIÓN DE PDF PERFECTO (MÚLTIPLES PÁGINAS + TEXTOS CLAROS)
+// 5. GUARDADO REAL EN BASE DE DATOS (ODONTOGRAMA E HISTORIA)
 // =========================================================================
-window.guardarFichaClinica = function() {
+window.guardarFichaClinica = async function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idPaciente = urlParams.get('id');
+
+    if (!idPaciente) {
+        return Alerta.error("Error de ID", "No se detectó el paciente actual.");
+    }
+
+    // 2. RECOLECTAR ODONTOGRAMA (Escáner de Dientes y Textos)
+    let odontogramaData = {
+        diagnostico: {},
+        operatoria: {},
+        // NUEVO: Capturamos los campos de Prótesis y Endodoncia
+        detalles_extra: {
+            prot_color: document.getElementById('prot_color')?.value || '',
+            prot_guia: document.getElementById('prot_guia')?.value || '',
+            prot_molde: document.getElementById('prot_molde')?.value || '',
+            prot_acrilico: document.getElementById('prot_acrilico')?.checked || false,
+            prot_porcelana: document.getElementById('prot_porcelana')?.checked || false,
+            endo_diente: document.getElementById('endo_diente')?.value || '',
+            endo_vitalidad: document.getElementById('endo_vitalidad')?.value || '',
+            endo_provisional: document.getElementById('endo_provisional')?.value || '',
+            endo_trabajo: document.getElementById('endo_trabajo')?.value || ''
+        }
+    };
+
+    // 2.1 Escanear Diagnóstico Visual
+    document.querySelectorAll('#diag-c1 [data-numero], #diag-c2 [data-numero], #diag-c3 [data-numero], #diag-c4 [data-numero]').forEach(el => {
+        const numero = el.getAttribute('data-numero');
+        const estado = el.getAttribute('data-estado') || 'sano';
+        if(estado !== 'sano') odontogramaData.diagnostico[numero] = estado;
+    });
+
+    // 2.2 Escanear Operatoria
+    document.querySelectorAll('#oper-c1 [data-numero], #oper-c2 [data-numero], #oper-c3 [data-numero], #oper-c4 [data-numero]').forEach(el => {
+        const numero = el.getAttribute('data-numero');
+        let caras = [];
+        el.querySelectorAll('.cara-circulo').forEach(cara => {
+            caras.push(cara.getAttribute('data-estado') || 'sano');
+        });
+        if(caras.some(c => c !== 'sano')) odontogramaData.operatoria[numero] = caras;
+    });
+
+    // 3. RECOLECTAR HISTORIA DE CONSULTA
+    const historiaData = {
+        motivo_consulta: document.getElementById('hc_motivo')?.value || '',
+        sintomas: document.getElementById('hc_sintomas')?.value || '',
+        observaciones: document.getElementById('hc_observaciones')?.value || '',
+        diagnostico: document.getElementById('hc_diagnostico')?.value || '',
+        prescripciones: document.getElementById('hc_prescripciones')?.value || '',
+        proxima_cita: document.getElementById('hc_proxima_cita')?.value || null,
+    };
+
+    const payload = {
+        odontograma: odontogramaData,
+        historia: historiaData
+    };
+
     const btn = document.getElementById('btnGuardarFicha');
-    if(!btn) return;
     const textoOriginal = btn.innerHTML;
-    btn.innerHTML = `<svg class="w-5 h-5 animate-spin mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-    setTimeout(() => {
-        btn.innerHTML = "¡Guardado Exitoso!";
-        btn.classList.replace('bg-blue-800', 'bg-emerald-600');
-        setTimeout(() => { btn.innerHTML = textoOriginal; btn.classList.replace('bg-emerald-600', 'bg-blue-800'); }, 2000);
-    }, 800);
+
+    try {
+        btn.innerHTML = `<svg class="w-5 h-5 animate-spin mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+        btn.disabled = true;
+
+        await API.post(`/api/expediente/${idPaciente}/guardar`, payload);
+
+        Alerta.exito("¡Ficha Guardada!", "Odontograma y consulta registrados exitosamente.");
+
+        // Limpiamos SOLO la historia de consulta (El odontograma y prótesis se quedan porque son permanentes)
+        document.getElementById('hc_motivo').value = '';
+        document.getElementById('hc_sintomas').value = '';
+        document.getElementById('hc_observaciones').value = '';
+        document.getElementById('hc_diagnostico').value = '';
+        document.getElementById('hc_prescripciones').value = '';
+        document.getElementById('hc_proxima_cita').value = '';
+
+    } catch (error) {
+        console.error("Error al guardar ficha:", error);
+        Alerta.error("Error del Servidor", "No se pudo guardar la información de la ficha.");
+    } finally {
+        btn.innerHTML = textoOriginal;
+        btn.disabled = false;
+    }
 };
 
+// =========================================================================
+// 6. GENERACIÓN DE PDF PERFECTO
+// =========================================================================
 window.imprimirFichaPDF = async function() {
     const elNombre = document.getElementById("exp-nombre");
     const nombrePaciente = elNombre ? elNombre.innerText : "Paciente";
@@ -521,8 +656,6 @@ window.imprimirFichaPDF = async function() {
     const contenedorImpresion = document.getElementById('contenedor-impresion');
 
     try {
-        // html2canvas tiene una función "onclone". Esto crea una copia INVISIBLE de tu pantalla,
-        // la ajusta para la foto, y luego la destruye. ¡Tú nunca ves la pantalla parpadear ni romperse!
         const canvas = await html2canvas(contenedorImpresion, { 
             scale: 2, 
             backgroundColor: '#ffffff',
@@ -550,8 +683,7 @@ window.imprimirFichaPDF = async function() {
                 }
                 if(tabFin) tabFin.style.display = 'none';
 
-                // SOLUCIÓN DE TEXTO CORTADO: Convertir inputs y textareas en bloques de texto reales
-                const inputs = clonedContainer.querySelectorAll('input[type="text"], input[type="number"]');
+                const inputs = clonedContainer.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]');
                 inputs.forEach(input => {
                     const originalInput = document.getElementById(input.id);
                     const div = clonedDoc.createElement('div');
@@ -572,7 +704,6 @@ window.imprimirFichaPDF = async function() {
                     textarea.parentNode.replaceChild(div, textarea);
                 });
 
-                // Convertir checkboxes
                 const checkboxes = clonedContainer.querySelectorAll('input[type="checkbox"]');
                 checkboxes.forEach(cb => {
                     const originalCb = document.getElementById(cb.id);
