@@ -5,17 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Odontograma;
 use App\Models\Consulta;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema; // <-- IMPORTANTE PARA EL TRUCO
+use Illuminate\Support\Facades\Schema;
 
 class ExpedienteController extends Controller
 {
     // =========================================================
-    // 1. FUNCIÓN PARA GUARDAR (La que ya tenías perfecta)
+    // 1. FUNCIÓN PARA GUARDAR O ACTUALIZAR
     // =========================================================
     public function guardarFicha(Request $request, $paciente_id)
     {
         try {
-            // 1. GUARDAR ODONTOGRAMA
             $odontograma = Odontograma::updateOrCreate(
                 ['paciente_id' => $paciente_id], 
                 [
@@ -24,24 +23,38 @@ class ExpedienteController extends Controller
                 ]
             );
 
-            // 2. GUARDAR HISTORIA DE CONSULTA
             $historia = $request->historia;
             $consultaGuardada = null;
 
             if (!empty($historia['motivo_consulta']) || !empty($historia['diagnostico'])) {
-                
                 Schema::disableForeignKeyConstraints();
 
-                $consultaGuardada = Consulta::create([
-                    'paciente_id' => $paciente_id,
-                    'empleado_id' => 1, 
-                    'motivo_consulta' => $historia['motivo_consulta'] ?? null,
-                    'sintomas' => $historia['sintomas'] ?? null,
-                    'observaciones' => $historia['observaciones'] ?? null,
-                    'diagnostico' => $historia['diagnostico'] ?? null,
-                    'prescripciones' => $historia['prescripciones'] ?? null,
-                    'proxima_cita_recomendada' => $historia['proxima_cita'] ?? null,
-                ]);
+                // SI TRAE UN ID, ACTUALIZAMOS LA CONSULTA EXISTENTE
+                if (!empty($historia['consulta_id'])) {
+                    $consultaGuardada = Consulta::find($historia['consulta_id']);
+                    if ($consultaGuardada) {
+                        $consultaGuardada->update([
+                            'motivo_consulta' => $historia['motivo_consulta'] ?? null,
+                            'sintomas' => $historia['sintomas'] ?? null,
+                            'observaciones' => $historia['observaciones'] ?? null,
+                            'diagnostico' => $historia['diagnostico'] ?? null,
+                            'prescripciones' => $historia['prescripciones'] ?? null,
+                            'proxima_cita_recomendada' => $historia['proxima_cita'] ?? null,
+                        ]);
+                    }
+                } else {
+                    // SI NO TRAE ID, CREAMOS UNA NUEVA
+                    $consultaGuardada = Consulta::create([
+                        'paciente_id' => $paciente_id,
+                        'empleado_id' => 1, 
+                        'motivo_consulta' => $historia['motivo_consulta'] ?? null,
+                        'sintomas' => $historia['sintomas'] ?? null,
+                        'observaciones' => $historia['observaciones'] ?? null,
+                        'diagnostico' => $historia['diagnostico'] ?? null,
+                        'prescripciones' => $historia['prescripciones'] ?? null,
+                        'proxima_cita_recomendada' => $historia['proxima_cita'] ?? null,
+                    ]);
+                }
 
                 Schema::enableForeignKeyConstraints();
             }
@@ -53,30 +66,30 @@ class ExpedienteController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'error_real' => $e->getMessage(),
-                'linea' => $e->getLine()
-            ], 500);
+            return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
         }
     }
 
     // =========================================================
-    // 2. FUNCIÓN PARA LEER (¡Esta es la que faltaba!)
+    // 2. FUNCIÓN PARA LEER EL HISTORIAL AL ENTRAR
     // =========================================================
     public function obtenerFicha($paciente_id)
     {
         try {
             $odontograma = Odontograma::where('paciente_id', $paciente_id)->first();
             
+            // NUEVO: Traemos el historial ordenado de la más reciente a la más antigua
+            $consultas = Consulta::where('paciente_id', $paciente_id)
+                                 ->orderBy('id', 'desc')
+                                 ->get();
+            
             return response()->json([
-                'odontograma' => $odontograma ? $odontograma->estado_dientes : null
+                'odontograma' => $odontograma ? $odontograma->estado_dientes : null,
+                'consultas' => $consultas
             ]);
             
         } catch (\Exception $e) {
-            return response()->json([
-                'error_real' => $e->getMessage(),
-                'linea' => $e->getLine()
-            ], 500);
+            return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
         }
     }
 }

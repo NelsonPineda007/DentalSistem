@@ -1,6 +1,11 @@
 // public/js/expedienteControlador.js
 
+// =========================================================================
+// VARIABLES GLOBALES
+// =========================================================================
 let pagosPaginador;
+let consultasPaginador;
+let consultasDB = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     cargarDatosPacienteDesdeURL(); 
@@ -10,11 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (typeof PaginadorTabla !== "undefined") {
         inicializarPaginadorPagos();
+        inicializarPaginadorConsultas();
     }
 });
 
 // =========================================================================
-// 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL Y CARGA DE ODONTOGRAMA)
+// 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL Y CARGA DE DATOS)
 // =========================================================================
 async function cargarDatosPacienteDesdeURL() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -23,30 +29,23 @@ async function cargarDatosPacienteDesdeURL() {
     if (!idPaciente) return;
 
     try {
-        // Hacemos la petición a nuestra nueva API en Laravel
+        // 1. Cargar datos básicos del paciente
         const respuesta = await fetch(`/api/pacientes/${idPaciente}`);
-        
-        if (!respuesta.ok) {
-            throw new Error('No se pudo encontrar el paciente en la base de datos.');
-        }
+        if (!respuesta.ok) throw new Error('No se pudo encontrar el paciente.');
 
-        // Convertimos la respuesta a JSON
         const paciente = await respuesta.json();
 
-        // Inyectamos los datos reales en el HTML
+        // Inyectar datos en la cabecera
         document.getElementById("exp-nombre").textContent = `${paciente.nombre} ${paciente.apellido}`;
         document.getElementById("exp-iniciales").textContent = `${paciente.nombre.charAt(0)}${paciente.apellido.charAt(0)}`;
         document.getElementById("exp-numero").textContent = paciente.numero_expediente;
         
-        // Calculamos la edad real
         if(paciente.fecha_nacimiento) {
             const hoy = new Date();
             const nacimiento = new Date(paciente.fecha_nacimiento);
             let edad = hoy.getFullYear() - nacimiento.getFullYear();
             const m = hoy.getMonth() - nacimiento.getMonth();
-            if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
-                edad--;
-            }
+            if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
             document.getElementById("exp-edad").textContent = `${edad} años`;
         } else {
             document.getElementById("exp-edad").textContent = "Sin fecha nac.";
@@ -63,13 +62,14 @@ async function cargarDatosPacienteDesdeURL() {
             document.getElementById("exp-alergias").classList.remove("flex");
         }
 
-try {
+        // 2. Cargar Odontograma y Consultas
+        try {
             const resFicha = await fetch(`/api/expediente/${idPaciente}`);
             if (resFicha.ok) {
                 const ficha = await resFicha.json();
                 
+                // Pintar Odontograma
                 if (ficha.odontograma) {
-                    // 1. Pintar Diagnóstico Anatómico
                     if (ficha.odontograma.diagnostico) {
                         Object.entries(ficha.odontograma.diagnostico).forEach(([numero, estado]) => {
                             const diente = document.querySelector(`#tab-odontograma div[data-numero="${numero}"]`);
@@ -83,7 +83,6 @@ try {
                         });
                     }
 
-                    // 2. Pintar Operatoria
                     if (ficha.odontograma.operatoria) {
                         Object.entries(ficha.odontograma.operatoria).forEach(([numero, carasCargadas]) => {
                             const dienteOper = document.querySelector(`#oper-c1 [data-numero="${numero}"], #oper-c2 [data-numero="${numero}"], #oper-c3 [data-numero="${numero}"], #oper-c4 [data-numero="${numero}"]`);
@@ -102,7 +101,6 @@ try {
                         });
                     }
 
-                    // 3. NUEVO: Rellenar textos de Prótesis y Endodoncia
                     if (ficha.odontograma.detalles_extra) {
                         const extra = ficha.odontograma.detalles_extra;
                         if(document.getElementById('prot_color')) document.getElementById('prot_color').value = extra.prot_color || '';
@@ -115,6 +113,12 @@ try {
                         if(document.getElementById('endo_provisional')) document.getElementById('endo_provisional').value = extra.endo_provisional || '';
                         if(document.getElementById('endo_trabajo')) document.getElementById('endo_trabajo').value = extra.endo_trabajo || '';
                     }
+                }
+
+                // Cargar Historial en la Tabla
+                if (ficha.consultas) {
+                    consultasDB = ficha.consultas;
+                    if(consultasPaginador) consultasPaginador.setData(consultasDB);
                 }
             }
         } catch (errorFicha) {
@@ -146,18 +150,93 @@ function configurarTabsExpediente() {
             contents.forEach((c) => c.classList.add("hidden"));
             document.getElementById(tab.dataset.target).classList.remove("hidden");
 
+            // Refrescar tablas si es necesario para evitar bugs visuales
             if (tab.dataset.target === "tab-finanzas" && typeof pagosPaginador !== "undefined") {
-                setTimeout(() => {
-                    const scrollContainer = pagosPaginador.tbody ? pagosPaginador.tbody.parentElement.parentElement : null;
-                    if(scrollContainer) pagosPaginador.recalcularYRenderizar(scrollContainer);
-                }, 50);
+                setTimeout(() => { if(pagosPaginador.tbody) pagosPaginador.recalcularYRenderizar(pagosPaginador.tbody.parentElement.parentElement); }, 50);
+            }
+            if (tab.dataset.target === "tab-consultas" && typeof consultasPaginador !== "undefined") {
+                setTimeout(() => { if(consultasPaginador.tbody) consultasPaginador.recalcularYRenderizar(consultasPaginador.tbody.parentElement.parentElement); }, 50);
             }
         });
     });
 }
 
 // =========================================================================
-// 2. LÓGICA DE ODONTOGRAMAS Y AUTOCOMPLETADO
+// 2. LÓGICA DE HISTORIAL DE CONSULTAS
+// =========================================================================
+function inicializarPaginadorConsultas() {
+    if (!document.getElementById("consultasTableContainer")) return;
+    
+    consultasPaginador = new PaginadorTabla(consultasDB, 'auto', {
+        tableBodyId: "consultasTableBody",
+        containerId: "consultasTableContainer",
+        renderRow: (c) => {
+            const fecha = c.fecha_consulta ? new Date(c.fecha_consulta).toLocaleDateString() : '-';
+            const proxima = c.proxima_cita_recomendada ? new Date(c.proxima_cita_recomendada).toLocaleDateString() : 'No asignada';
+            
+            // Extraer un resumen para rellenar el hueco debajo del motivo
+            const resumen = c.sintomas || c.observaciones || 'Sin detalles adicionales registrados.';
+
+            return `
+                <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors h-[75px]">
+                    <td class="px-6 py-4 font-bold text-slate-600 whitespace-nowrap">${fecha}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col justify-center">
+                            <span class="font-bold text-blue-800 text-sm truncate max-w-[250px]">${c.motivo_consulta || 'Consulta de control'}</span>
+                            <span class="text-[11px] text-slate-400 mt-0.5 truncate max-w-[250px]" title="${resumen}">${resumen}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                        <div class="truncate max-w-[200px]" title="${c.diagnostico || '-'}">${c.diagnostico || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 font-medium text-emerald-600 whitespace-nowrap">${proxima}</td>
+                    <td class="px-6 py-4">
+                        <button type="button" onclick="window.editarConsulta(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100" title="Ver / Editar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                    </td>
+                </tr>`;
+        }
+    });
+}
+
+window.editarConsulta = function(id) {
+    const c = consultasDB.find(x => x.id === id);
+    if (!c) return;
+
+    // Llenamos el formulario
+    document.getElementById('hc_consulta_id').value = c.id;
+    document.getElementById('hc_motivo').value = c.motivo_consulta || '';
+    document.getElementById('hc_sintomas').value = c.sintomas || '';
+    document.getElementById('hc_observaciones').value = c.observaciones || '';
+    document.getElementById('hc_diagnostico').value = c.diagnostico || '';
+    document.getElementById('hc_prescripciones').value = c.prescripciones || '';
+    
+    if(c.proxima_cita_recomendada) {
+        document.getElementById('hc_proxima_cita').value = c.proxima_cita_recomendada.split(' ')[0];
+    } else {
+        document.getElementById('hc_proxima_cita').value = '';
+    }
+
+    // Saltamos a la pestaña de edición
+    document.querySelector('.tab-btn[data-target="tab-historia"]').click();
+    Alerta.info("Modo Edición", "Estás viendo una consulta pasada.");
+};
+
+window.nuevaConsulta = function() {
+    document.getElementById('hc_consulta_id').value = '';
+    document.getElementById('hc_motivo').value = '';
+    document.getElementById('hc_sintomas').value = '';
+    document.getElementById('hc_observaciones').value = '';
+    document.getElementById('hc_diagnostico').value = '';
+    document.getElementById('hc_prescripciones').value = '';
+    document.getElementById('hc_proxima_cita').value = '';
+    
+    document.querySelector('.tab-btn[data-target="tab-historia"]').click();
+};
+
+// =========================================================================
+// 3. LÓGICA DE ODONTOGRAMAS
 // =========================================================================
 const dientesC1 = [18, 17, 16, 15, 14, 13, 12, 11];
 const dientesC2 = [21, 22, 23, 24, 25, 26, 27, 28];
@@ -227,7 +306,6 @@ function actualizarTextosDiagnostico() {
     document.querySelectorAll('#diag-c1 [data-numero], #diag-c2 [data-numero], #diag-c3 [data-numero], #diag-c4 [data-numero]').forEach(el => {
         const numero = el.getAttribute('data-numero');
         const estado = el.getAttribute('data-estado');
-        
         if (estado === 'ausente') ausentes.push(numero);
         if (estado === 'extraccion') extracciones.push(numero);
         if (estado === 'caries') caries.push(numero);
@@ -239,13 +317,9 @@ function actualizarTextosDiagnostico() {
 
     if (inputAusentes) inputAusentes.value = ausentes.length > 0 ? ausentes.join(', ') : '';
     if (inputExtraccion) inputExtraccion.value = extracciones.length > 0 ? `Pieza(s): ${extracciones.join(', ')}` : '';
-
     if (inputFinal) {
-        if (caries.length > 0) {
-            inputFinal.value = `Se detectan caries en piezas: ${caries.join(', ')}`;
-        } else if (inputFinal.value.includes('caries en piezas')) {
-            inputFinal.value = ""; 
-        }
+        if (caries.length > 0) inputFinal.value = `Se detectan caries en piezas: ${caries.join(', ')}`;
+        else if (inputFinal.value.includes('caries en piezas')) inputFinal.value = ""; 
     }
 }
 
@@ -301,11 +375,9 @@ function renderizarOdontogramaOperatoria() {
     });
 }
 
-
 // =========================================================================
-// 3. MÚLTIPLES TRATAMIENTOS: Lógica del Carrito de Compras en Modal
+// 4. LÓGICA DE PAGOS (Se conectará a BD después)
 // =========================================================================
-
 const catalogoTratamientos = [
     { id: 1, codigo: "LMP-01", nombre: "Limpieza Profunda (Profilaxis)", precio: 35.00 },
     { id: 2, codigo: "RST-01", nombre: "Resina Dental Simple", precio: 50.00 },
@@ -317,6 +389,7 @@ const catalogoTratamientos = [
 ];
 
 let tratamientosSeleccionados = [];
+let pagosDB = []; 
 
 function renderizarBadgesTratamientos() {
     const contenedor = document.getElementById('lista_tratamientos');
@@ -406,15 +479,9 @@ if(inputSearch) {
     });
 }
 
-// =========================================================================
-// 4. LÓGICA DE TABLA DE PAGOS Y EVENTOS DEL MODAL
-// =========================================================================
-let pagosDB = [
-    { id: 1, fecha: "2024-02-15", tratamiento: "Resina Dental Simple", diente: "16", valor: 50.00, abono: 50.00, saldo: 0.00 },
-    { id: 2, fecha: "2024-01-10", tratamiento: "Limpieza Profunda (Profilaxis)", diente: "General", valor: 35.00, abono: 20.00, saldo: 15.00 }
-];
-
 function inicializarPaginadorPagos() {
+    if (!document.getElementById("pagosTableContainer")) return;
+    
     pagosPaginador = new PaginadorTabla(pagosDB, 'auto', {
         tableBodyId: "pagosTableBody",
         containerId: "pagosTableContainer",
@@ -468,7 +535,6 @@ window.openModal = function (modalID, mode = "add") {
         if(inputDientes) {
             inputDientes.value = dientesAfectados.size > 0 ? Array.from(dientesAfectados).join(', ') : "";
         }
-        
     } else {
         document.getElementById("modalTitle").innerText = "Editar Visita";
     }
@@ -489,66 +555,6 @@ window.closeModal = function (modalID) {
     setTimeout(() => modal.classList.add("hidden"), 300);
 };
 
-window.abrirModalEdicion = function (id) {
-    const v = pagosDB.find((x) => x.id === id);
-    if (!v) return;
-    const form = document.getElementById("formVisita");
-    
-    form.id.value = v.id;
-    form.fecha.value = v.fecha;
-    
-    tratamientosSeleccionados = v.tratamiento.split(', ').map(nombre => {
-        const cat = catalogoTratamientos.find(x => x.nombre === nombre);
-        return { nombre: nombre, precio: cat ? cat.precio : 0 };
-    });
-    renderizarBadgesTratamientos();
-
-    const inputDientes = document.getElementById('input_dientes_modal');
-    if(inputDientes) inputDientes.value = v.diente;
-
-    form.valor.value = v.valor;
-    form.abono.value = v.abono;
-
-    window.openModal("modalVisita", "edit");
-};
-
-window.eliminarVisita = function (id) {
-    if (confirm("¿Eliminar este registro permanentemente?")) {
-        pagosDB = pagosDB.filter(v => v.id !== id);
-        pagosPaginador.setData(pagosDB);
-    }
-};
-
-window.guardarDatos = function () {
-    const form = document.getElementById("formVisita");
-    const id = form.id.value;
-    
-    const valor = parseFloat(form.valor.value);
-    const abono = parseFloat(form.abono.value);
-    const dienteVal = document.getElementById("input_dientes_modal").value || "General";
-    const tratamientosNombres = tratamientosSeleccionados.map(t => t.nombre).join(', ');
-    
-    const nuevaVisita = {
-        id: id ? parseInt(id) : Date.now(),
-        fecha: form.fecha.value,
-        tratamiento: tratamientosNombres || "Consulta General",
-        diente: dienteVal,
-        valor: valor,
-        abono: abono,
-        saldo: valor - abono
-    };
-
-    if (id) {
-        const index = pagosDB.findIndex((v) => v.id == id);
-        pagosDB[index] = nuevaVisita;
-    } else {
-        pagosDB.unshift(nuevaVisita);
-    }
-
-    window.closeModal("modalVisita");
-    pagosPaginador.setData(pagosDB);
-};
-
 // =========================================================================
 // 5. GUARDADO REAL EN BASE DE DATOS (ODONTOGRAMA E HISTORIA)
 // =========================================================================
@@ -560,11 +566,10 @@ window.guardarFichaClinica = async function() {
         return Alerta.error("Error de ID", "No se detectó el paciente actual.");
     }
 
-    // 2. RECOLECTAR ODONTOGRAMA (Escáner de Dientes y Textos)
+    // 1. RECOLECTAR ODONTOGRAMA
     let odontogramaData = {
         diagnostico: {},
         operatoria: {},
-        // NUEVO: Capturamos los campos de Prótesis y Endodoncia
         detalles_extra: {
             prot_color: document.getElementById('prot_color')?.value || '',
             prot_guia: document.getElementById('prot_guia')?.value || '',
@@ -578,14 +583,12 @@ window.guardarFichaClinica = async function() {
         }
     };
 
-    // 2.1 Escanear Diagnóstico Visual
     document.querySelectorAll('#diag-c1 [data-numero], #diag-c2 [data-numero], #diag-c3 [data-numero], #diag-c4 [data-numero]').forEach(el => {
         const numero = el.getAttribute('data-numero');
         const estado = el.getAttribute('data-estado') || 'sano';
         if(estado !== 'sano') odontogramaData.diagnostico[numero] = estado;
     });
 
-    // 2.2 Escanear Operatoria
     document.querySelectorAll('#oper-c1 [data-numero], #oper-c2 [data-numero], #oper-c3 [data-numero], #oper-c4 [data-numero]').forEach(el => {
         const numero = el.getAttribute('data-numero');
         let caras = [];
@@ -595,8 +598,9 @@ window.guardarFichaClinica = async function() {
         if(caras.some(c => c !== 'sano')) odontogramaData.operatoria[numero] = caras;
     });
 
-    // 3. RECOLECTAR HISTORIA DE CONSULTA
+    // 2. RECOLECTAR HISTORIA DE CONSULTA
     const historiaData = {
+        consulta_id: document.getElementById('hc_consulta_id')?.value || '', 
         motivo_consulta: document.getElementById('hc_motivo')?.value || '',
         sintomas: document.getElementById('hc_sintomas')?.value || '',
         observaciones: document.getElementById('hc_observaciones')?.value || '',
@@ -621,7 +625,8 @@ window.guardarFichaClinica = async function() {
 
         Alerta.exito("¡Ficha Guardada!", "Odontograma y consulta registrados exitosamente.");
 
-        // Limpiamos SOLO la historia de consulta (El odontograma y prótesis se quedan porque son permanentes)
+        // Limpiar el formulario de consulta
+        document.getElementById('hc_consulta_id').value = '';
         document.getElementById('hc_motivo').value = '';
         document.getElementById('hc_sintomas').value = '';
         document.getElementById('hc_observaciones').value = '';
@@ -629,9 +634,12 @@ window.guardarFichaClinica = async function() {
         document.getElementById('hc_prescripciones').value = '';
         document.getElementById('hc_proxima_cita').value = '';
 
+        // Recargar datos para que la nueva consulta aparezca inmediatamente en la tabla
+        await cargarDatosPacienteDesdeURL();
+
     } catch (error) {
         console.error("Error al guardar ficha:", error);
-        Alerta.error("Error del Servidor", "No se pudo guardar la información de la ficha.");
+        Alerta.error("Error del Servidor", "No se pudo guardar la información.");
     } finally {
         btn.innerHTML = textoOriginal;
         btn.disabled = false;
@@ -646,7 +654,7 @@ window.imprimirFichaPDF = async function() {
     const nombrePaciente = elNombre ? elNombre.innerText : "Paciente";
     
     if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-        return alert("Cargando librerías de PDF, intente de nuevo en un segundo...");
+        return Alerta.advertencia("Cargando...", "Espere un momento a que el creador de PDF termine de cargar.");
     }
 
     const btn = document.querySelector('button[onclick="window.imprimirFichaPDF()"]');
@@ -670,17 +678,12 @@ window.imprimirFichaPDF = async function() {
 
                 const tabOdon = clonedDoc.getElementById('tab-odontograma');
                 const tabHist = clonedDoc.getElementById('tab-historia');
+                const tabCons = clonedDoc.getElementById('tab-consultas');
                 const tabFin = clonedDoc.getElementById('tab-finanzas');
 
-                if(tabOdon) {
-                    tabOdon.classList.remove('hidden');
-                    tabOdon.style.display = 'flex';
-                }
-                if(tabHist) {
-                    tabHist.classList.remove('hidden', 'h-full');
-                    tabHist.style.display = 'block';
-                    tabHist.style.height = 'max-content';
-                }
+                if(tabOdon) { tabOdon.classList.remove('hidden'); tabOdon.style.display = 'flex'; }
+                if(tabHist) { tabHist.classList.remove('hidden', 'h-full'); tabHist.style.display = 'block'; tabHist.style.height = 'max-content'; }
+                if(tabCons) tabCons.style.display = 'none';
                 if(tabFin) tabFin.style.display = 'none';
 
                 const inputs = clonedContainer.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]');
@@ -721,7 +724,6 @@ window.imprimirFichaPDF = async function() {
         const { jsPDF } = window.jspdf;
         
         const pdf = new jsPDF('l', 'mm', 'a4'); 
-        
         pdf.setFontSize(16);
         pdf.setTextColor(30, 64, 175);
         pdf.text(`Ficha Técnica Dental y Médica - ${nombrePaciente}`, 15, 15);
@@ -745,7 +747,6 @@ window.imprimirFichaPDF = async function() {
         pdf.addImage(imgData, 'PNG', margin, position, finalWidth, finalHeight);
         heightLeft -= (pageHeight - topMargin);
 
-        // IMPRESIÓN MULTIPÁGINA INTELIGENTE
         while (heightLeft > 0) {
             pdf.addPage();
             let amountShown = finalHeight - heightLeft;
@@ -758,7 +759,7 @@ window.imprimirFichaPDF = async function() {
         
     } catch (error) {
         console.error("Error al generar PDF:", error);
-        alert("Hubo un error al crear el PDF. Revise la consola.");
+        Alerta.error("Error", "Hubo un error al crear el PDF. Revise la consola.");
     } finally {
         if(btn) btn.innerHTML = btnText;
     }
