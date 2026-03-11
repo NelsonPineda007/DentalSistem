@@ -1,30 +1,18 @@
-// static/js/tratamientosControlador.js
-
 const ICONS = {
     edit: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
     trash: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`
 };
 
-// --- 1. BASE DE DATOS SIMULADA ---
-let tratamientosDB = [
-    { id: 1, codigo: 'LMP-001', nombre: 'Limpieza Dental', descripcion: 'Limpieza profunda y profilaxis dental', categoria: 'Preventivo', duracion_estimada: 30, costo_base: 35.00, requiere_cita: true, activo: true, creado_en: new Date().toISOString() },
-    { id: 2, codigo: 'RST-002', nombre: 'Resina Dental', descripcion: 'Restauración con resina compuesta', categoria: 'Restaurador', duracion_estimada: 45, costo_base: 50.00, requiere_cita: true, activo: true, creado_en: new Date().toISOString() },
-    { id: 3, codigo: 'END-003', nombre: 'Endodoncia', descripcion: 'Tratamiento de conducto radicular', categoria: 'Endodoncia', duracion_estimada: 90, costo_base: 150.00, requiere_cita: true, activo: true, creado_en: new Date().toISOString() },
-    { id: 4, codigo: 'ORT-001', nombre: 'Ajuste Brackets', descripcion: 'Control mensual de ortodoncia', categoria: 'Ortodoncia', duracion_estimada: 20, costo_base: 40.00, requiere_cita: true, activo: true, creado_en: new Date().toISOString() },
-    { id: 5, codigo: 'EXT-001', nombre: 'Extracción Simple', descripcion: 'Extracción de pieza dental sin cirugía', categoria: 'Cirugía', duracion_estimada: 40, costo_base: 45.00, requiere_cita: true, activo: true, creado_en: new Date().toISOString() },
-    { id: 6, codigo: 'EXT-002', nombre: 'Extracción Cordal', descripcion: 'Extracción de muela del juicio', categoria: 'Cirugía', duracion_estimada: 60, costo_base: 120.00, requiere_cita: true, activo: false, creado_en: new Date().toISOString() },
-    { id: 7, codigo: 'BLQ-001', nombre: 'Blanqueamiento', descripcion: 'Blanqueamiento dental láser', categoria: 'Estética', duracion_estimada: 60, costo_base: 200.00, requiere_cita: true, activo: true, creado_en: new Date().toISOString() }
-];
-
+let tratamientosDB = [];
 let miPaginador;
 
-// --- 2. INICIALIZACIÓN ---
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     if (typeof PaginadorTabla === "undefined") return console.error("Falta paginadorTabla.js");
 
-    inicializarPaginador();
+    await cargarCategorias(); 
     configurarFiltros();
-    actualizarEstadisticas(tratamientosDB); // Pintar stats iniciales
+    inicializarPaginador();
+    await cargarTratamientosDesdeBD();
 
     let resizeTimer;
     window.addEventListener("resize", () => {
@@ -33,39 +21,87 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// --- LÓGICA DE ESTADÍSTICAS Y GRÁFICAS (RESTAURADO A TU DISEÑO ORIGINAL) ---
+async function cargarCategorias() {
+    try {
+        const categorias = await API.get('/api/categorias-tratamientos');
+        console.log("✅ Categorías cargadas desde MySQL:", categorias);
+        
+        let opcionesFiltro = '<option value="">Todas las categorías</option>';
+        let opcionesForm = '<option value="">Seleccione una categoría</option>';
+
+        categorias.forEach(c => {
+            opcionesFiltro += `<option value="${c.id}">${c.nombre}</option>`;
+            opcionesForm += `<option value="${c.id}">${c.nombre}</option>`;
+        });
+
+        const selectFiltro = document.getElementById("filterCategoria");
+        const selectForm = document.querySelector('select[name="categoria_id"]');
+
+        if (selectFiltro) selectFiltro.innerHTML = opcionesFiltro;
+        if (selectForm) selectForm.innerHTML = opcionesForm;
+
+    } catch (error) {
+        console.error("❌ Error cargando categorías:", error);
+    }
+}
+
+async function cargarTratamientosDesdeBD() {
+    try {
+        tratamientosDB = await API.get('/api/obtener-tratamientos');
+        const filterCategoria = document.getElementById("filterCategoria");
+        if (filterCategoria) {
+            filterCategoria.dispatchEvent(new Event('change'));
+        } else {
+            miPaginador.setData(tratamientosDB);
+            actualizarEstadisticas(tratamientosDB);
+        }
+    } catch (error) {
+        console.error("Error cargando tratamientos:", error);
+    }
+}
+
+function configurarFiltros() {
+    const searchInput = document.getElementById("searchInput");
+    const filterCategoria = document.getElementById("filterCategoria");
+
+    function aplicarFiltros() {
+        const term = searchInput ? searchInput.value.toLowerCase() : '';
+        const categoria = filterCategoria ? filterCategoria.value : '';
+
+        const filtrados = tratamientosDB.filter(t => {
+            const coincideTexto = t.nombre.toLowerCase().includes(term) || t.codigo.toLowerCase().includes(term);
+            const coincideCategoria = categoria === "" || String(t.categoria_id) === String(categoria);
+            return coincideTexto && coincideCategoria;
+        });
+
+        miPaginador.setData(filtrados);
+        actualizarEstadisticas(filtrados);
+    }
+
+    if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
+    if (filterCategoria) filterCategoria.addEventListener("change", aplicarFiltros);
+}
+
 function actualizarEstadisticas(datos) {
     if(!datos) return;
 
     const total = datos.length;
-    const activos = datos.filter(t => t.activo).length;
-    const categorias = new Set(datos.map(t => t.categoria)).size;
+    const activos = datos.filter(t => t.estado === 'Activo').length;
+    const categorias = new Set(datos.filter(t => t.categoria_id).map(t => t.categoria_id)).size;
     const costoPromedio = total > 0 ? datos.reduce((sum, t) => sum + parseFloat(t.costo_base), 0) / total : 0;
 
-    // Actualizar Textos
     if(document.getElementById('statTotal')) document.getElementById('statTotal').textContent = total;
     if(document.getElementById('statActivos')) document.getElementById('statActivos').textContent = activos;
     if(document.getElementById('statCategorias')) document.getElementById('statCategorias').textContent = categorias;
     if(document.getElementById('statCosto')) document.getElementById('statCosto').textContent = '$' + costoPromedio.toFixed(2);
 
-    // Actualizar Sparklines (Llamando a la función global en charts.js)
-    // Generamos datos falsos dinámicos basados en los reales para que las gráficas se muevan
     if(typeof window.drawSparkline === 'function') {
-        const d1 = [total-2, total-1, total+1, total-1, total+2, total];
-        window.drawSparkline('sparkTotal', d1, '#2563eb', 'rgba(37, 99, 235, 0.2)'); // Azul
-        
-        const d2 = [activos-1, activos+1, activos-2, activos, activos+1, activos];
-        window.drawSparkline('sparkActivos', d2, '#059669', 'rgba(5, 150, 105, 0.2)'); // Verde
-        
-        const d3 = [categorias-1, categorias, categorias+1, categorias-1, categorias, categorias];
-        window.drawSparkline('sparkCategorias', d3, '#7c3aed', 'rgba(124, 58, 237, 0.2)'); // Morado
-        
-        const d4 = [costoPromedio-10, costoPromedio+5, costoPromedio-5, costoPromedio+15, costoPromedio-2, costoPromedio];
-        window.drawSparkline('sparkCosto', d4, '#ca8a04', 'rgba(202, 138, 4, 0.2)'); // Amarillo
+        window.drawSparkline('sparkTotal', [total-2, total-1, total+1, total-1, total+2, total], '#2563eb', 'rgba(37, 99, 235, 0.2)'); 
+        window.drawSparkline('sparkActivos', [activos-1, activos+1, activos-2, activos, activos+1, activos], '#059669', 'rgba(5, 150, 105, 0.2)'); 
+        window.drawSparkline('sparkCategorias', [categorias-1, categorias, categorias+1, categorias-1, categorias, categorias], '#7c3aed', 'rgba(124, 58, 237, 0.2)'); 
+        window.drawSparkline('sparkCosto', [costoPromedio-10, costoPromedio+5, costoPromedio-5, costoPromedio+15, costoPromedio-2, costoPromedio], '#ca8a04', 'rgba(202, 138, 4, 0.2)'); 
     }
 }
-
-// --- RESTO DEL CÓDIGO (Tabla y Modal - Igual al paso anterior) ---
 
 function calcularItemsPorPagina() {
     const container = document.getElementById("tableContainer");
@@ -79,9 +115,11 @@ function inicializarPaginador() {
         tableBodyId: "tratamientosTableBody",
         containerId: "tableContainer",
         renderRow: (t) => {
-            const estadoClass = t.activo ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200";
-            const estadoTexto = t.activo ? "Activo" : "Inactivo";
-            const costo = parseFloat(t.costo_base).toFixed(2);
+            const esActivo = t.estado === 'Activo';
+            const estadoClass = esActivo ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200";
+            const estadoTexto = esActivo ? "Activo" : "Inactivo";
+            const costoFormateado = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.costo_base || 0);
+            const nombreCategoria = t.categoria ? t.categoria.nombre : '<span class="text-rose-400 italic font-medium">Sin Categoría</span>';
 
             return `
                 <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors h-[75px]">
@@ -92,8 +130,8 @@ function inicializarPaginador() {
                             <span class="text-[10px] text-slate-400 truncate max-w-[200px]">${t.descripcion || 'Sin descripción'}</span>
                         </div>
                     </td>
-                    <td class="px-6 py-4 text-sm font-medium text-slate-600">${t.categoria}</td>
-                    <td class="px-6 py-4 text-sm font-bold text-emerald-600">$${costo}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-slate-600">${nombreCategoria}</td>
+                    <td class="px-6 py-4 font-bold text-slate-700 text-sm">${costoFormateado}</td>
                     <td class="px-6 py-4"><span class="${estadoClass} text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">${estadoTexto}</span></td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
@@ -108,28 +146,6 @@ function inicializarPaginador() {
             if (info) info.innerHTML = `Mostrando <span class="font-bold text-slate-900">${start}-${end}</span> de <span class="font-bold text-slate-900">${total}</span> tratamientos`;
         }
     });
-}
-
-function configurarFiltros() {
-    const searchInput = document.getElementById("searchInput");
-    const filterCategoria = document.getElementById("filterCategoria");
-
-    function aplicarFiltros() {
-        const term = searchInput ? searchInput.value.toLowerCase() : '';
-        const categoria = filterCategoria ? filterCategoria.value : '';
-
-        const filtrados = tratamientosDB.filter(t => {
-            const coincideTexto = t.nombre.toLowerCase().includes(term) || t.codigo.toLowerCase().includes(term);
-            const coincideCategoria = categoria === "" || t.categoria === categoria;
-            return coincideTexto && coincideCategoria;
-        });
-
-        miPaginador.setData(filtrados);
-        actualizarEstadisticas(filtrados); // Actualiza stats al filtrar
-    }
-
-    if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
-    if (filterCategoria) filterCategoria.addEventListener("change", aplicarFiltros);
 }
 
 window.openModal = function (modalID, mode = "add") {
@@ -169,27 +185,43 @@ window.abrirModalEdicion = function (id) {
     
     Array.from(form.elements).forEach(input => {
         if(!input.name) return;
-        
-        if(input.type === 'checkbox') {
-            input.checked = t[input.name] === true;
-        } else if (input.name === 'requiere_cita') {
-            input.value = t.requiere_cita ? "true" : "false";
-        } else if (t[input.name] !== undefined) {
+        if (t[input.name] !== undefined && t[input.name] !== null) {
             input.value = t[input.name];
         }
     });
 
+    form.id.value = t.id;
+    form.activo.checked = t.estado === 'Activo'; 
+    form.requiere_cita.value = t.requiere_cita ? "true" : "false";
+
     window.openModal("modalTratamientos", "edit");
 };
 
-window.eliminarTratamiento = function (id) {
-    if (confirm("¿Eliminar este tratamiento permanentemente?")) {
-        tratamientosDB = tratamientosDB.filter((t) => t.id !== id);
-        document.getElementById("searchInput").dispatchEvent(new Event('input')); 
+window.eliminarTratamiento = async function (id) {
+    // Usamos tu nuevo modal con estilo "danger" (Rojo y gradiente)
+    const confirmado = await Alerta.eliminar(
+        "¿Archivar Tratamiento?", 
+        "El tratamiento pasará a estado Inactivo. Podrás recuperarlo después.",
+        "Sí, archivar",
+        "Cancelar"
+    );
+
+    if (confirmado) {
+        try {
+            await API.delete(`/api/tratamientos/${id}`);
+            
+            // Usamos tu nuevo Toast verde de éxito
+            Alerta.exito("¡Archivado!", "El tratamiento ha sido ocultado de la lista principal.");
+            
+            await cargarTratamientosDesdeBD(); 
+        } catch (error) {
+            console.error("Error al archivar:", error);
+            Alerta.error("Hubo un problema", "No se pudo archivar el tratamiento.");
+        }
     }
 };
 
-window.guardarDatos = function () {
+window.guardarDatos = async function () {
     const form = document.getElementById("formTratamiento");
     const formData = new FormData(form);
     const id = formData.get("id");
@@ -197,26 +229,33 @@ window.guardarDatos = function () {
     let datosForm = Object.fromEntries(formData.entries());
 
     if (!datosForm.codigo || !datosForm.nombre || !datosForm.costo_base) {
-        return alert("Por favor complete los campos obligatorios (*)");
+        // Usamos tu nuevo Toast dorado de advertencia
+        return Alerta.advertencia("Campos incompletos", "Por favor completa los campos con asterisco (*).");
     }
 
-    datosForm.activo = form.activo.checked; 
-    datosForm.requiere_cita = datosForm.requiere_cita === 'true';
+    datosForm.estado = form.activo.checked ? 'Activo' : 'Inactivo';
+    datosForm.requiere_cita = datosForm.requiere_cita === 'true' ? 1 : 0;
     datosForm.costo_base = parseFloat(datosForm.costo_base);
-    datosForm.duracion_estimada = datosForm.duracion_estimada ? parseInt(datosForm.duracion_estimada) : 0;
+    datosForm.duracion_estimada = datosForm.duracion_estimada ? parseInt(datosForm.duracion_estimada) : null;
+    datosForm.categoria_id = datosForm.categoria_id ? parseInt(datosForm.categoria_id) : null;
 
-    if (id) {
-        const index = tratamientosDB.findIndex((t) => t.id == id);
-        if (index !== -1) {
-            datosForm.creado_en = tratamientosDB[index].creado_en; 
-            tratamientosDB[index] = { ...tratamientosDB[index], ...datosForm, id: parseInt(id) };
+    try {
+        if (id) {
+            await API.put(`/api/tratamientos/${id}`, datosForm);
+            // Toast verde
+            Alerta.exito("¡Actualizado!", "El tratamiento se actualizó correctamente.");
+        } else {
+            await API.post('/api/guardar-tratamiento', datosForm);
+            // Toast verde
+            Alerta.exito("¡Guardado!", "El nuevo tratamiento está listo para usarse.");
         }
-    } else {
-        datosForm.creado_en = new Date().toISOString(); 
-        tratamientosDB.push({ ...datosForm, id: Date.now() });
-    }
 
-    alert("Tratamiento guardado correctamente");
-    window.closeModal("modalTratamientos");
-    document.getElementById("searchInput").dispatchEvent(new Event('input')); 
+        window.closeModal("modalTratamientos");
+        await cargarTratamientosDesdeBD(); 
+        
+    } catch (error) {
+        console.error("Error al guardar:", error);
+        // Toast rojo
+        Alerta.error("Error del servidor", "Revisa tu conexión o contacta a soporte.");
+    }
 };
