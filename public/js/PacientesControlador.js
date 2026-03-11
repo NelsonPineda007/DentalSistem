@@ -1,36 +1,19 @@
 // static/js/pacientesControlador.js
 
-// --- 1. CONFIGURACIÓN Y MAPEO ---
-// Diccionario para traducir nombres de DB a nombres del Formulario HTML
-const CAMPOS_MAP = {
-    'contacto_emergencia_nombre': 'contacto_nombre',
-    'contacto_emergencia_telefono': 'contacto_tel',
-    'enfermedades_cronicas': 'cronicas',
-    'medicamentos_actuales': 'medicamentos',
-    'notas_medicas': 'notas',
-    'seguro_medico': 'seguro'
-};
-
-// Iconos SVG reutilizables para no ensuciar el código
 const ICONS = {
     pdf: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/><path d="M8 12h8v2H8zm0 4h8v2H8z"/></svg>`,
     edit: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
-    trash: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
-    folder: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>`
+    trash: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`
 };
 
-// --- 2. BASE DE DATOS (AHORA DINÁMICA) ---
 let pacientesDB = []; 
 let miPaginador;
 
-// --- 3. INICIALIZACIÓN ---
 document.addEventListener("DOMContentLoaded", async () => {
     if (typeof PaginadorTabla === "undefined") return console.error("Falta paginadorTabla.js");
-
     inicializarPaginador();
     configurarBusqueda();
     configurarTabsModal();
-
     await cargarPacientesDesdeBD();
 
     let resizeTimer;
@@ -43,14 +26,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function cargarPacientesDesdeBD() {
     try {
         pacientesDB = await API.get('/api/obtener-pacientes');
-        
         const filterEstado = document.getElementById("filterEstado");
-        if (filterEstado) {
-            filterEstado.dispatchEvent(new Event('change'));
-        } else {
-            miPaginador.setData(pacientesDB);
-        }
-        
+        if (filterEstado) filterEstado.dispatchEvent(new Event('change'));
+        else miPaginador.setData(pacientesDB);
     } catch (error) {
         console.error("Error cargando pacientes:", error);
     }
@@ -69,7 +47,6 @@ function inicializarPaginador() {
         containerId: "tableContainer",
         renderRow: (p) => {
             const edad = p.fecha_nacimiento ? new Date().getFullYear() - new Date(p.fecha_nacimiento).getFullYear() : "-";
-            
             const esActivo = p.estado === 'Activo';
             const estadoClass = esActivo ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200";
 
@@ -113,15 +90,12 @@ function configurarBusqueda() {
         const estadoSelect = filterEstado ? filterEstado.value : ''; 
 
         const filtrados = pacientesDB.filter(p => {
-            const coincideTexto = (p.nombre + " " + p.apellido).toLowerCase().includes(term) || 
-                                  p.numero_expediente.toLowerCase().includes(term);
-            
+            const coincideTexto = (p.nombre + " " + p.apellido).toLowerCase().includes(term) || p.numero_expediente.toLowerCase().includes(term);
             let coincideEstado = true;
             if (estadoSelect !== "") {
                 const estadoReal = p.estado === 'Activo' ? "1" : "0";
                 coincideEstado = estadoReal === estadoSelect;
             }
-
             return coincideTexto && coincideEstado;
         });
 
@@ -147,12 +121,9 @@ function configurarTabsModal() {
     });
 }
 
-// --- FUNCIONES GLOBALES OPTIMIZADAS ---
-
 window.openModal = function (modalID, mode = "add") {
     const modal = document.getElementById(modalID);
     const form = document.getElementById("formPaciente");
-    
     const tabPersonal = document.querySelector('.tab-btn[data-target="tab-personal"]');
     if (tabPersonal) tabPersonal.click();
 
@@ -160,6 +131,8 @@ window.openModal = function (modalID, mode = "add") {
         document.getElementById("modalTitle").innerText = "Nuevo Paciente";
         form.reset();
         form.id.value = "";
+        form.es_menor_check.checked = false;
+        form.responsable_legal.disabled = true;
         
         let maxNum = 0;
         pacientesDB.forEach(p => {
@@ -199,35 +172,31 @@ window.closeModal = function (modalID) {
 window.abrirModalEdicion = function (id) {
     const p = pacientesDB.find((x) => x.id === id);
     if (!p) return;
-    
     const form = document.getElementById("formPaciente");
     
     Array.from(form.elements).forEach(input => {
         if(!input.name) return;
-        
-        const dbKey = CAMPOS_MAP[input.name] || input.name;
-        
-        if(p[dbKey] !== undefined && p[dbKey] !== null) {
-            input.value = p[dbKey];
+        if(p[input.name] !== undefined && p[input.name] !== null) {
+            input.value = p[input.name];
         }
     });
 
     form.id.value = p.id; 
     form.expediente.value = p.numero_expediente; 
     form.activo.value = p.estado === 'Activo' ? "1" : "0"; 
-    
-    if(p.fecha_nacimiento) {
-        form.fecha_nacimiento.value = p.fecha_nacimiento.split('T')[0]; 
-    }
+    if(p.fecha_nacimiento) form.fecha_nacimiento.value = p.fecha_nacimiento.split('T')[0]; 
+
+    // Activamos la casilla visual de "Es menor" si es 1
+    form.es_menor_check.checked = p.es_menor == 1;
+    form.responsable_legal.disabled = p.es_menor != 1;
 
     window.openModal("modalPacientes", "edit");
 };
 
 window.eliminarPaciente = async function (id) {
-    // LLAMAMOS AL NUEVO SISTEMA DE ALERTAS
     const confirmado = await Alerta.eliminar(
         "¿Archivar Expediente?", 
-        "El paciente pasará a estado Inactivo y se ocultará de la lista principal, pero su historial médico se conservará intacto.",
+        "El paciente pasará a estado Inactivo y se ocultará de la lista principal.",
         "Sí, archivar",
         "Cancelar"
     );
@@ -235,11 +204,8 @@ window.eliminarPaciente = async function (id) {
     if (confirmado) {
         try {
             await API.delete(`/api/pacientes/${id}`);
-            
-            // TOAST DE ÉXITO
             Alerta.exito("¡Archivado!", "Expediente archivado correctamente.");
             await cargarPacientesDesdeBD();
-            
         } catch (error) {
             console.error("Error al archivar:", error);
             Alerta.error("Hubo un problema", "No se pudo archivar el expediente.");
@@ -254,8 +220,8 @@ window.imprimirExpediente = function (id) {
     const edad = p.fecha_nacimiento ? new Date().getFullYear() - new Date(p.fecha_nacimiento).getFullYear() : "N/A";
 
     ReportePDF.generar({
-        folio: p.expediente,
-        nombreArchivo: `Expediente_${p.expediente}`,
+        folio: p.numero_expediente,
+        nombreArchivo: `Expediente_${p.numero_expediente}`,
         data: {
             nombre: `${p.nombre} ${p.apellido}`,
             nacimiento: p.fecha_nacimiento,
@@ -263,15 +229,15 @@ window.imprimirExpediente = function (id) {
             genero: p.genero,
             telefono: p.telefono,
             email: p.email,
-            direccion: `${p.direccion}, ${p.ciudad}`,
+            direccion: `${p.direccion || ''}, ${p.ciudad || ''}`,
             cp: p.codigo_postal,
-            emergencia_nombre: p.contacto_nombre,
-            emergencia_tel: p.contacto_tel,
-            seguro: p.seguro,
+            emergencia_nombre: p.contacto_emergencia_nombre,
+            emergencia_tel: p.contacto_emergencia_telefono,
+            seguro: p.seguro_medico,
             alergias: p.alergias,
-            cronicas: p.cronicas,
-            medicamentos: p.medicamentos,
-            notas: p.notas,
+            cronicas: p.enfermedades_cronicas,
+            medicamentos: p.medicamentos_actuales,
+            notas: p.notas_medicas,
         },
         citas: p.citas || [],
         tratamientos: p.tratamientos || [],
@@ -285,22 +251,18 @@ window.guardarDatos = async function () {
     
     let datosForm = Object.fromEntries(formData.entries());
 
-    // VALIDACIÓN CON EL NUEVO SISTEMA DE ALERTAS
     if (!datosForm.nombre || !datosForm.apellido || !datosForm.telefono) {
         return Alerta.advertencia("Campos incompletos", "Por favor completa los campos obligatorios (*).");
     }
 
     datosForm.numero_expediente = datosForm.expediente;
     delete datosForm.expediente;
-
-    Object.keys(CAMPOS_MAP).forEach(formKey => {
-        if(datosForm[formKey] !== undefined) {
-            datosForm[CAMPOS_MAP[formKey]] = datosForm[formKey];
-            delete datosForm[formKey];
-        }
-    });
-
     datosForm.estado = parseInt(datosForm.activo) === 1 ? 'Activo' : 'Inactivo';
+    
+    // NUEVO: Transformar el estado del Checkbox a 1 o 0 para MySQL
+    datosForm.es_menor = form.es_menor_check.checked ? 1 : 0;
+    delete datosForm.es_menor_check; // Limpiamos la variable fantasma
+
     if (!datosForm.fecha_nacimiento) delete datosForm.fecha_nacimiento;
 
     try {
@@ -310,22 +272,18 @@ window.guardarDatos = async function () {
 
         if (id) {
             await API.put(`/api/pacientes/${id}`, datosForm);
-            // TOAST DE ACTUALIZACIÓN
             Alerta.exito("¡Actualizado!", "El expediente se actualizó correctamente.");
         } else {
             await API.post('/api/guardar-paciente', datosForm);
-            // TOAST DE CREACIÓN
             Alerta.exito("¡Guardado!", "El nuevo paciente ha sido registrado.");
         }
 
         window.closeModal("modalPacientes");
         form.reset();
-        
         await cargarPacientesDesdeBD();
 
     } catch (error) {
         console.error("Error al guardar:", error);
-        // TOAST DE ERROR
         Alerta.error("Error del servidor", "No se pudo guardar la información.");
     } finally {
         const btnGuardar = document.getElementById("btnGuardar");
