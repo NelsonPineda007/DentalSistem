@@ -29,13 +29,11 @@ async function cargarDatosPacienteDesdeURL() {
     if (!idPaciente) return;
 
     try {
-        // 1. Cargar datos básicos del paciente
         const respuesta = await fetch(`/api/pacientes/${idPaciente}`);
         if (!respuesta.ok) throw new Error('No se pudo encontrar el paciente.');
 
         const paciente = await respuesta.json();
 
-        // Inyectar datos en la cabecera
         document.getElementById("exp-nombre").textContent = `${paciente.nombre} ${paciente.apellido}`;
         document.getElementById("exp-iniciales").textContent = `${paciente.nombre.charAt(0)}${paciente.apellido.charAt(0)}`;
         document.getElementById("exp-numero").textContent = paciente.numero_expediente;
@@ -62,13 +60,11 @@ async function cargarDatosPacienteDesdeURL() {
             document.getElementById("exp-alergias").classList.remove("flex");
         }
 
-        // 2. Cargar Odontograma y Consultas
         try {
             const resFicha = await fetch(`/api/expediente/${idPaciente}`);
             if (resFicha.ok) {
                 const ficha = await resFicha.json();
                 
-                // Pintar Odontograma
                 if (ficha.odontograma) {
                     if (ficha.odontograma.diagnostico) {
                         Object.entries(ficha.odontograma.diagnostico).forEach(([numero, estado]) => {
@@ -115,7 +111,6 @@ async function cargarDatosPacienteDesdeURL() {
                     }
                 }
 
-                // Cargar Historial en la Tabla
                 if (ficha.consultas) {
                     consultasDB = ficha.consultas;
                     if(consultasPaginador) consultasPaginador.setData(consultasDB);
@@ -150,7 +145,6 @@ function configurarTabsExpediente() {
             contents.forEach((c) => c.classList.add("hidden"));
             document.getElementById(tab.dataset.target).classList.remove("hidden");
 
-            // Refrescar tablas si es necesario para evitar bugs visuales
             if (tab.dataset.target === "tab-finanzas" && typeof pagosPaginador !== "undefined") {
                 setTimeout(() => { if(pagosPaginador.tbody) pagosPaginador.recalcularYRenderizar(pagosPaginador.tbody.parentElement.parentElement); }, 50);
             }
@@ -173,8 +167,6 @@ function inicializarPaginadorConsultas() {
         renderRow: (c) => {
             const fecha = c.fecha_consulta ? new Date(c.fecha_consulta).toLocaleDateString() : '-';
             const proxima = c.proxima_cita_recomendada ? new Date(c.proxima_cita_recomendada).toLocaleDateString() : 'No asignada';
-            
-            // Extraer un resumen para rellenar el hueco debajo del motivo
             const resumen = c.sintomas || c.observaciones || 'Sin detalles adicionales registrados.';
 
             return `
@@ -204,7 +196,6 @@ window.editarConsulta = function(id) {
     const c = consultasDB.find(x => x.id === id);
     if (!c) return;
 
-    // Llenamos el formulario
     document.getElementById('hc_consulta_id').value = c.id;
     document.getElementById('hc_motivo').value = c.motivo_consulta || '';
     document.getElementById('hc_sintomas').value = c.sintomas || '';
@@ -218,7 +209,6 @@ window.editarConsulta = function(id) {
         document.getElementById('hc_proxima_cita').value = '';
     }
 
-    // Saltamos a la pestaña de edición
     document.querySelector('.tab-btn[data-target="tab-historia"]').click();
     Alerta.info("Modo Edición", "Estás viendo una consulta pasada.");
 };
@@ -376,8 +366,10 @@ function renderizarOdontogramaOperatoria() {
 }
 
 // =========================================================================
-// 4. LÓGICA DE PAGOS (Se conectará a BD después)
+// 4. LÓGICA DE FACTURACIÓN Y PAGOS (POS)
 // =========================================================================
+
+// DATOS DE PRUEBA (Mientras conectamos con tu BD real de tratamientos)
 const catalogoTratamientos = [
     { id: 1, codigo: "LMP-01", nombre: "Limpieza Profunda (Profilaxis)", precio: 35.00 },
     { id: 2, codigo: "RST-01", nombre: "Resina Dental Simple", precio: 50.00 },
@@ -391,38 +383,94 @@ const catalogoTratamientos = [
 let tratamientosSeleccionados = [];
 let pagosDB = []; 
 
+// FUNCIÓN 1: DIBUJA LOS TRATAMIENTOS AGREGADOS Y CALCULA EL SUBTOTAL
 function renderizarBadgesTratamientos() {
     const contenedor = document.getElementById('lista_tratamientos');
     if (!contenedor) return;
     contenedor.innerHTML = '';
-    let total = 0;
+    let subtotal = 0;
 
     if (tratamientosSeleccionados.length === 0) {
-        contenedor.innerHTML = `<span class="text-xs text-slate-400 italic">Ningún tratamiento agregado...</span>`;
+        contenedor.innerHTML = `<span class="text-xs text-slate-400 italic px-2">Ningún tratamiento agregado a la factura...</span>`;
     } else {
         tratamientosSeleccionados.forEach((t, index) => {
-            total += t.precio;
-            const badge = document.createElement('span');
-            badge.className = "inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 text-[11px] font-bold rounded-lg border border-blue-100 shadow-sm";
-            badge.innerHTML = `
-                ${t.nombre} ($${t.precio.toFixed(2)})
-                <button type="button" class="hover:text-rose-500 transition-colors ml-1 focus:outline-none" onclick="removerTratamiento(${index})">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+            subtotal += t.precio;
+            const item = document.createElement('div');
+            item.className = "flex justify-between items-center px-3 py-2 bg-white rounded-lg border border-slate-200 shadow-sm";
+            item.innerHTML = `
+                <div class="flex flex-col">
+                    <span class="font-bold text-slate-700 text-xs">${t.nombre}</span>
+                    <span class="text-[10px] text-slate-400 uppercase">${t.codigo || 'S/C'}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="font-bold text-blue-700 text-sm">$${t.precio.toFixed(2)}</span>
+                    <button type="button" class="text-slate-300 hover:text-rose-500 transition-colors focus:outline-none" onclick="removerTratamiento(${index})">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
             `;
-            contenedor.appendChild(badge);
+            contenedor.appendChild(item);
         });
     }
 
-    const inputValor = document.querySelector('input[name="valor"]');
-    if(inputValor) inputValor.value = total > 0 ? total.toFixed(2) : "";
+    // Actualizamos el subtotal en la pantalla
+    const spanSubtotal = document.getElementById('resumen_subtotal');
+    if(spanSubtotal) spanSubtotal.innerText = subtotal.toFixed(2);
+    
+    // Llamamos a la función que calcula el total y el saldo final
+    calcularTotalesFactura();
 }
 
+// FUNCIÓN 2: HACE TODA LA MATEMÁTICA DE LA FACTURA EN TIEMPO REAL
+window.calcularTotalesFactura = function() {
+    const spanSubtotal = document.getElementById('resumen_subtotal');
+    const inputDescuento = document.getElementById('input_descuento');
+    const spanTotal = document.getElementById('resumen_total');
+    const inputTotalOculto = document.getElementById('input_total_oculto');
+    const inputAbono = document.getElementById('input_abono');
+    const spanSaldo = document.getElementById('resumen_saldo');
+
+    if(!spanSubtotal) return;
+
+    let subtotal = parseFloat(spanSubtotal.innerText) || 0;
+    let descuento = parseFloat(inputDescuento.value) || 0;
+    
+    // El descuento no puede ser mayor al subtotal
+    if(descuento > subtotal) {
+        descuento = subtotal;
+        inputDescuento.value = descuento.toFixed(2);
+    }
+
+    let total = subtotal - descuento;
+    spanTotal.innerText = total.toFixed(2);
+    inputTotalOculto.value = total.toFixed(2);
+
+    let abono = parseFloat(inputAbono.value) || 0;
+    let saldo = total - abono;
+
+    // Si abona más de la cuenta, lo ajustamos al total exacto
+    if(saldo < 0) {
+        saldo = 0;
+        inputAbono.value = total.toFixed(2);
+    }
+
+    spanSaldo.innerText = saldo.toFixed(2);
+    
+    // Cambiar el color del Saldo: Verde si está pagado, Rojo si debe
+    if(saldo === 0 && total > 0) {
+        spanSaldo.parentElement.classList.replace('text-rose-500', 'text-emerald-500');
+    } else {
+        spanSaldo.parentElement.classList.replace('text-emerald-500', 'text-rose-500');
+    }
+}
+
+// FUNCIÓN 3: ELIMINAR TRATAMIENTO DEL CARRITO
 window.removerTratamiento = function(index) {
     tratamientosSeleccionados.splice(index, 1);
     renderizarBadgesTratamientos();
 };
 
+// BUSCADOR EN VIVO DE TRATAMIENTOS
 const inputSearch = document.getElementById('tratamiento_search');
 const dropdown = document.getElementById('tratamiento_dropdown');
 
@@ -454,7 +502,7 @@ function renderizarResultadosBuscador(filtro = "") {
         `;
         
         item.addEventListener("click", () => {
-            tratamientosSeleccionados.push({ nombre: t.nombre, precio: t.precio });
+            tratamientosSeleccionados.push({ nombre: t.nombre, codigo: t.codigo, precio: t.precio });
             renderizarBadgesTratamientos();
             inputSearch.value = ""; 
             dropdown.classList.add("hidden");
@@ -487,22 +535,33 @@ function inicializarPaginadorPagos() {
         containerId: "pagosTableContainer",
         renderRow: (p) => {
             const saldoColor = p.saldo > 0 ? "text-rose-500 font-bold" : "text-slate-400 font-bold";
+            const estadoBadge = p.saldo > 0 
+                ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pendiente</span>` 
+                : `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pagado</span>`;
+
+            const numFactura = `FAC-${String(p.id).padStart(4, '0')}`;
+
             return `
                 <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors h-[75px]">
-                    <td class="px-6 py-4 font-medium text-slate-600">${p.fecha}</td>
+                    <td class="px-6 py-4 font-bold text-slate-600">${p.fecha}</td>
+                    <td class="px-6 py-4 font-mono text-xs text-blue-800 font-bold">${numFactura}</td>
                     <td class="px-6 py-4">
                         <div class="flex flex-col">
-                            <span class="font-bold text-blue-800 line-clamp-2 leading-tight">${p.tratamiento}</span>
-                            <span class="text-xs text-slate-400 font-medium mt-1">Pieza: ${p.diente}</span>
+                            <span class="font-bold text-slate-700 text-sm line-clamp-1">${p.tratamiento}</span>
+                            <span class="text-[10px] text-slate-400">Pieza: ${p.diente || 'General'}</span>
                         </div>
                     </td>
-                    <td class="px-6 py-4 font-bold text-slate-800">$${parseFloat(p.valor).toFixed(2)}</td>
-                    <td class="px-6 py-4 font-bold text-emerald-600">$${parseFloat(p.abono).toFixed(2)}</td>
+                    <td class="px-6 py-4 font-black text-slate-800">$${parseFloat(p.valor).toFixed(2)}</td>
                     <td class="px-6 py-4 ${saldoColor}">$${parseFloat(p.saldo).toFixed(2)}</td>
+                    <td class="px-6 py-4">${estadoBadge}</td>
                     <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <button type="button" onclick="window.abrirModalEdicion(${p.id})" class="text-emerald-500 hover:text-emerald-700 transition-colors p-1" title="Editar"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
-                            <button type="button" onclick="window.eliminarVisita(${p.id})" class="text-rose-400 hover:text-rose-600 transition-colors p-1" title="Eliminar"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="Alerta.info('Próximamente', 'Generador de Facturas en PDF en desarrollo.')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Imprimir Factura">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            </button>
+                            <button type="button" onclick="window.abrirModalEdicion(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100" title="Editar / Abonar">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </button>
                         </div>
                     </td>
                 </tr>`;
@@ -515,7 +574,7 @@ window.openModal = function (modalID, mode = "add") {
     const form = document.getElementById("formVisita");
 
     if (mode === "add") {
-        document.getElementById("modalTitle").innerText = "Registrar Nueva Visita";
+        document.getElementById("modalTitle").innerText = "Registrar Nueva Factura";
         form.reset();
         form.id.value = "";
         
@@ -536,7 +595,7 @@ window.openModal = function (modalID, mode = "add") {
             inputDientes.value = dientesAfectados.size > 0 ? Array.from(dientesAfectados).join(', ') : "";
         }
     } else {
-        document.getElementById("modalTitle").innerText = "Editar Visita";
+        document.getElementById("modalTitle").innerText = "Abonar / Editar Factura";
     }
     
     modal.classList.remove("hidden");
@@ -566,7 +625,6 @@ window.guardarFichaClinica = async function() {
         return Alerta.error("Error de ID", "No se detectó el paciente actual.");
     }
 
-    // 1. RECOLECTAR ODONTOGRAMA
     let odontogramaData = {
         diagnostico: {},
         operatoria: {},
@@ -598,7 +656,6 @@ window.guardarFichaClinica = async function() {
         if(caras.some(c => c !== 'sano')) odontogramaData.operatoria[numero] = caras;
     });
 
-    // 2. RECOLECTAR HISTORIA DE CONSULTA
     const historiaData = {
         consulta_id: document.getElementById('hc_consulta_id')?.value || '', 
         motivo_consulta: document.getElementById('hc_motivo')?.value || '',
@@ -625,7 +682,6 @@ window.guardarFichaClinica = async function() {
 
         Alerta.exito("¡Ficha Guardada!", "Odontograma y consulta registrados exitosamente.");
 
-        // Limpiar el formulario de consulta
         document.getElementById('hc_consulta_id').value = '';
         document.getElementById('hc_motivo').value = '';
         document.getElementById('hc_sintomas').value = '';
@@ -634,7 +690,6 @@ window.guardarFichaClinica = async function() {
         document.getElementById('hc_prescripciones').value = '';
         document.getElementById('hc_proxima_cita').value = '';
 
-        // Recargar datos para que la nueva consulta aparezca inmediatamente en la tabla
         await cargarDatosPacienteDesdeURL();
 
     } catch (error) {
@@ -647,7 +702,7 @@ window.guardarFichaClinica = async function() {
 };
 
 // =========================================================================
-// 6. GENERACIÓN DE PDF PERFECTO
+// 6. GENERACIÓN DE PDF PERFECTO (Ficha Clínica)
 // =========================================================================
 window.imprimirFichaPDF = async function() {
     const elNombre = document.getElementById("exp-nombre");
@@ -670,7 +725,6 @@ window.imprimirFichaPDF = async function() {
             windowWidth: 1200,
             onclone: function(clonedDoc) {
                 const clonedContainer = clonedDoc.getElementById('contenedor-impresion');
-                
                 clonedContainer.style.width = '1200px';
                 clonedContainer.style.maxWidth = '1200px';
                 clonedContainer.style.height = 'max-content';
