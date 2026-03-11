@@ -40,19 +40,20 @@ Route::get('/perfil', function () {
     return view('perfil');
 });
 
-//PACIENTES
+// ==========================================
+// PACIENTES
+// ==========================================
 use App\Http\Controllers\PacienteController;
 Route::get('/api/obtener-pacientes', [PacienteController::class, 'obtenerTodos']);
 Route::get('/api/pacientes/{id}', [PacienteController::class, 'obtenerUno']);
-//guardar
 Route::post('/api/guardar-paciente', [PacienteController::class, 'guardar']);
-//actualizar
 Route::put('/api/pacientes/{id}', [PacienteController::class, 'actualizar']);
-//soft delete
 Route::delete('/api/pacientes/{id}', [PacienteController::class, 'eliminar']);
 
 
-//TRATAMIENTOS
+// ==========================================
+// TRATAMIENTOS
+// ==========================================
 use App\Http\Controllers\TratamientoController;
 Route::get('/api/categorias-tratamientos', [TratamientoController::class, 'obtenerCategorias']);
 Route::get('/api/obtener-tratamientos', [TratamientoController::class, 'obtenerTodos']);
@@ -60,3 +61,14 @@ Route::post('/api/guardar-tratamiento', [TratamientoController::class, 'guardar'
 Route::put('/api/tratamientos/{id}', [TratamientoController::class, 'actualizar']);
 Route::delete('/api/tratamientos/{id}', [TratamientoController::class, 'eliminar']);
 
+
+// ==========================================
+// CITAS
+// ==========================================
+use App\Http\Controllers\CitaController; 
+Route::get('/api/citas/datos-formulario', [CitaController::class, 'obtenerDatosFormulario']);
+Route::get('/api/citas', [CitaController::class, 'obtenerCitas']);
+Route::post('/api/citas', [CitaController::class, 'guardarCita']);
+
+Route::put('/api/citas/{id}', [CitaController::class, 'actualizarCita']); 
+Route::delete('/api/citas/{id}', [CitaController::class, 'eliminarCita']);
