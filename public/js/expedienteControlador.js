@@ -1,6 +1,15 @@
 // public/js/expedienteControlador.js
 
+<<<<<<< HEAD
 let pagosPaginador;
+=======
+// =========================================================================
+// VARIABLES GLOBALES
+// =========================================================================
+let pagosPaginador;
+let consultasPaginador;
+let consultasDB = [];
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 
 document.addEventListener("DOMContentLoaded", () => {
     cargarDatosPacienteDesdeURL(); 
@@ -10,11 +19,19 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (typeof PaginadorTabla !== "undefined") {
         inicializarPaginadorPagos();
+<<<<<<< HEAD
+=======
+        inicializarPaginadorConsultas();
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     }
 });
 
 // =========================================================================
+<<<<<<< HEAD
 // 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL)
+=======
+// 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL Y CARGA DE DATOS)
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 // =========================================================================
 async function cargarDatosPacienteDesdeURL() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -23,6 +40,7 @@ async function cargarDatosPacienteDesdeURL() {
     if (!idPaciente) return;
 
     try {
+<<<<<<< HEAD
         // Hacemos la petición a nuestra nueva API en Laravel
         const respuesta = await fetch(`/api/pacientes/${idPaciente}`);
         
@@ -34,19 +52,33 @@ async function cargarDatosPacienteDesdeURL() {
         const paciente = await respuesta.json();
 
         // Inyectamos los datos reales en el HTML
+=======
+        const respuesta = await fetch(`/api/pacientes/${idPaciente}`);
+        if (!respuesta.ok) throw new Error('No se pudo encontrar el paciente.');
+
+        const paciente = await respuesta.json();
+
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         document.getElementById("exp-nombre").textContent = `${paciente.nombre} ${paciente.apellido}`;
         document.getElementById("exp-iniciales").textContent = `${paciente.nombre.charAt(0)}${paciente.apellido.charAt(0)}`;
         document.getElementById("exp-numero").textContent = paciente.numero_expediente;
         
+<<<<<<< HEAD
         // Calculamos la edad real basada en la fecha de nacimiento
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         if(paciente.fecha_nacimiento) {
             const hoy = new Date();
             const nacimiento = new Date(paciente.fecha_nacimiento);
             let edad = hoy.getFullYear() - nacimiento.getFullYear();
             const m = hoy.getMonth() - nacimiento.getMonth();
+<<<<<<< HEAD
             if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
                 edad--;
             }
+=======
+            if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             document.getElementById("exp-edad").textContent = `${edad} años`;
         } else {
             document.getElementById("exp-edad").textContent = "Sin fecha nac.";
@@ -63,6 +95,69 @@ async function cargarDatosPacienteDesdeURL() {
             document.getElementById("exp-alergias").classList.remove("flex");
         }
 
+<<<<<<< HEAD
+=======
+        try {
+            const resFicha = await fetch(`/api/expediente/${idPaciente}`);
+            if (resFicha.ok) {
+                const ficha = await resFicha.json();
+                
+                if (ficha.odontograma) {
+                    if (ficha.odontograma.diagnostico) {
+                        Object.entries(ficha.odontograma.diagnostico).forEach(([numero, estado]) => {
+                            const diente = document.querySelector(`#tab-odontograma div[data-numero="${numero}"]`);
+                            if (diente) {
+                                let estadoActual = diente.getAttribute('data-estado') || 'sano';
+                                while(estadoActual !== estado) {
+                                    window.toggleColorDienteAnatomico(diente);
+                                    estadoActual = diente.getAttribute('data-estado');
+                                }
+                            }
+                        });
+                    }
+
+                    if (ficha.odontograma.operatoria) {
+                        Object.entries(ficha.odontograma.operatoria).forEach(([numero, carasCargadas]) => {
+                            const dienteOper = document.querySelector(`#oper-c1 [data-numero="${numero}"], #oper-c2 [data-numero="${numero}"], #oper-c3 [data-numero="${numero}"], #oper-c4 [data-numero="${numero}"]`);
+                            if (dienteOper) {
+                                const carasDOM = dienteOper.querySelectorAll('.cara-circulo');
+                                carasDOM.forEach((cara, index) => {
+                                    const estadoGuardado = carasCargadas[index];
+                                    if (estadoGuardado !== 'sano') {
+                                        cara.setAttribute('data-estado', estadoGuardado);
+                                        if (estadoGuardado === 'caries') cara.setAttribute('fill', '#f43f5e');
+                                        else if (estadoGuardado === 'restaurado') cara.setAttribute('fill', '#3b82f6');
+                                        else if (estadoGuardado === 'ausente') cara.setAttribute('fill', '#1e293b');
+                                    }
+                                });
+                            }
+                        });
+                    }
+
+                    if (ficha.odontograma.detalles_extra) {
+                        const extra = ficha.odontograma.detalles_extra;
+                        if(document.getElementById('prot_color')) document.getElementById('prot_color').value = extra.prot_color || '';
+                        if(document.getElementById('prot_guia')) document.getElementById('prot_guia').value = extra.prot_guia || '';
+                        if(document.getElementById('prot_molde')) document.getElementById('prot_molde').value = extra.prot_molde || '';
+                        if(document.getElementById('prot_acrilico')) document.getElementById('prot_acrilico').checked = extra.prot_acrilico || false;
+                        if(document.getElementById('prot_porcelana')) document.getElementById('prot_porcelana').checked = extra.prot_porcelana || false;
+                        if(document.getElementById('endo_diente')) document.getElementById('endo_diente').value = extra.endo_diente || '';
+                        if(document.getElementById('endo_vitalidad')) document.getElementById('endo_vitalidad').value = extra.endo_vitalidad || '';
+                        if(document.getElementById('endo_provisional')) document.getElementById('endo_provisional').value = extra.endo_provisional || '';
+                        if(document.getElementById('endo_trabajo')) document.getElementById('endo_trabajo').value = extra.endo_trabajo || '';
+                    }
+                }
+
+                if (ficha.consultas) {
+                    consultasDB = ficha.consultas;
+                    if(consultasPaginador) consultasPaginador.setData(consultasDB);
+                }
+            }
+        } catch (errorFicha) {
+            console.error("Error al cargar el odontograma:", errorFicha);
+        }
+
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     } catch (error) {
         console.error("Error cargando paciente:", error);
         document.getElementById("exp-nombre").textContent = "Error al cargar paciente";
@@ -89,17 +184,98 @@ function configurarTabsExpediente() {
             document.getElementById(tab.dataset.target).classList.remove("hidden");
 
             if (tab.dataset.target === "tab-finanzas" && typeof pagosPaginador !== "undefined") {
+<<<<<<< HEAD
                 setTimeout(() => {
                     const scrollContainer = pagosPaginador.tbody ? pagosPaginador.tbody.parentElement.parentElement : null;
                     if(scrollContainer) pagosPaginador.recalcularYRenderizar(scrollContainer);
                 }, 50);
+=======
+                setTimeout(() => { if(pagosPaginador.tbody) pagosPaginador.recalcularYRenderizar(pagosPaginador.tbody.parentElement.parentElement); }, 50);
+            }
+            if (tab.dataset.target === "tab-consultas" && typeof consultasPaginador !== "undefined") {
+                setTimeout(() => { if(consultasPaginador.tbody) consultasPaginador.recalcularYRenderizar(consultasPaginador.tbody.parentElement.parentElement); }, 50);
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             }
         });
     });
 }
 
 // =========================================================================
+<<<<<<< HEAD
 // 2. LÓGICA DE ODONTOGRAMAS Y AUTOCOMPLETADO
+=======
+// 2. LÓGICA DE HISTORIAL DE CONSULTAS
+// =========================================================================
+function inicializarPaginadorConsultas() {
+    if (!document.getElementById("consultasTableContainer")) return;
+    
+    consultasPaginador = new PaginadorTabla(consultasDB, 'auto', {
+        tableBodyId: "consultasTableBody",
+        containerId: "consultasTableContainer",
+        renderRow: (c) => {
+            const fecha = c.fecha_consulta ? new Date(c.fecha_consulta).toLocaleDateString() : '-';
+            const proxima = c.proxima_cita_recomendada ? new Date(c.proxima_cita_recomendada).toLocaleDateString() : 'No asignada';
+            const resumen = c.sintomas || c.observaciones || 'Sin detalles adicionales registrados.';
+
+            return `
+                <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors h-[75px]">
+                    <td class="px-6 py-4 font-bold text-slate-600 whitespace-nowrap">${fecha}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col justify-center">
+                            <span class="font-bold text-blue-800 text-sm truncate max-w-[250px]">${c.motivo_consulta || 'Consulta de control'}</span>
+                            <span class="text-[11px] text-slate-400 mt-0.5 truncate max-w-[250px]" title="${resumen}">${resumen}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                        <div class="truncate max-w-[200px]" title="${c.diagnostico || '-'}">${c.diagnostico || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 font-medium text-emerald-600 whitespace-nowrap">${proxima}</td>
+                    <td class="px-6 py-4">
+                        <button type="button" onclick="window.editarConsulta(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100" title="Ver / Editar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                    </td>
+                </tr>`;
+        }
+    });
+}
+
+window.editarConsulta = function(id) {
+    const c = consultasDB.find(x => x.id === id);
+    if (!c) return;
+
+    document.getElementById('hc_consulta_id').value = c.id;
+    document.getElementById('hc_motivo').value = c.motivo_consulta || '';
+    document.getElementById('hc_sintomas').value = c.sintomas || '';
+    document.getElementById('hc_observaciones').value = c.observaciones || '';
+    document.getElementById('hc_diagnostico').value = c.diagnostico || '';
+    document.getElementById('hc_prescripciones').value = c.prescripciones || '';
+    
+    if(c.proxima_cita_recomendada) {
+        document.getElementById('hc_proxima_cita').value = c.proxima_cita_recomendada.split(' ')[0];
+    } else {
+        document.getElementById('hc_proxima_cita').value = '';
+    }
+
+    document.querySelector('.tab-btn[data-target="tab-historia"]').click();
+    Alerta.info("Modo Edición", "Estás viendo una consulta pasada.");
+};
+
+window.nuevaConsulta = function() {
+    document.getElementById('hc_consulta_id').value = '';
+    document.getElementById('hc_motivo').value = '';
+    document.getElementById('hc_sintomas').value = '';
+    document.getElementById('hc_observaciones').value = '';
+    document.getElementById('hc_diagnostico').value = '';
+    document.getElementById('hc_prescripciones').value = '';
+    document.getElementById('hc_proxima_cita').value = '';
+    
+    document.querySelector('.tab-btn[data-target="tab-historia"]').click();
+};
+
+// =========================================================================
+// 3. LÓGICA DE ODONTOGRAMAS
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 // =========================================================================
 const dientesC1 = [18, 17, 16, 15, 14, 13, 12, 11];
 const dientesC2 = [21, 22, 23, 24, 25, 26, 27, 28];
@@ -169,7 +345,10 @@ function actualizarTextosDiagnostico() {
     document.querySelectorAll('#diag-c1 [data-numero], #diag-c2 [data-numero], #diag-c3 [data-numero], #diag-c4 [data-numero]').forEach(el => {
         const numero = el.getAttribute('data-numero');
         const estado = el.getAttribute('data-estado');
+<<<<<<< HEAD
         
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         if (estado === 'ausente') ausentes.push(numero);
         if (estado === 'extraccion') extracciones.push(numero);
         if (estado === 'caries') caries.push(numero);
@@ -181,6 +360,7 @@ function actualizarTextosDiagnostico() {
 
     if (inputAusentes) inputAusentes.value = ausentes.length > 0 ? ausentes.join(', ') : '';
     if (inputExtraccion) inputExtraccion.value = extracciones.length > 0 ? `Pieza(s): ${extracciones.join(', ')}` : '';
+<<<<<<< HEAD
 
     if (inputFinal) {
         if (caries.length > 0) {
@@ -188,6 +368,11 @@ function actualizarTextosDiagnostico() {
         } else if (inputFinal.value.includes('caries en piezas')) {
             inputFinal.value = ""; 
         }
+=======
+    if (inputFinal) {
+        if (caries.length > 0) inputFinal.value = `Se detectan caries en piezas: ${caries.join(', ')}`;
+        else if (inputFinal.value.includes('caries en piezas')) inputFinal.value = ""; 
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     }
 }
 
@@ -243,11 +428,19 @@ function renderizarOdontogramaOperatoria() {
     });
 }
 
+<<<<<<< HEAD
 
 // =========================================================================
 // MÚLTIPLES TRATAMIENTOS: Lógica del Carrito de Compras en Modal
 // =========================================================================
 
+=======
+// =========================================================================
+// 4. LÓGICA DE FACTURACIÓN Y PAGOS (POS)
+// =========================================================================
+
+// DATOS DE PRUEBA (Mientras conectamos con tu BD real de tratamientos)
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 const catalogoTratamientos = [
     { id: 1, codigo: "LMP-01", nombre: "Limpieza Profunda (Profilaxis)", precio: 35.00 },
     { id: 2, codigo: "RST-01", nombre: "Resina Dental Simple", precio: 50.00 },
@@ -259,11 +452,18 @@ const catalogoTratamientos = [
 ];
 
 let tratamientosSeleccionados = [];
+<<<<<<< HEAD
 
+=======
+let pagosDB = []; 
+
+// FUNCIÓN 1: DIBUJA LOS TRATAMIENTOS AGREGADOS Y CALCULA EL SUBTOTAL
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 function renderizarBadgesTratamientos() {
     const contenedor = document.getElementById('lista_tratamientos');
     if (!contenedor) return;
     contenedor.innerHTML = '';
+<<<<<<< HEAD
     let total = 0;
 
     if (tratamientosSeleccionados.length === 0) {
@@ -287,11 +487,94 @@ function renderizarBadgesTratamientos() {
     if(inputValor) inputValor.value = total > 0 ? total.toFixed(2) : "";
 }
 
+=======
+    let subtotal = 0;
+
+    if (tratamientosSeleccionados.length === 0) {
+        contenedor.innerHTML = `<span class="text-xs text-slate-400 italic px-2">Ningún tratamiento agregado a la factura...</span>`;
+    } else {
+        tratamientosSeleccionados.forEach((t, index) => {
+            subtotal += t.precio;
+            const item = document.createElement('div');
+            item.className = "flex justify-between items-center px-3 py-2 bg-white rounded-lg border border-slate-200 shadow-sm";
+            item.innerHTML = `
+                <div class="flex flex-col">
+                    <span class="font-bold text-slate-700 text-xs">${t.nombre}</span>
+                    <span class="text-[10px] text-slate-400 uppercase">${t.codigo || 'S/C'}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="font-bold text-blue-700 text-sm">$${t.precio.toFixed(2)}</span>
+                    <button type="button" class="text-slate-300 hover:text-rose-500 transition-colors focus:outline-none" onclick="removerTratamiento(${index})">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+            `;
+            contenedor.appendChild(item);
+        });
+    }
+
+    // Actualizamos el subtotal en la pantalla
+    const spanSubtotal = document.getElementById('resumen_subtotal');
+    if(spanSubtotal) spanSubtotal.innerText = subtotal.toFixed(2);
+    
+    // Llamamos a la función que calcula el total y el saldo final
+    calcularTotalesFactura();
+}
+
+// FUNCIÓN 2: HACE TODA LA MATEMÁTICA DE LA FACTURA EN TIEMPO REAL
+window.calcularTotalesFactura = function() {
+    const spanSubtotal = document.getElementById('resumen_subtotal');
+    const inputDescuento = document.getElementById('input_descuento');
+    const spanTotal = document.getElementById('resumen_total');
+    const inputTotalOculto = document.getElementById('input_total_oculto');
+    const inputAbono = document.getElementById('input_abono');
+    const spanSaldo = document.getElementById('resumen_saldo');
+
+    if(!spanSubtotal) return;
+
+    let subtotal = parseFloat(spanSubtotal.innerText) || 0;
+    let descuento = parseFloat(inputDescuento.value) || 0;
+    
+    // El descuento no puede ser mayor al subtotal
+    if(descuento > subtotal) {
+        descuento = subtotal;
+        inputDescuento.value = descuento.toFixed(2);
+    }
+
+    let total = subtotal - descuento;
+    spanTotal.innerText = total.toFixed(2);
+    inputTotalOculto.value = total.toFixed(2);
+
+    let abono = parseFloat(inputAbono.value) || 0;
+    let saldo = total - abono;
+
+    // Si abona más de la cuenta, lo ajustamos al total exacto
+    if(saldo < 0) {
+        saldo = 0;
+        inputAbono.value = total.toFixed(2);
+    }
+
+    spanSaldo.innerText = saldo.toFixed(2);
+    
+    // Cambiar el color del Saldo: Verde si está pagado, Rojo si debe
+    if(saldo === 0 && total > 0) {
+        spanSaldo.parentElement.classList.replace('text-rose-500', 'text-emerald-500');
+    } else {
+        spanSaldo.parentElement.classList.replace('text-emerald-500', 'text-rose-500');
+    }
+}
+
+// FUNCIÓN 3: ELIMINAR TRATAMIENTO DEL CARRITO
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 window.removerTratamiento = function(index) {
     tratamientosSeleccionados.splice(index, 1);
     renderizarBadgesTratamientos();
 };
 
+<<<<<<< HEAD
+=======
+// BUSCADOR EN VIVO DE TRATAMIENTOS
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 const inputSearch = document.getElementById('tratamiento_search');
 const dropdown = document.getElementById('tratamiento_dropdown');
 
@@ -323,7 +606,11 @@ function renderizarResultadosBuscador(filtro = "") {
         `;
         
         item.addEventListener("click", () => {
+<<<<<<< HEAD
             tratamientosSeleccionados.push({ nombre: t.nombre, precio: t.precio });
+=======
+            tratamientosSeleccionados.push({ nombre: t.nombre, codigo: t.codigo, precio: t.precio });
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             renderizarBadgesTratamientos();
             inputSearch.value = ""; 
             dropdown.classList.add("hidden");
@@ -348,6 +635,7 @@ if(inputSearch) {
     });
 }
 
+<<<<<<< HEAD
 // =========================================================================
 // LÓGICA DE TABLA DE PAGOS Y EVENTOS DEL MODAL
 // =========================================================================
@@ -357,11 +645,17 @@ let pagosDB = [
 ];
 
 function inicializarPaginadorPagos() {
+=======
+function inicializarPaginadorPagos() {
+    if (!document.getElementById("pagosTableContainer")) return;
+    
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     pagosPaginador = new PaginadorTabla(pagosDB, 'auto', {
         tableBodyId: "pagosTableBody",
         containerId: "pagosTableContainer",
         renderRow: (p) => {
             const saldoColor = p.saldo > 0 ? "text-rose-500 font-bold" : "text-slate-400 font-bold";
+<<<<<<< HEAD
             return `
                 <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors h-[75px]">
                     <td class="px-6 py-4 font-medium text-slate-600">${p.fecha}</td>
@@ -378,6 +672,35 @@ function inicializarPaginadorPagos() {
                         <div class="flex items-center gap-3">
                             <button type="button" onclick="window.abrirModalEdicion(${p.id})" class="text-emerald-500 hover:text-emerald-700 transition-colors p-1" title="Editar"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
                             <button type="button" onclick="window.eliminarVisita(${p.id})" class="text-rose-400 hover:text-rose-600 transition-colors p-1" title="Eliminar"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+=======
+            const estadoBadge = p.saldo > 0 
+                ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pendiente</span>` 
+                : `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pagado</span>`;
+
+            const numFactura = `FAC-${String(p.id).padStart(4, '0')}`;
+
+            return `
+                <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors h-[75px]">
+                    <td class="px-6 py-4 font-bold text-slate-600">${p.fecha}</td>
+                    <td class="px-6 py-4 font-mono text-xs text-blue-800 font-bold">${numFactura}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-slate-700 text-sm line-clamp-1">${p.tratamiento}</span>
+                            <span class="text-[10px] text-slate-400">Pieza: ${p.diente || 'General'}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 font-black text-slate-800">$${parseFloat(p.valor).toFixed(2)}</td>
+                    <td class="px-6 py-4 ${saldoColor}">$${parseFloat(p.saldo).toFixed(2)}</td>
+                    <td class="px-6 py-4">${estadoBadge}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="Alerta.info('Próximamente', 'Generador de Facturas en PDF en desarrollo.')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Imprimir Factura">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            </button>
+                            <button type="button" onclick="window.abrirModalEdicion(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100" title="Editar / Abonar">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </button>
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
                         </div>
                     </td>
                 </tr>`;
@@ -390,7 +713,11 @@ window.openModal = function (modalID, mode = "add") {
     const form = document.getElementById("formVisita");
 
     if (mode === "add") {
+<<<<<<< HEAD
         document.getElementById("modalTitle").innerText = "Registrar Nueva Visita";
+=======
+        document.getElementById("modalTitle").innerText = "Registrar Nueva Factura";
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         form.reset();
         form.id.value = "";
         
@@ -410,9 +737,14 @@ window.openModal = function (modalID, mode = "add") {
         if(inputDientes) {
             inputDientes.value = dientesAfectados.size > 0 ? Array.from(dientesAfectados).join(', ') : "";
         }
+<<<<<<< HEAD
         
     } else {
         document.getElementById("modalTitle").innerText = "Editar Visita";
+=======
+    } else {
+        document.getElementById("modalTitle").innerText = "Abonar / Editar Factura";
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     }
     
     modal.classList.remove("hidden");
@@ -431,6 +763,7 @@ window.closeModal = function (modalID) {
     setTimeout(() => modal.classList.add("hidden"), 300);
 };
 
+<<<<<<< HEAD
 window.abrirModalEdicion = function (id) {
     const v = pagosDB.find((x) => x.id === id);
     if (!v) return;
@@ -506,12 +839,108 @@ window.guardarFichaClinica = function() {
     }, 800);
 };
 
+=======
+// =========================================================================
+// 5. GUARDADO REAL EN BASE DE DATOS (ODONTOGRAMA E HISTORIA)
+// =========================================================================
+window.guardarFichaClinica = async function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idPaciente = urlParams.get('id');
+
+    if (!idPaciente) {
+        return Alerta.error("Error de ID", "No se detectó el paciente actual.");
+    }
+
+    let odontogramaData = {
+        diagnostico: {},
+        operatoria: {},
+        detalles_extra: {
+            prot_color: document.getElementById('prot_color')?.value || '',
+            prot_guia: document.getElementById('prot_guia')?.value || '',
+            prot_molde: document.getElementById('prot_molde')?.value || '',
+            prot_acrilico: document.getElementById('prot_acrilico')?.checked || false,
+            prot_porcelana: document.getElementById('prot_porcelana')?.checked || false,
+            endo_diente: document.getElementById('endo_diente')?.value || '',
+            endo_vitalidad: document.getElementById('endo_vitalidad')?.value || '',
+            endo_provisional: document.getElementById('endo_provisional')?.value || '',
+            endo_trabajo: document.getElementById('endo_trabajo')?.value || ''
+        }
+    };
+
+    document.querySelectorAll('#diag-c1 [data-numero], #diag-c2 [data-numero], #diag-c3 [data-numero], #diag-c4 [data-numero]').forEach(el => {
+        const numero = el.getAttribute('data-numero');
+        const estado = el.getAttribute('data-estado') || 'sano';
+        if(estado !== 'sano') odontogramaData.diagnostico[numero] = estado;
+    });
+
+    document.querySelectorAll('#oper-c1 [data-numero], #oper-c2 [data-numero], #oper-c3 [data-numero], #oper-c4 [data-numero]').forEach(el => {
+        const numero = el.getAttribute('data-numero');
+        let caras = [];
+        el.querySelectorAll('.cara-circulo').forEach(cara => {
+            caras.push(cara.getAttribute('data-estado') || 'sano');
+        });
+        if(caras.some(c => c !== 'sano')) odontogramaData.operatoria[numero] = caras;
+    });
+
+    const historiaData = {
+        consulta_id: document.getElementById('hc_consulta_id')?.value || '', 
+        motivo_consulta: document.getElementById('hc_motivo')?.value || '',
+        sintomas: document.getElementById('hc_sintomas')?.value || '',
+        observaciones: document.getElementById('hc_observaciones')?.value || '',
+        diagnostico: document.getElementById('hc_diagnostico')?.value || '',
+        prescripciones: document.getElementById('hc_prescripciones')?.value || '',
+        proxima_cita: document.getElementById('hc_proxima_cita')?.value || null,
+    };
+
+    const payload = {
+        odontograma: odontogramaData,
+        historia: historiaData
+    };
+
+    const btn = document.getElementById('btnGuardarFicha');
+    const textoOriginal = btn.innerHTML;
+
+    try {
+        btn.innerHTML = `<svg class="w-5 h-5 animate-spin mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+        btn.disabled = true;
+
+        await API.post(`/api/expediente/${idPaciente}/guardar`, payload);
+
+        Alerta.exito("¡Ficha Guardada!", "Odontograma y consulta registrados exitosamente.");
+
+        document.getElementById('hc_consulta_id').value = '';
+        document.getElementById('hc_motivo').value = '';
+        document.getElementById('hc_sintomas').value = '';
+        document.getElementById('hc_observaciones').value = '';
+        document.getElementById('hc_diagnostico').value = '';
+        document.getElementById('hc_prescripciones').value = '';
+        document.getElementById('hc_proxima_cita').value = '';
+
+        await cargarDatosPacienteDesdeURL();
+
+    } catch (error) {
+        console.error("Error al guardar ficha:", error);
+        Alerta.error("Error del Servidor", "No se pudo guardar la información.");
+    } finally {
+        btn.innerHTML = textoOriginal;
+        btn.disabled = false;
+    }
+};
+
+// =========================================================================
+// 6. GENERACIÓN DE PDF PERFECTO (Ficha Clínica)
+// =========================================================================
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 window.imprimirFichaPDF = async function() {
     const elNombre = document.getElementById("exp-nombre");
     const nombrePaciente = elNombre ? elNombre.innerText : "Paciente";
     
     if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+<<<<<<< HEAD
         return alert("Cargando librerías de PDF, intente de nuevo en un segundo...");
+=======
+        return Alerta.advertencia("Cargando...", "Espere un momento a que el creador de PDF termine de cargar.");
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     }
 
     const btn = document.querySelector('button[onclick="window.imprimirFichaPDF()"]');
@@ -521,15 +950,21 @@ window.imprimirFichaPDF = async function() {
     const contenedorImpresion = document.getElementById('contenedor-impresion');
 
     try {
+<<<<<<< HEAD
         // html2canvas tiene una función "onclone". Esto crea una copia INVISIBLE de tu pantalla,
         // la ajusta para la foto, y luego la destruye. ¡Tú nunca ves la pantalla parpadear ni romperse!
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         const canvas = await html2canvas(contenedorImpresion, { 
             scale: 2, 
             backgroundColor: '#ffffff',
             windowWidth: 1200,
             onclone: function(clonedDoc) {
                 const clonedContainer = clonedDoc.getElementById('contenedor-impresion');
+<<<<<<< HEAD
                 
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
                 clonedContainer.style.width = '1200px';
                 clonedContainer.style.maxWidth = '1200px';
                 clonedContainer.style.height = 'max-content';
@@ -537,6 +972,7 @@ window.imprimirFichaPDF = async function() {
 
                 const tabOdon = clonedDoc.getElementById('tab-odontograma');
                 const tabHist = clonedDoc.getElementById('tab-historia');
+<<<<<<< HEAD
                 const tabFin = clonedDoc.getElementById('tab-finanzas');
 
                 if(tabOdon) {
@@ -552,6 +988,17 @@ window.imprimirFichaPDF = async function() {
 
                 // SOLUCIÓN DE TEXTO CORTADO: Convertir inputs y textareas en bloques de texto reales
                 const inputs = clonedContainer.querySelectorAll('input[type="text"], input[type="number"]');
+=======
+                const tabCons = clonedDoc.getElementById('tab-consultas');
+                const tabFin = clonedDoc.getElementById('tab-finanzas');
+
+                if(tabOdon) { tabOdon.classList.remove('hidden'); tabOdon.style.display = 'flex'; }
+                if(tabHist) { tabHist.classList.remove('hidden', 'h-full'); tabHist.style.display = 'block'; tabHist.style.height = 'max-content'; }
+                if(tabCons) tabCons.style.display = 'none';
+                if(tabFin) tabFin.style.display = 'none';
+
+                const inputs = clonedContainer.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]');
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
                 inputs.forEach(input => {
                     const originalInput = document.getElementById(input.id);
                     const div = clonedDoc.createElement('div');
@@ -572,7 +1019,10 @@ window.imprimirFichaPDF = async function() {
                     textarea.parentNode.replaceChild(div, textarea);
                 });
 
+<<<<<<< HEAD
                 // Convertir checkboxes
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
                 const checkboxes = clonedContainer.querySelectorAll('input[type="checkbox"]');
                 checkboxes.forEach(cb => {
                     const originalCb = document.getElementById(cb.id);
@@ -590,7 +1040,10 @@ window.imprimirFichaPDF = async function() {
         const { jsPDF } = window.jspdf;
         
         const pdf = new jsPDF('l', 'mm', 'a4'); 
+<<<<<<< HEAD
         
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         pdf.setFontSize(16);
         pdf.setTextColor(30, 64, 175);
         pdf.text(`Ficha Técnica Dental y Médica - ${nombrePaciente}`, 15, 15);
@@ -614,7 +1067,10 @@ window.imprimirFichaPDF = async function() {
         pdf.addImage(imgData, 'PNG', margin, position, finalWidth, finalHeight);
         heightLeft -= (pageHeight - topMargin);
 
+<<<<<<< HEAD
         // IMPRESIÓN MULTIPÁGINA INTELIGENTE
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         while (heightLeft > 0) {
             pdf.addPage();
             let amountShown = finalHeight - heightLeft;
@@ -627,7 +1083,11 @@ window.imprimirFichaPDF = async function() {
         
     } catch (error) {
         console.error("Error al generar PDF:", error);
+<<<<<<< HEAD
         alert("Hubo un error al crear el PDF. Revise la consola.");
+=======
+        Alerta.error("Error", "Hubo un error al crear el PDF. Revise la consola.");
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     } finally {
         if(btn) btn.innerHTML = btnText;
     }

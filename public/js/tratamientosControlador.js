@@ -198,6 +198,7 @@ window.abrirModalEdicion = function (id) {
 };
 
 window.eliminarTratamiento = async function (id) {
+<<<<<<< HEAD
     if (confirm("¿Estás seguro de archivar este tratamiento?\n\nPasará a estado Inactivo y no se mostrará por defecto.")) {
         try {
             await API.delete(`/api/tratamientos/${id}`);
@@ -206,6 +207,27 @@ window.eliminarTratamiento = async function (id) {
         } catch (error) {
             console.error("Error al archivar:", error);
             alert("Hubo un error al intentar archivar el tratamiento.");
+=======
+    // Usamos tu nuevo modal con estilo "danger" (Rojo y gradiente)
+    const confirmado = await Alerta.eliminar(
+        "¿Archivar Tratamiento?", 
+        "El tratamiento pasará a estado Inactivo. Podrás recuperarlo después.",
+        "Sí, archivar",
+        "Cancelar"
+    );
+
+    if (confirmado) {
+        try {
+            await API.delete(`/api/tratamientos/${id}`);
+            
+            // Usamos tu nuevo Toast verde de éxito
+            Alerta.exito("¡Archivado!", "El tratamiento ha sido ocultado de la lista principal.");
+            
+            await cargarTratamientosDesdeBD(); 
+        } catch (error) {
+            console.error("Error al archivar:", error);
+            Alerta.error("Hubo un problema", "No se pudo archivar el tratamiento.");
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         }
     }
 };
@@ -218,21 +240,35 @@ window.guardarDatos = async function () {
     let datosForm = Object.fromEntries(formData.entries());
 
     if (!datosForm.codigo || !datosForm.nombre || !datosForm.costo_base) {
-        return alert("Por favor complete los campos obligatorios (*)");
+        // Usamos tu nuevo Toast dorado de advertencia
+        return Alerta.advertencia("Campos incompletos", "Por favor completa los campos con asterisco (*).");
     }
 
     datosForm.estado = form.activo.checked ? 'Activo' : 'Inactivo';
     datosForm.requiere_cita = datosForm.requiere_cita === 'true' ? 1 : 0;
     datosForm.costo_base = parseFloat(datosForm.costo_base);
     datosForm.duracion_estimada = datosForm.duracion_estimada ? parseInt(datosForm.duracion_estimada) : null;
+<<<<<<< HEAD
+=======
+    datosForm.categoria_id = datosForm.categoria_id ? parseInt(datosForm.categoria_id) : null;
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 
     try {
         if (id) {
             await API.put(`/api/tratamientos/${id}`, datosForm);
+<<<<<<< HEAD
             alert("Tratamiento actualizado en la base de datos");
         } else {
             await API.post('/api/guardar-tratamiento', datosForm);
             alert("Tratamiento guardado en la base de datos");
+=======
+            // Toast verde
+            Alerta.exito("¡Actualizado!", "El tratamiento se actualizó correctamente.");
+        } else {
+            await API.post('/api/guardar-tratamiento', datosForm);
+            // Toast verde
+            Alerta.exito("¡Guardado!", "El nuevo tratamiento está listo para usarse.");
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         }
 
         window.closeModal("modalTratamientos");
@@ -240,6 +276,11 @@ window.guardarDatos = async function () {
         
     } catch (error) {
         console.error("Error al guardar:", error);
+<<<<<<< HEAD
         alert("Ocurrió un error al guardar. Revisa la consola.");
+=======
+        // Toast rojo
+        Alerta.error("Error del servidor", "Revisa tu conexión o contacta a soporte.");
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     }
 };

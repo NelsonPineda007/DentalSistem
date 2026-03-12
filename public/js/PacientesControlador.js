@@ -1,5 +1,6 @@
 // static/js/pacientesControlador.js
 
+<<<<<<< HEAD
 // --- 1. CONFIGURACIÓN Y MAPEO ---
 // Diccionario para traducir nombres de DB a nombres del Formulario HTML
 // Clave = Nombre en Formulario HTML, Valor = Nombre en pacientsDB
@@ -34,6 +35,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     configurarTabsModal();
 
     // 2. Traemos los datos de Laravel
+=======
+const ICONS = {
+    pdf: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/><path d="M8 12h8v2H8zm0 4h8v2H8z"/></svg>`,
+    edit: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
+    trash: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`
+};
+
+let pacientesDB = []; 
+let miPaginador;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    if (typeof PaginadorTabla === "undefined") return console.error("Falta paginadorTabla.js");
+    inicializarPaginador();
+    configurarBusqueda();
+    configurarTabsModal();
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     await cargarPacientesDesdeBD();
 
     let resizeTimer;
@@ -43,6 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 });
 
+<<<<<<< HEAD
 // NUEVA FUNCIÓN: Conexión al Backend
 async function cargarPacientesDesdeBD() {
     try {
@@ -58,6 +76,14 @@ async function cargarPacientesDesdeBD() {
             miPaginador.setData(pacientesDB);
         }
         
+=======
+async function cargarPacientesDesdeBD() {
+    try {
+        pacientesDB = await API.get('/api/obtener-pacientes');
+        const filterEstado = document.getElementById("filterEstado");
+        if (filterEstado) filterEstado.dispatchEvent(new Event('change'));
+        else miPaginador.setData(pacientesDB);
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     } catch (error) {
         console.error("Error cargando pacientes:", error);
     }
@@ -66,7 +92,11 @@ async function cargarPacientesDesdeBD() {
 function calcularItemsPorPagina() {
     const container = document.getElementById("tableContainer");
     if (!container) return 5;
+<<<<<<< HEAD
     const items = Math.floor((container.clientHeight - 140) / 76); // 140 = header+footer aprox
+=======
+    const items = Math.floor((container.clientHeight - 140) / 76); 
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     return items > 3 ? items : 3;
 }
 
@@ -76,8 +106,11 @@ function inicializarPaginador() {
         containerId: "tableContainer",
         renderRow: (p) => {
             const edad = p.fecha_nacimiento ? new Date().getFullYear() - new Date(p.fecha_nacimiento).getFullYear() : "-";
+<<<<<<< HEAD
             
             // Adaptación para MySQL: Evaluamos el texto del estado
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             const esActivo = p.estado === 'Activo';
             const estadoClass = esActivo ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200";
 
@@ -118,6 +151,7 @@ function configurarBusqueda() {
 
     function aplicarFiltros() {
         const term = searchInput ? searchInput.value.toLowerCase() : '';
+<<<<<<< HEAD
         const estadoSelect = filterEstado ? filterEstado.value : ''; // "1", "0", o ""
 
         const filtrados = pacientesDB.filter(p => {
@@ -137,6 +171,20 @@ function configurarBusqueda() {
         });
 
         // Tu paginador universal hace el resto de la magia
+=======
+        const estadoSelect = filterEstado ? filterEstado.value : ''; 
+
+        const filtrados = pacientesDB.filter(p => {
+            const coincideTexto = (p.nombre + " " + p.apellido).toLowerCase().includes(term) || p.numero_expediente.toLowerCase().includes(term);
+            let coincideEstado = true;
+            if (estadoSelect !== "") {
+                const estadoReal = p.estado === 'Activo' ? "1" : "0";
+                coincideEstado = estadoReal === estadoSelect;
+            }
+            return coincideTexto && coincideEstado;
+        });
+
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         miPaginador.setData(filtrados);
     }
 
@@ -144,7 +192,10 @@ function configurarBusqueda() {
     if (filterEstado) filterEstado.addEventListener("change", aplicarFiltros);
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 function configurarTabsModal() {
     document.querySelectorAll(".tab-btn").forEach((tab) => {
         tab.addEventListener("click", () => {
@@ -160,6 +211,7 @@ function configurarTabsModal() {
     });
 }
 
+<<<<<<< HEAD
 
 
 // --- FUNCIONES GLOBALES OPTIMIZADAS ---
@@ -169,6 +221,11 @@ window.openModal = function (modalID, mode = "add") {
     const form = document.getElementById("formPaciente");
     
     // Nos aseguramos de que siempre se abra en la primera pestaña
+=======
+window.openModal = function (modalID, mode = "add") {
+    const modal = document.getElementById(modalID);
+    const form = document.getElementById("formPaciente");
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     const tabPersonal = document.querySelector('.tab-btn[data-target="tab-personal"]');
     if (tabPersonal) tabPersonal.click();
 
@@ -176,9 +233,15 @@ window.openModal = function (modalID, mode = "add") {
         document.getElementById("modalTitle").innerText = "Nuevo Paciente";
         form.reset();
         form.id.value = "";
+<<<<<<< HEAD
         
         // --- AQUÍ ESTÁ LA MAGIA DEL NUEVO FORMATO ---
         // 1. Buscamos el expediente con el número más alto para evitar duplicados al eliminar
+=======
+        form.es_menor_check.checked = false;
+        form.responsable_legal.disabled = true;
+        
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         let maxNum = 0;
         pacientesDB.forEach(p => {
             if (p.numero_expediente && p.numero_expediente.startsWith('EXP-')) {
@@ -187,10 +250,14 @@ window.openModal = function (modalID, mode = "add") {
             }
         });
         
+<<<<<<< HEAD
         // 2. Generamos el nuevo código con el formato EXP-XXX
         form.expediente.value = `EXP-${String(maxNum + 1).padStart(3, "0")}`;
         // ---------------------------------------------
         
+=======
+        form.expediente.value = `EXP-${String(maxNum + 1).padStart(3, "0")}`;
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         form.ciudad.value = "San Salvador";
     } else {
         document.getElementById("modalTitle").innerText = "Editar Paciente";
@@ -217,6 +284,7 @@ window.closeModal = function (modalID) {
     setTimeout(() => modal.classList.add("hidden"), 300);
 };
 
+<<<<<<< HEAD
 // OPTIMIZADA: Rellena el formulario automáticamente usando el mapa
 window.abrirModalEdicion = function (id) {
     const p = pacientesDB.find((x) => x.id === id);
@@ -247,11 +315,34 @@ window.abrirModalEdicion = function (id) {
         // Esto la recorta para que el input type="date" la acepte sin errores
         form.fecha_nacimiento.value = p.fecha_nacimiento.split('T')[0]; 
     }
+=======
+window.abrirModalEdicion = function (id) {
+    const p = pacientesDB.find((x) => x.id === id);
+    if (!p) return;
+    const form = document.getElementById("formPaciente");
+    
+    Array.from(form.elements).forEach(input => {
+        if(!input.name) return;
+        if(p[input.name] !== undefined && p[input.name] !== null) {
+            input.value = p[input.name];
+        }
+    });
+
+    form.id.value = p.id; 
+    form.expediente.value = p.numero_expediente; 
+    form.activo.value = p.estado === 'Activo' ? "1" : "0"; 
+    if(p.fecha_nacimiento) form.fecha_nacimiento.value = p.fecha_nacimiento.split('T')[0]; 
+
+    // Activamos la casilla visual de "Es menor" si es 1
+    form.es_menor_check.checked = p.es_menor == 1;
+    form.responsable_legal.disabled = p.es_menor != 1;
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 
     window.openModal("modalPacientes", "edit");
 };
 
 window.eliminarPaciente = async function (id) {
+<<<<<<< HEAD
     // 1. Un mensaje claro de lo que realmente va a pasar
     if (confirm("¿Estás seguro de archivar este expediente?\n\nEl paciente pasará a estado 'Inactivo' y se ocultará de la lista principal, pero su historial médico y pagos se conservarán intactos.")) {
         try {
@@ -265,6 +356,23 @@ window.eliminarPaciente = async function (id) {
         } catch (error) {
             console.error("Error al archivar:", error);
             alert("No se pudo archivar el expediente.");
+=======
+    const confirmado = await Alerta.eliminar(
+        "¿Archivar Expediente?", 
+        "El paciente pasará a estado Inactivo y se ocultará de la lista principal.",
+        "Sí, archivar",
+        "Cancelar"
+    );
+
+    if (confirmado) {
+        try {
+            await API.delete(`/api/pacientes/${id}`);
+            Alerta.exito("¡Archivado!", "Expediente archivado correctamente.");
+            await cargarPacientesDesdeBD();
+        } catch (error) {
+            console.error("Error al archivar:", error);
+            Alerta.error("Hubo un problema", "No se pudo archivar el expediente.");
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         }
     }
 };
@@ -276,8 +384,13 @@ window.imprimirExpediente = function (id) {
     const edad = p.fecha_nacimiento ? new Date().getFullYear() - new Date(p.fecha_nacimiento).getFullYear() : "N/A";
 
     ReportePDF.generar({
+<<<<<<< HEAD
         folio: p.expediente,
         nombreArchivo: `Expediente_${p.expediente}`,
+=======
+        folio: p.numero_expediente,
+        nombreArchivo: `Expediente_${p.numero_expediente}`,
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         data: {
             nombre: `${p.nombre} ${p.apellido}`,
             nacimiento: p.fecha_nacimiento,
@@ -285,6 +398,7 @@ window.imprimirExpediente = function (id) {
             genero: p.genero,
             telefono: p.telefono,
             email: p.email,
+<<<<<<< HEAD
             direccion: `${p.direccion}, ${p.ciudad}`,
             cp: p.codigo_postal,
             emergencia_nombre: p.contacto_nombre,
@@ -294,19 +408,34 @@ window.imprimirExpediente = function (id) {
             cronicas: p.cronicas,
             medicamentos: p.medicamentos,
             notas: p.notas,
+=======
+            direccion: `${p.direccion || ''}, ${p.ciudad || ''}`,
+            cp: p.codigo_postal,
+            emergencia_nombre: p.contacto_emergencia_nombre,
+            emergencia_tel: p.contacto_emergencia_telefono,
+            seguro: p.seguro_medico,
+            alergias: p.alergias,
+            cronicas: p.enfermedades_cronicas,
+            medicamentos: p.medicamentos_actuales,
+            notas: p.notas_medicas,
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         },
         citas: p.citas || [],
         tratamientos: p.tratamientos || [],
     });
 };
 
+<<<<<<< HEAD
 // OPTIMIZADA: Guarda datos dinámicamente en MySQL
 // OPTIMIZADA: Guarda datos dinámicamente usando la API global
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 window.guardarDatos = async function () {
     const form = document.getElementById("formPaciente");
     const formData = new FormData(form);
     const id = formData.get("id");
     
+<<<<<<< HEAD
     // Convertir FormData a Objeto simple
     let datosForm = Object.fromEntries(formData.entries());
 
@@ -331,6 +460,22 @@ window.guardarDatos = async function () {
 
     // Asegurar que el estado y fechas vayan limpios
     datosForm.estado = parseInt(datosForm.activo) === 1 ? 'Activo' : 'Inactivo';
+=======
+    let datosForm = Object.fromEntries(formData.entries());
+
+    if (!datosForm.nombre || !datosForm.apellido || !datosForm.telefono) {
+        return Alerta.advertencia("Campos incompletos", "Por favor completa los campos obligatorios (*).");
+    }
+
+    datosForm.numero_expediente = datosForm.expediente;
+    delete datosForm.expediente;
+    datosForm.estado = parseInt(datosForm.activo) === 1 ? 'Activo' : 'Inactivo';
+    
+    // NUEVO: Transformar el estado del Checkbox a 1 o 0 para MySQL
+    datosForm.es_menor = form.es_menor_check.checked ? 1 : 0;
+    delete datosForm.es_menor_check; // Limpiamos la variable fantasma
+
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     if (!datosForm.fecha_nacimiento) delete datosForm.fecha_nacimiento;
 
     try {
@@ -339,6 +484,7 @@ window.guardarDatos = async function () {
         btnGuardar.disabled = true;
 
         if (id) {
+<<<<<<< HEAD
             // LÓGICA DE ACTUALIZAR (PUT)
             await API.put(`/api/pacientes/${id}`, datosForm);
             alert("Paciente actualizado correctamente");
@@ -346,22 +492,40 @@ window.guardarDatos = async function () {
             // LÓGICA DE CREAR NUEVO (POST)
             await API.post('/api/guardar-paciente', datosForm);
             alert("Paciente guardado correctamente");
+=======
+            await API.put(`/api/pacientes/${id}`, datosForm);
+            Alerta.exito("¡Actualizado!", "El expediente se actualizó correctamente.");
+        } else {
+            await API.post('/api/guardar-paciente', datosForm);
+            Alerta.exito("¡Guardado!", "El nuevo paciente ha sido registrado.");
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         }
 
         window.closeModal("modalPacientes");
         form.reset();
+<<<<<<< HEAD
         
         // Refrescar tabla
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         await cargarPacientesDesdeBD();
 
     } catch (error) {
         console.error("Error al guardar:", error);
+<<<<<<< HEAD
         alert("Error al guardar. Verifica la consola.");
+=======
+        Alerta.error("Error del servidor", "No se pudo guardar la información.");
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     } finally {
         const btnGuardar = document.getElementById("btnGuardar");
         btnGuardar.innerText = "Guardar";
         btnGuardar.disabled = false;
     }
+<<<<<<< HEAD
 
     
 };
+=======
+};
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f

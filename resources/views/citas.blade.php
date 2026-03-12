@@ -20,6 +20,10 @@
                 Nueva Cita
             </button>
 
+<<<<<<< HEAD
+=======
+            {{-- Botón corregido con url() de Laravel --}}
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             <button onclick="window.location.href='{{ url('/calendar') }}'" class="bg-blue-800 hover:bg-blue-900 text-white px-5 py-3 rounded-xl shadow-lg shadow-blue-900/20 font-semibold flex items-center gap-2 transition-all active:scale-95">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 Calendario
@@ -69,10 +73,17 @@
         </div>
         <select id="filtroEstado" class="px-4 py-3 bg-slate-50 rounded-xl text-slate-600 font-medium focus:ring-2 focus:ring-blue-800/20 outline-none cursor-pointer border-none min-w-[180px]">
             <option value="">Todos los estados</option>
+<<<<<<< HEAD
             <option value="Programada">Programada</option>
             <option value="Confirmada">Confirmada</option>
             <option value="Completada">Completada</option>
             <option value="Cancelada">Cancelada</option>
+=======
+            <option value="Confirmada">Confirmada</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Cancelada">Cancelada</option>
+            <option value="Completada">Completada</option>
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         </select>
     </div>
 
@@ -102,7 +113,14 @@
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Paciente *</label>
             <div class="relative">
                 <select name="paciente_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white" required>
+<<<<<<< HEAD
                     <option value="">Cargando pacientes...</option>
+=======
+                    <option value="">Seleccione un paciente...</option>
+                    <option value="1">María González</option>
+                    <option value="2">Carlos Martínez</option>
+                    <option value="3">Ana Rodríguez</option>
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
                 </select>
             </div>
         </div>
@@ -122,15 +140,26 @@
         </div>
 
         <div>
+<<<<<<< HEAD
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Doctor Asignado *</label>
             <select name="empleado_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500" required>
                 <option value="">Cargando doctores...</option>
+=======
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Doctor Asignado</label>
+            <select name="doctor" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500">
+                <option>Dr. General</option>
+                <option>Dra. Ortodoncista</option>
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             </select>
         </div>
         <div>
              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Estado</label>
              <select name="estado" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 bg-white outline-none focus:border-blue-500">
+<<<<<<< HEAD
                 <option value="Programada">Programada</option>
+=======
+                <option value="Pendiente">Pendiente</option>
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
                 <option value="Confirmada">Confirmada</option>
                 <option value="Completada">Completada</option>
                 <option value="Cancelada">Cancelada</option>
@@ -141,9 +170,12 @@
              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Notas Adicionales</label>
              <textarea name="notas" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 bg-yellow-50/50"></textarea>
         </div>
+<<<<<<< HEAD
         
         {{-- Quitamos los botones duplicados de aquí, usaremos los de modal_base mediante JS --}}
         <button type="submit" id="btnSubmitOculto" class="hidden"></button>
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
     </div>
 </form>
 
@@ -154,7 +186,11 @@
 @endphp
 @include('components.modal_base')
 
+<<<<<<< HEAD
 <script src="{{ asset('js/utils/api.js') }}"></script>
+=======
+{{-- Scripts corregidos con asset() y sin static/ --}}
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
 <script src="{{ asset('js/utils/reportes.js') }}"></script>
 <script src="{{ asset('js/CitasControlador.js') }}"></script>

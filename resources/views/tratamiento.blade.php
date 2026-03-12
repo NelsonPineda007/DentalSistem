@@ -165,12 +165,23 @@
     'modalTitle' => 'Nuevo Tratamiento', 
     'modalContent' => View::yieldContent('modal_tratamiento_content')
 ])
+<<<<<<< HEAD
 
 {{-- Scripts con Helper Asset de Laravel --}}
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
 <script src="{{ asset('js/utils/api.js') }}"></script> {{-- Cliente API Global --}}
 <script src="{{ asset('js/charts.js') }}"></script> 
 <script src="{{ asset('js/tratamientosControlador.js') }}"></script>
+=======
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 
+{{-- Scripts con Helper Asset de Laravel --}}
+<script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
+<script src="{{ asset('js/utils/api.js') }}"></script> {{-- Cliente API Global --}}
+<script src="{{ asset('js/charts.js') }}"></script> 
+<script src="{{ asset('js/tratamientosControlador.js') }}"></script>
+{{-- CDN de SweetAlert2 y Alertas --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/utils/alertas.js') }}"></script>
 </body>
 </html>

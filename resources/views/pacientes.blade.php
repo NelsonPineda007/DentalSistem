@@ -59,6 +59,10 @@
     </div>
 
     <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         {{-- Tab: Información Personal --}}
         <div id="tab-personal" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="md:col-span-2 grid grid-cols-2 gap-4">
@@ -74,10 +78,36 @@
                     </select>
                 </div>
             </div>
+
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombres *</label><input type="text" name="nombre" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Apellidos *</label><input type="text" name="apellido" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>
+<<<<<<< HEAD
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha Nacimiento</label><input type="date" name="fecha_nacimiento" max="{{ date('Y-m-d') }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 hover:border-blue-400 transition-colors cursor-pointer"></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Género</label><select name="genero" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500"><option>Masculino</option><option>Femenino</option><option>Otro</option></select></div>
+=======
+            
+            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">DUI</label><input type="text" name="DUI" placeholder="00000000-0" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
+            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha Nacimiento</label><input type="date" name="fecha_nacimiento" max="{{ date('Y-m-d') }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 hover:border-blue-400 transition-colors cursor-pointer"></div>
+            
+            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Género</label><select name="genero" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500"><option value="">Seleccionar...</option><option>Masculino</option><option>Femenino</option><option>Otro</option></select></div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Grupo Sanguíneo</label>
+                <select name="grupo_sanguineo" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500">
+                    <option value="">Desconocido</option><option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
+                </select>
+            </div>
+
+            <div class="md:col-span-2 flex flex-col md:flex-row gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 items-center">
+                <div class="flex items-center gap-3 w-full md:w-1/3">
+                    <input type="checkbox" id="es_menor_check" name="es_menor_check" class="w-5 h-5 text-blue-800 rounded border-slate-300 focus:ring-blue-800 cursor-pointer" onchange="document.querySelector('[name=responsable_legal]').disabled = !this.checked; if(!this.checked) document.querySelector('[name=responsable_legal]').value = '';">
+                    <label for="es_menor_check" class="text-sm font-bold text-slate-700 cursor-pointer">Es menor de edad</label>
+                </div>
+                <div class="w-full md:w-2/3">
+                    <input type="text" name="responsable_legal" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white disabled:bg-slate-100 disabled:text-slate-400 transition-colors" placeholder="Nombre del responsable legal (Padre/Madre/Tutor)" disabled>
+                </div>
+            </div>
+
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección Completa</label><textarea name="direccion" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500"></textarea></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Ciudad</label><input type="text" name="ciudad" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Código Postal</label><input type="text" name="codigo_postal" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
@@ -87,6 +117,18 @@
         <div id="tab-contacto" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono Móvil *</label><input type="tel" name="telefono" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label><input type="email" name="email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
+            
+            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Empresa / Institución</label><input type="text" name="empresa" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" placeholder="Ej: Universidad Francisco Gavidia"></div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Preferencia de Contacto</label>
+                <select name="preferencia_contacto" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500">
+                    <option value="">Cualquiera</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Llamada">Llamada telefónica</option>
+                    <option value="Correo">Correo Electrónico</option>
+                </select>
+            </div>
+
             <div class="md:col-span-2 pt-4 pb-2 border-t border-slate-100 mt-2"><h4 class="text-sm font-bold text-blue-800">Contacto de Emergencia</h4></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre Contacto</label><input type="text" name="contacto_emergencia_nombre" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono Emergencia</label><input type="tel" name="contacto_emergencia_telefono" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
@@ -94,7 +136,11 @@
 
         {{-- Tab: Ficha Médica --}}
         <div id="tab-medica" class="tab-content hidden space-y-4">
+<<<<<<< HEAD
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seguro Médico</label><input type="text" name="seguro_medico" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" placeholder="Nombre de la aseguradora"></div>
+=======
+            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seguro Médico</label><input type="text" name="seguro_medico" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" placeholder="Nombre de la aseguradora o póliza"></div>
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Alergias Conocidas</label><textarea name="alergias" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 placeholder:text-slate-300"></textarea></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Enfermedades Crónicas</label><textarea name="enfermedades_cronicas" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 placeholder:text-slate-300"></textarea></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Medicamentos Actuales</label><textarea name="medicamentos_actuales" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 placeholder:text-slate-300"></textarea></div>
@@ -116,6 +162,11 @@
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
 <script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/PacientesControlador.js') }}"></script>
+<<<<<<< HEAD
+=======
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/utils/alertas.js') }}"></script>
+>>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 
 </body>
 </html>
