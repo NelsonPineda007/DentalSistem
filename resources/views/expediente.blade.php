@@ -281,5 +281,53 @@
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
 <script src="{{ asset('js/expedienteControlador.js') }}"></script>
 
+{{-- MODAL SECUNDARIO: REGISTRAR ABONOS --}}
+@section('modal_abono_content')
+<form id="formAbono" class="flex flex-col gap-4">
+    <input type="hidden" name="factura_id" id="abono_factura_id">
+    
+    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <div class="flex justify-between items-center text-sm mb-2">
+            <span class="text-slate-500 font-bold uppercase">Factura:</span>
+            <span class="font-bold text-blue-800 px-2 py-1 bg-blue-100 rounded-md" id="abono_numero_factura">--</span>
+        </div>
+        <div class="flex justify-between text-sm mb-2 mt-4">
+            <span class="text-slate-500 font-medium">Total Original:</span>
+            <span class="font-bold text-slate-700">$<span id="abono_total">0.00</span></span>
+        </div>
+        <div class="flex justify-between text-lg border-t border-slate-200 pt-2 mt-2">
+            <span class="text-slate-800 font-bold">Saldo Actual:</span>
+            <span class="font-black text-rose-500">$<span id="abono_saldo_actual">0.00</span></span>
+        </div>
+    </div>
+
+    <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Método de Pago</label>
+        <select name="metodo_pago" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:border-emerald-500 font-medium text-slate-600">
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia">Transferencia Bancaria</option>
+            <option value="tarjeta_credito">Tarjeta de Crédito</option>
+            <option value="tarjeta_debito">Tarjeta de Débito</option>
+        </select>
+    </div>
+
+    <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Monto que paga hoy ($) *</label>
+        <input type="number" step="0.01" name="abono" id="input_nuevo_abono" class="w-full px-4 py-3 rounded-xl border-2 border-emerald-200 outline-none focus:border-emerald-500 font-black text-emerald-700 text-2xl bg-emerald-50/50 text-center" required oninput="calcularNuevoSaldo()" placeholder="0.00">
+    </div>
+
+    <div class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 shadow-sm mt-2">
+        <span class="font-bold text-slate-500 text-xs uppercase">El nuevo saldo quedará en:</span>
+        <span class="font-black text-blue-600 text-xl">$<span id="abono_nuevo_saldo">0.00</span></span>
+    </div>
+</form>
+@endsection
+
+@include('components.modal_base', [
+    'modalID' => 'modalAbono',
+    'modalTitle' => 'Registrar Abono',
+    'modalContent' => View::yieldContent('modal_abono_content')
+])
+
 </body>
 </html>

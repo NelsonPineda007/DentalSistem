@@ -6,9 +6,13 @@
 let pagosPaginador;
 let consultasPaginador;
 let consultasDB = [];
+let catalogoTratamientos = [];
+let tratamientosSeleccionados = [];
+let pagosDB = []; 
 
 document.addEventListener("DOMContentLoaded", () => {
     cargarDatosPacienteDesdeURL(); 
+    cargarCatalogoTratamientos(); // Carga los tratamientos para el buscador del modal
     configurarTabsExpediente();
     renderizarOdontogramaDiagnostico();
     renderizarOdontogramaOperatoria();
@@ -22,6 +26,26 @@ document.addEventListener("DOMContentLoaded", () => {
 // =========================================================================
 // 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL Y CARGA DE DATOS)
 // =========================================================================
+
+// Cargar Tratamientos Reales al abrir la página
+async function cargarCatalogoTratamientos() {
+    try {
+        catalogoTratamientos = await API.get('/api/obtener-tratamientos');
+    } catch (error) {
+        console.error("Error al cargar catálogo de tratamientos:", error);
+    }
+}
+
+// Cargar Historial de Facturas del Paciente
+async function cargarFacturasPaciente(idPaciente) {
+    try {
+        pagosDB = await API.get(`/api/expediente/${idPaciente}/facturas`);
+        if(pagosPaginador) pagosPaginador.setData(pagosDB);
+    } catch (error) {
+        console.error("Error al cargar facturas:", error);
+    }
+}
+
 async function cargarDatosPacienteDesdeURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const idPaciente = urlParams.get('id');
@@ -119,6 +143,11 @@ async function cargarDatosPacienteDesdeURL() {
         } catch (errorFicha) {
             console.error("Error al cargar el odontograma:", errorFicha);
         }
+
+        // ========================================================
+        // ¡ESTA ES LA LÍNEA MÁGICA QUE CARGA LAS FACTURAS EN LA TABLA!
+        // ========================================================
+        await cargarFacturasPaciente(idPaciente);
 
     } catch (error) {
         console.error("Error cargando paciente:", error);
@@ -366,24 +395,10 @@ function renderizarOdontogramaOperatoria() {
 }
 
 // =========================================================================
-// 4. LÓGICA DE FACTURACIÓN Y PAGOS (POS)
+// 4. LÓGICA DE FACTURACIÓN Y PAGOS (POS REAL)
 // =========================================================================
 
-// DATOS DE PRUEBA (Mientras conectamos con tu BD real de tratamientos)
-const catalogoTratamientos = [
-    { id: 1, codigo: "LMP-01", nombre: "Limpieza Profunda (Profilaxis)", precio: 35.00 },
-    { id: 2, codigo: "RST-01", nombre: "Resina Dental Simple", precio: 50.00 },
-    { id: 3, codigo: "RST-02", nombre: "Resina Dental Compuesta", precio: 65.00 },
-    { id: 4, codigo: "EXT-01", nombre: "Extracción Simple", precio: 45.00 },
-    { id: 5, codigo: "EXT-02", nombre: "Extracción Cordal (Cirugía)", precio: 120.00 },
-    { id: 6, codigo: "END-01", nombre: "Endodoncia Unirradicular", precio: 150.00 },
-    { id: 7, codigo: "ORT-01", nombre: "Control de Ortodoncia Mensual", precio: 40.00 }
-];
-
-let tratamientosSeleccionados = [];
-let pagosDB = []; 
-
-// FUNCIÓN 1: DIBUJA LOS TRATAMIENTOS AGREGADOS Y CALCULA EL SUBTOTAL
+// Dibujar Tratamientos en el Carrito
 function renderizarBadgesTratamientos() {
     const contenedor = document.getElementById('lista_tratamientos');
     if (!contenedor) return;
@@ -413,20 +428,15 @@ function renderizarBadgesTratamientos() {
         });
     }
 
-    // Actualizamos el subtotal en la pantalla
     const spanSubtotal = document.getElementById('resumen_subtotal');
     if(spanSubtotal) spanSubtotal.innerText = subtotal.toFixed(2);
-    
-    // Llamamos a la función que calcula el total y el saldo final
     calcularTotalesFactura();
 }
 
-// FUNCIÓN 2: HACE TODA LA MATEMÁTICA DE LA FACTURA EN TIEMPO REAL
 window.calcularTotalesFactura = function() {
     const spanSubtotal = document.getElementById('resumen_subtotal');
     const inputDescuento = document.getElementById('input_descuento');
     const spanTotal = document.getElementById('resumen_total');
-    const inputTotalOculto = document.getElementById('input_total_oculto');
     const inputAbono = document.getElementById('input_abono');
     const spanSaldo = document.getElementById('resumen_saldo');
 
@@ -435,42 +445,27 @@ window.calcularTotalesFactura = function() {
     let subtotal = parseFloat(spanSubtotal.innerText) || 0;
     let descuento = parseFloat(inputDescuento.value) || 0;
     
-    // El descuento no puede ser mayor al subtotal
-    if(descuento > subtotal) {
-        descuento = subtotal;
-        inputDescuento.value = descuento.toFixed(2);
-    }
+    if(descuento > subtotal) { descuento = subtotal; inputDescuento.value = descuento.toFixed(2); }
 
     let total = subtotal - descuento;
     spanTotal.innerText = total.toFixed(2);
-    inputTotalOculto.value = total.toFixed(2);
 
     let abono = parseFloat(inputAbono.value) || 0;
     let saldo = total - abono;
 
-    // Si abona más de la cuenta, lo ajustamos al total exacto
-    if(saldo < 0) {
-        saldo = 0;
-        inputAbono.value = total.toFixed(2);
-    }
+    if(saldo < 0) { saldo = 0; inputAbono.value = total.toFixed(2); }
 
     spanSaldo.innerText = saldo.toFixed(2);
     
-    // Cambiar el color del Saldo: Verde si está pagado, Rojo si debe
-    if(saldo === 0 && total > 0) {
-        spanSaldo.parentElement.classList.replace('text-rose-500', 'text-emerald-500');
-    } else {
-        spanSaldo.parentElement.classList.replace('text-emerald-500', 'text-rose-500');
-    }
+    if(saldo === 0 && total > 0) spanSaldo.parentElement.classList.replace('text-rose-500', 'text-emerald-500');
+    else spanSaldo.parentElement.classList.replace('text-emerald-500', 'text-rose-500');
 }
 
-// FUNCIÓN 3: ELIMINAR TRATAMIENTO DEL CARRITO
 window.removerTratamiento = function(index) {
     tratamientosSeleccionados.splice(index, 1);
     renderizarBadgesTratamientos();
 };
 
-// BUSCADOR EN VIVO DE TRATAMIENTOS
 const inputSearch = document.getElementById('tratamiento_search');
 const dropdown = document.getElementById('tratamiento_dropdown');
 
@@ -496,13 +491,11 @@ function renderizarResultadosBuscador(filtro = "") {
                 <div class="font-bold text-sm text-slate-700 group-hover:text-blue-800">${t.nombre}</div>
                 <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Código: ${t.codigo}</div>
             </div>
-            <div class="font-bold text-emerald-600 text-sm bg-emerald-50 px-2 py-1 rounded-lg">
-                $${t.precio.toFixed(2)}
-            </div>
+            <div class="font-bold text-emerald-600 text-sm bg-emerald-50 px-2 py-1 rounded-lg">$${parseFloat(t.costo_base).toFixed(2)}</div>
         `;
         
         item.addEventListener("click", () => {
-            tratamientosSeleccionados.push({ nombre: t.nombre, codigo: t.codigo, precio: t.precio });
+            tratamientosSeleccionados.push({ id: t.id, nombre: t.nombre, codigo: t.codigo, precio: parseFloat(t.costo_base) });
             renderizarBadgesTratamientos();
             inputSearch.value = ""; 
             dropdown.classList.add("hidden");
@@ -513,20 +506,10 @@ function renderizarResultadosBuscador(filtro = "") {
 }
 
 if(inputSearch) {
-    inputSearch.addEventListener("focus", () => {
-        renderizarResultadosBuscador(inputSearch.value);
-        dropdown.classList.remove("hidden");
-    });
-    inputSearch.addEventListener("input", (e) => {
-        renderizarResultadosBuscador(e.target.value);
-    });
-    document.addEventListener("click", (e) => {
-        if (!inputSearch.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.add("hidden");
-        }
-    });
+    inputSearch.addEventListener("focus", () => { renderizarResultadosBuscador(inputSearch.value); dropdown.classList.remove("hidden"); });
+    inputSearch.addEventListener("input", (e) => { renderizarResultadosBuscador(e.target.value); });
+    document.addEventListener("click", (e) => { if (!inputSearch.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.add("hidden"); });
 }
-
 function inicializarPaginadorPagos() {
     if (!document.getElementById("pagosTableContainer")) return;
     
@@ -535,39 +518,140 @@ function inicializarPaginadorPagos() {
         containerId: "pagosTableContainer",
         renderRow: (p) => {
             const saldoColor = p.saldo > 0 ? "text-rose-500 font-bold" : "text-slate-400 font-bold";
-            const estadoBadge = p.saldo > 0 
-                ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pendiente</span>` 
-                : `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pagado</span>`;
+            let estadoBadge = `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">${p.estado_pago}</span>`;
+            if (p.estado_pago === 'pagado') estadoBadge = `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pagado</span>`;
 
-            const numFactura = `FAC-${String(p.id).padStart(4, '0')}`;
+            // MAGIA: El botón de abonar solo se crea si el paciente debe dinero (saldo > 0)
+            const btnAbonar = p.saldo > 0 
+                ? `<button type="button" onclick="window.abrirModalEdicion(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-200" title="Registrar Abono">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                   </button>` 
+                : '';
 
             return `
                 <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors h-[75px]">
                     <td class="px-6 py-4 font-bold text-slate-600">${p.fecha}</td>
-                    <td class="px-6 py-4 font-mono text-xs text-blue-800 font-bold">${numFactura}</td>
+                    <td class="px-6 py-4 font-mono text-xs text-blue-800 font-bold">${p.numero}</td>
                     <td class="px-6 py-4">
-                        <div class="flex flex-col">
-                            <span class="font-bold text-slate-700 text-sm line-clamp-1">${p.tratamiento}</span>
-                            <span class="text-[10px] text-slate-400">Pieza: ${p.diente || 'General'}</span>
-                        </div>
+                        <span class="font-bold text-slate-700 text-sm line-clamp-1">${p.tratamiento}</span>
                     </td>
                     <td class="px-6 py-4 font-black text-slate-800">$${parseFloat(p.valor).toFixed(2)}</td>
                     <td class="px-6 py-4 ${saldoColor}">$${parseFloat(p.saldo).toFixed(2)}</td>
                     <td class="px-6 py-4">${estadoBadge}</td>
                     <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <button type="button" onclick="Alerta.info('Próximamente', 'Generador de Facturas en PDF en desarrollo.')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Imprimir Factura">
+                        <div class="flex gap-2">
+                            <button type="button" onclick="Alerta.info('Próximamente', 'Generador de PDF en la siguiente fase.')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Ver Factura">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                             </button>
-                            <button type="button" onclick="window.abrirModalEdicion(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100" title="Editar / Abonar">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                            </button>
+                            ${btnAbonar}
                         </div>
                     </td>
                 </tr>`;
         }
     });
 }
+
+// =========================================================================
+// 5. LÓGICA DE ABONOS (Cobro posterior)
+// =========================================================================
+
+// Esta función se ejecuta al darle al botón azul de "Editar / Abonar" en la tabla
+window.abrirModalEdicion = function(facturaId) {
+    const fac = pagosDB.find(f => f.id === facturaId);
+    if (!fac) return;
+
+    if (fac.saldo <= 0) {
+        return Alerta.info("Factura Pagada", "Esta factura ya no tiene saldo pendiente.");
+    }
+
+    // Llenamos el modal chiquito
+    document.getElementById('abono_factura_id').value = fac.id;
+    document.getElementById('abono_numero_factura').innerText = fac.numero;
+    document.getElementById('abono_total').innerText = parseFloat(fac.valor).toFixed(2);
+    document.getElementById('abono_saldo_actual').innerText = parseFloat(fac.saldo).toFixed(2);
+    document.getElementById('input_nuevo_abono').value = '';
+    document.getElementById('abono_nuevo_saldo').innerText = parseFloat(fac.saldo).toFixed(2);
+
+    window.openModal("modalAbono", "edit");
+};
+
+// Matemática en vivo para el modal de abono
+window.calcularNuevoSaldo = function() {
+    const saldo = parseFloat(document.getElementById('abono_saldo_actual').innerText) || 0;
+    let abono = parseFloat(document.getElementById('input_nuevo_abono').value) || 0;
+    
+    // Evitar que el cajero cobre más de lo que debe
+    if (abono > saldo) {
+        abono = saldo;
+        document.getElementById('input_nuevo_abono').value = abono.toFixed(2);
+    }
+    
+    document.getElementById('abono_nuevo_saldo').innerText = (saldo - abono).toFixed(2);
+};
+
+// BOTÓN GUARDAR INTELIGENTE (Detecta qué modal está abierto)
+window.guardarDatos = async function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idPaciente = urlParams.get('id');
+
+    // MODO A: ¿Está abierto el modal de Abono?
+    const modalAbono = document.getElementById("modalAbono");
+    if (modalAbono && !modalAbono.classList.contains('hidden')) {
+        const formAbono = document.getElementById("formAbono");
+        const formDataAbono = new FormData(formAbono);
+        const facturaId = formDataAbono.get("factura_id");
+        const abono = parseFloat(formDataAbono.get("abono"));
+
+        if (!abono || abono <= 0) return Alerta.advertencia("Monto inválido", "Ingresa cuánto dinero te entregó el paciente.");
+
+        try {
+            await API.post(`/api/expediente/facturas/${facturaId}/abonar`, {
+                abono: abono,
+                metodo_pago: formDataAbono.get("metodo_pago")
+            });
+            Alerta.exito("¡Dinero Recibido!", "El saldo de la factura se ha actualizado.");
+            window.closeModal("modalAbono");
+            await cargarFacturasPaciente(idPaciente); // Refrescar la tabla
+        } catch (error) {
+            console.error("Error al abonar:", error);
+            Alerta.error("Error", "No se pudo registrar el pago.");
+        }
+        return; // Detenemos aquí para que no siga con el código de abajo
+    }
+
+    // MODO B: Está abierto el modal grande de Nueva Factura
+    const form = document.getElementById("formVisita");
+    const formData = new FormData(form);
+
+    if (tratamientosSeleccionados.length === 0) {
+        return Alerta.advertencia("Carrito vacío", "Debes agregar al menos un tratamiento a la factura.");
+    }
+
+    const payload = {
+        fecha: formData.get("fecha"),
+        diente: formData.get("diente"),
+        tipo_factura: formData.get("tipo_factura"),
+        metodo_pago: formData.get("metodo_pago"),
+        abono: formData.get("abono"),
+        descuento: formData.get("descuento"),
+        observaciones_factura: formData.get("observaciones_factura"),
+        subtotal: document.getElementById('resumen_subtotal').innerText,
+        total: document.getElementById('resumen_total').innerText,
+        tratamientos: tratamientosSeleccionados
+    };
+
+    try {
+        await API.post(`/api/expediente/${idPaciente}/facturas`, payload);
+        Alerta.exito("¡Factura Generada!", "Se ha guardado la factura y registrado el cobro.");
+        
+        window.closeModal("modalVisita");
+        await cargarFacturasPaciente(idPaciente); 
+        
+    } catch (error) {
+        console.error("Error guardando factura:", error);
+        Alerta.error("Error de base de datos", "No se pudo generar la factura.");
+    }
+};
 
 window.openModal = function (modalID, mode = "add") {
     const modal = document.getElementById(modalID);
