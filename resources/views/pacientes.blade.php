@@ -59,10 +59,7 @@
     </div>
 
     <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-<<<<<<< HEAD
-=======
         
->>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
         {{-- Tab: Información Personal --}}
         <div id="tab-personal" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="md:col-span-2 grid grid-cols-2 gap-4">
@@ -81,10 +78,6 @@
 
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombres *</label><input type="text" name="nombre" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Apellidos *</label><input type="text" name="apellido" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>
-<<<<<<< HEAD
-            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha Nacimiento</label><input type="date" name="fecha_nacimiento" max="{{ date('Y-m-d') }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 hover:border-blue-400 transition-colors cursor-pointer"></div>
-            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Género</label><select name="genero" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500"><option>Masculino</option><option>Femenino</option><option>Otro</option></select></div>
-=======
             
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">DUI</label><input type="text" name="DUI" placeholder="00000000-0" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha Nacimiento</label><input type="date" name="fecha_nacimiento" max="{{ date('Y-m-d') }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 hover:border-blue-400 transition-colors cursor-pointer"></div>
@@ -107,7 +100,6 @@
                 </div>
             </div>
 
->>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección Completa</label><textarea name="direccion" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500"></textarea></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Ciudad</label><input type="text" name="ciudad" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Código Postal</label><input type="text" name="codigo_postal" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
@@ -136,11 +128,7 @@
 
         {{-- Tab: Ficha Médica --}}
         <div id="tab-medica" class="tab-content hidden space-y-4">
-<<<<<<< HEAD
-            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seguro Médico</label><input type="text" name="seguro_medico" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" placeholder="Nombre de la aseguradora"></div>
-=======
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seguro Médico</label><input type="text" name="seguro_medico" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" placeholder="Nombre de la aseguradora o póliza"></div>
->>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Alergias Conocidas</label><textarea name="alergias" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 placeholder:text-slate-300"></textarea></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Enfermedades Crónicas</label><textarea name="enfermedades_cronicas" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 placeholder:text-slate-300"></textarea></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Medicamentos Actuales</label><textarea name="medicamentos_actuales" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 placeholder:text-slate-300"></textarea></div>
@@ -162,11 +150,8 @@
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
 <script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/PacientesControlador.js') }}"></script>
-<<<<<<< HEAD
-=======
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('js/utils/alertas.js') }}"></script>
->>>>>>> 7952cb10a02b1a1aebb017ac176e4e58d9c1ea8f
 
 </body>
 </html>

@@ -1,60 +1,75 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PacienteController;
-use App\Http\Controllers\TratamientoController;
-use App\Http\Controllers\CitaController; 
-use App\Http\Controllers\ExpedienteController;
 
-// ==========================================
-// RUTAS DE VISTAS (NAVEGACIÓN)
-// ==========================================
+// Pantalla de Login
 Route::get('/', function () {
     return view('login');
 });
+
+// Dashboard Principal
 Route::get('/dashboard', function () {
     return view('dashboard');
 });
+
+// Gestión de Pacientes
 Route::get('/pacientes', function () {
     return view('pacientes');
 });
+
+// RUTAS DE CITAS
 Route::get('/citas', function () {
     return view('citas');
 });
+
 Route::get('/calendar', function () {
     return view('calendar');
 });
+
 Route::get('/expediente', function () {
-    return view('expediente'); 
+    return view('expediente'); // Carga resources/views/expediente.blade.php
 });
+
+// Gestión de Catálogo de Tratamientos
 Route::get('/tratamiento', function () {
     return view('tratamiento');
 });
+
+// Perfil del usuario
 Route::get('/perfil', function () {
     return view('perfil');
 });
 
-// ==========================================
-// API: PACIENTES
-// ==========================================
+//PACIENTES
+use App\Http\Controllers\PacienteController;
 Route::get('/api/obtener-pacientes', [PacienteController::class, 'obtenerTodos']);
 Route::get('/api/pacientes/{id}', [PacienteController::class, 'obtenerUno']);
+//guardar
 Route::post('/api/guardar-paciente', [PacienteController::class, 'guardar']);
+//actualizar
 Route::put('/api/pacientes/{id}', [PacienteController::class, 'actualizar']);
+//soft delete
 Route::delete('/api/pacientes/{id}', [PacienteController::class, 'eliminar']);
 
-// ==========================================
-// API: TRATAMIENTOS
-// ==========================================
+
+//TRATAMIENTOS
+use App\Http\Controllers\TratamientoController;
 Route::get('/api/categorias-tratamientos', [TratamientoController::class, 'obtenerCategorias']);
 Route::get('/api/obtener-tratamientos', [TratamientoController::class, 'obtenerTodos']);
 Route::post('/api/guardar-tratamiento', [TratamientoController::class, 'guardar']);
 Route::put('/api/tratamientos/{id}', [TratamientoController::class, 'actualizar']);
 Route::delete('/api/tratamientos/{id}', [TratamientoController::class, 'eliminar']);
 
+
+//EXPEDIENTE
+use App\Http\Controllers\ExpedienteController;
+Route::post('/api/expediente/{paciente_id}/guardar', [ExpedienteController::class, 'guardarFicha']);
+Route::get('/api/expediente/{paciente_id}', [ExpedienteController::class, 'obtenerFicha']); 
+
 // ==========================================
-// API: CITAS
+// CITAS
 // ==========================================
+use App\Http\Controllers\CitaController; 
 Route::get('/api/citas/datos-formulario', [CitaController::class, 'obtenerDatosFormulario']);
 Route::get('/api/citas', [CitaController::class, 'obtenerCitas']);
 Route::post('/api/citas', [CitaController::class, 'guardarCita']);
@@ -62,7 +77,10 @@ Route::put('/api/citas/{id}', [CitaController::class, 'actualizarCita']);
 Route::delete('/api/citas/{id}', [CitaController::class, 'eliminarCita']);
 
 // ==========================================
-// API: EXPEDIENTE
+// CALENDARIO
 // ==========================================
-Route::post('/api/expediente/{paciente_id}/guardar', [ExpedienteController::class, 'guardarFicha']);
-Route::get('/api/expediente/{paciente_id}', [ExpedienteController::class, 'obtenerFicha']);
+use App\Http\Controllers\CalendarioController; 
+Route::get('/api/calendario', [CalendarioController::class, 'obtenerEventos']);
+Route::post('/api/calendario', [CalendarioController::class, 'guardarEvento']);
+Route::put('/api/calendario/{id}', [CalendarioController::class, 'actualizarEvento']); 
+Route::delete('/api/calendario/{id}', [CalendarioController::class, 'eliminarEvento']);

@@ -26,7 +26,7 @@ class CitaController extends Controller
                 'citas.estado',
                 'citas.notas'
             )
-            ->where('citas.estado', '!=', 'Cancelada') // <--- Aquí hacemos que no se vean en el navegador
+            ->where('citas.estado', '!=', 'Cancelada')
             ->orderBy('citas.fecha_cita', 'desc')
             ->orderBy('citas.hora_inicio', 'desc')
             ->get();
@@ -79,7 +79,7 @@ class CitaController extends Controller
         return response()->json(['success' => true, 'mensaje' => 'Cita ocultada correctamente']);
     }
 
-    // 5. Llenar Selects del modal
+    // 5. Llenar Selects y Buscador del modal
     public function obtenerDatosFormulario()
     {
         $pacientes = DB::table('pacientes')->select('id', DB::raw("CONCAT(nombre, ' ', apellido) as nombre_completo"))->get();
@@ -87,4 +87,4 @@ class CitaController extends Controller
 
         return response()->json(['pacientes' => $pacientes, 'doctores' => $doctores]);
     }
-}   
+}

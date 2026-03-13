@@ -44,18 +44,6 @@
         <button class="tab-btn pb-3 text-sm font-medium text-slate-500 hover:text-blue-600 border-b-2 border-transparent transition-colors whitespace-nowrap" data-target="tab-historia">
             <i class="fas fa-notes-medical mr-2"></i>Historia de Consulta
         </button>
-        <button class="tab-btn pb-3 text-sm font-medium text-slate-500 hover:text-blue-600 border-b-2 border-transparent transition-colors whitespace-nowrap" data-target="tab-finanzas">
-            <i class="fas fa-file-invoice-dollar mr-2"></i>Tratamientos y Pagos
-        </button>
-    </div>
-
-    <div class="flex-1 flex flex-col gap-6" id="contenedor-impresion">
-
-        <div id="tab-odontograma" class="tab-content flex flex-col gap-8">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 overflow-x-auto">
-                <div class="flex justify-between items-center mb-6 min-w-[700px] border-b border-slate-100 pb-4">
-                    <h3 class="font-bold text-slate-800 text-lg uppercase tracking-wide">1. Diagnóstico Visual</h3>
-                    
         <button class="tab-btn pb-3 text-sm font-medium text-slate-500 hover:text-blue-600 border-b-2 border-transparent transition-colors whitespace-nowrap" data-target="tab-consultas">
             <i class="fas fa-history mr-2"></i>Consultas Previas
         </button>
@@ -77,15 +65,6 @@
                         <span class="flex items-center gap-1"><div class="w-3 h-3 bg-white border border-slate-300"></div> Sano</span>
                         <span class="flex items-center gap-1"><div class="w-3 h-3 bg-rose-500"></div> Caries</span>
                         <span class="flex items-center gap-1"><div class="w-3 h-3 bg-blue-500"></div> Restaurado</span>
-                        <span class="flex items-center gap-1">
-                            <svg class="w-4 h-4 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="4" y1="4" x2="20" y2="20"></line><line x1="20" y1="4" x2="4" y2="20"></line></svg> Ausente
-                        </span>
-                        <span class="flex items-center gap-1 text-rose-500">
-                            <svg class="w-4 h-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="4" y1="4" x2="20" y2="20"></line><line x1="20" y1="4" x2="4" y2="20"></line></svg> Extr. Indicada
-                        </span>
-                    </div>
-                </div>
-
                         <span class="flex items-center gap-1"><svg class="w-4 h-4 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="4" y1="4" x2="20" y2="20"></line><line x1="20" y1="4" x2="4" y2="20"></line></svg> Ausente</span>
                         <span class="flex items-center gap-1 text-rose-500"><svg class="w-4 h-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="4" y1="4" x2="20" y2="20"></line><line x1="20" y1="4" x2="4" y2="20"></line></svg> Extr. Indicada</span>
                     </div>
@@ -137,7 +116,6 @@
             </div>
         </div>
 
-        <div id="tab-historia" class="tab-content hidden h-full">
         {{-- TAB 2: HISTORIA DE CONSULTA --}}
         <div id="tab-historia" class="tab-content hidden h-full">
             <input type="hidden" id="hc_consulta_id" value="">
@@ -146,19 +124,6 @@
                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Síntomas Reportados</label><textarea id="hc_sintomas" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500"></textarea></div>
                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Examen Clínico / Observaciones</label><textarea id="hc_observaciones" rows="3" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500"></textarea></div>
                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Diagnóstico Presuntivo</label><textarea id="hc_diagnostico" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500"></textarea></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Prescripciones / Receta</label><textarea id="hc_prescripciones" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 bg-emerald-50/30"></textarea></div>
-            </div>
-        </div>
-
-        <div id="tab-finanzas" class="tab-content hidden flex-col h-full" data-html2canvas-ignore="true">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 flex-shrink-0">
-                <h3 class="font-bold text-slate-800 text-lg">Historial de Tratamientos y Pagos</h3>
-                <button onclick="window.openModal('modalVisita', 'add')" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/30 transition-all">
-                    + Registrar Nueva Visita
-                </button>
-            </div>
-            @php 
-                $tableColumns = ['Fecha', 'Tratamiento(s)', 'Valor', 'Abono', 'Saldo', 'Acciones'];
                 <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Prescripciones / Receta</label><textarea id="hc_prescripciones" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 bg-emerald-50/30"></textarea></div>                
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Próxima Cita Recomendada</label>
@@ -203,40 +168,6 @@
     </div>
 </main>
 
-{{-- MODAL PARA AGREGAR MULTIPLES TRATAMIENTOS --}}
-@section('modal_content')
-<form id="formVisita" class="flex flex-col gap-4">
-    <input type="hidden" name="id">
-    <div class="grid grid-cols-2 gap-4">
-        <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha *</label>
-            <input type="date" name="fecha" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required>
-        </div>
-        
-        <div class="relative">
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tratamiento(s) *</label>
-            <div class="relative">
-                <input type="text" id="tratamiento_search" autocomplete="off" placeholder="Buscar y agregar..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium text-slate-700">
-                <svg class="absolute right-3 top-2.5 w-5 h-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </div>
-            <div id="tratamiento_dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-y-auto custom-scrollbar divide-y divide-slate-100"></div>
-            
-            <div id="lista_tratamientos" class="flex flex-wrap gap-2 mt-3"></div>
-        </div>
-
-        <div class="col-span-2">
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Diente(s) Aplicado(s)</label>
-            <input type="text" id="input_dientes_modal" name="diente" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold text-blue-800 bg-blue-50/50" placeholder="Ej: 16, 45">
-            <p class="text-[10px] text-slate-400 mt-1">Se autocompleta basado en los dientes afectados de la Ficha Dental.</p>
-        </div>
-        
-        <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Valor Total ($) *</label>
-            <input type="number" step="0.01" name="valor" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold text-slate-800" required>
-        </div>
-        <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Abono Recibido ($) *</label>
-            <input type="number" step="0.01" name="abono" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-emerald-500 font-bold text-emerald-600" required>
 {{-- MODAL PARA AGREGAR FACTURA Y PAGOS (DISEÑO PROFESIONAL / POS) --}}
 @section('modal_content')
 <form id="formVisita" class="flex flex-col gap-6 h-full">
@@ -340,10 +271,6 @@
 
 @include('components.modal_base', [
     'modalID' => 'modalVisita',
-    'modalTitle' => 'Registrar Nueva Visita',
-    'modalContent' => View::yieldContent('modal_content')
-])
-
     'modalTitle' => 'Nueva Factura',
     'modalContent' => View::yieldContent('modal_content')
 ])

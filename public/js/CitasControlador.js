@@ -2,6 +2,7 @@
 
 let citasDB = []; 
 let miPaginadorCitas; 
+let pacientesGlobal = []; 
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof PaginadorTabla === 'undefined') {
@@ -11,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cargarCitasDesdeBD();
     configurarFiltros();
+    configurarBuscadorPacientes();
 });
 
 // 1. Cargar las citas a la tabla
@@ -26,9 +28,8 @@ async function cargarCitasDesdeBD() {
     }
 }
 
-// 2. Llenar los Selects de Pacientes y Doctores
+// 2. Llenar los Selects de Doctores y Memoria de Pacientes
 async function cargarDatosFormulario() {
-    const selectPaciente = document.querySelector('select[name="paciente_id"]');
     const selectDoctor = document.querySelector('select[name="empleado_id"]');
 
     try {
@@ -37,11 +38,9 @@ async function cargarDatosFormulario() {
 
         const datos = await respuesta.json();
 
-        if(selectPaciente) {
-            selectPaciente.innerHTML = '<option value="">Seleccione un paciente...</option>';
-            datos.pacientes.forEach(p => {
-                selectPaciente.innerHTML += `<option value="${p.id}">${p.nombre_completo}</option>`;
-            });
+        // Guardamos los pacientes en la variable global para el buscador
+        if(datos.pacientes) {
+            pacientesGlobal = datos.pacientes;
         }
 
         if(selectDoctor) {
@@ -55,43 +54,87 @@ async function cargarDatosFormulario() {
     }
 }
 
-// 3. Procesar el botón Guardar (Conectado directamente al modal_base)
+// 3. Lógica del buscador de pacientes en el modal
+function configurarBuscadorPacientes() {
+    const inputBuscador = document.getElementById('buscador_paciente');
+    const dropdown = document.getElementById('dropdown_pacientes');
+    const inputOcultoId = document.getElementById('paciente_id');
+
+    if(!inputBuscador) return;
+
+    inputBuscador.addEventListener('input', function() {
+        const termino = this.value.toLowerCase();
+        dropdown.innerHTML = '';
+
+        if (termino.length < 1) {
+            dropdown.classList.add('hidden');
+            inputOcultoId.value = ''; 
+            return;
+        }
+
+        const filtrados = pacientesGlobal.filter(p => p.nombre_completo.toLowerCase().includes(termino));
+
+        if (filtrados.length === 0) {
+            dropdown.innerHTML = `<div class="px-4 py-3 text-sm text-slate-500 italic">No se encontraron pacientes</div>`;
+        } else {
+            filtrados.forEach(p => {
+                const item = document.createElement('div');
+                item.className = "px-4 py-2.5 cursor-pointer hover:bg-blue-50 text-sm text-slate-700 font-medium transition-colors border-b border-slate-50 last:border-0";
+                item.textContent = p.nombre_completo;
+                
+                item.onclick = () => {
+                    inputBuscador.value = p.nombre_completo;
+                    inputOcultoId.value = p.id;
+                    dropdown.classList.add('hidden');
+                };
+                dropdown.appendChild(item);
+            });
+        }
+        dropdown.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!inputBuscador.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
+// 4. Procesar el botón Guardar usando las alertas
 window.guardarDatos = async function() {
     const form = document.getElementById('formCita');
+    const pacienteSeleccionado = document.getElementById('paciente_id').value;
     
-    // 1. Verificar que los campos con * estén llenos
-    if (!form.checkValidity()) {
-        form.reportValidity(); // Muestra las alertas rojas del navegador
+    if (!form.checkValidity() || pacienteSeleccionado === '') {
+        form.reportValidity(); 
+        Alerta.advertencia('Campos incompletos', 'Por favor completa los campos obligatorios (*) y selecciona un paciente de la lista.');
         return;
     }
 
-    // 2. Extraer todos los datos
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
     try {
         let response;
-        
-        // 3. Si hay un ID, editamos. Si no, creamos.
         if (data.id && data.id !== '') {
             response = await window.API.put('/api/citas/' + data.id, data);
         } else {
             response = await window.API.post('/api/citas', data);
         }
         
-        // 4. Si todo salió bien, cerramos el modal y recargamos la tabla
         if (response && response.success) {
             window.closeModal('modalCitas');
+            Alerta.exito('¡Éxito!', response.mensaje || 'La cita fue guardada correctamente.');
             cargarCitasDesdeBD(); 
         }
 
     } catch (error) {
         console.error("Error al guardar los datos:", error);
-        alert("Hubo un error al guardar. Revisa la consola.");
+        Alerta.error('Error del servidor', 'Hubo un problema al guardar la cita.');
     }
 };
 
-// 4. Actualizar Estadísticas
+// 5. Actualizar Estadísticas
 function actualizarEstadisticas() {
     const hoy = new Date().toISOString().split('T')[0];
     
@@ -111,7 +154,7 @@ function actualizarEstadisticas() {
     document.getElementById('statPendientes').innerText = countPendientes;
 }
 
-// 5. Armar la tabla
+// 6. Armar la tabla
 function inicializarPaginador() {
     miPaginadorCitas = new PaginadorTabla(citasDB, 6, {
         tableBodyId: 'citasTableBody',
@@ -138,32 +181,26 @@ function inicializarPaginador() {
                             <span class="text-xs text-slate-400 font-medium">${horaMin} hrs</span>
                         </div>
                     </td>
-                    
                     <td class="px-6 py-4">
                         <span class="font-bold text-blue-800 text-sm block">${c.paciente}</span>
                     </td>
-                    
                     <td class="px-6 py-4 text-sm text-slate-600 font-medium">${c.motivo || 'Sin motivo'}</td>
-                    
                     <td class="px-6 py-4 text-sm text-slate-500 text-xs">
                         <div class="flex items-center gap-1.5">
                             <div class="w-2 h-2 rounded-full bg-indigo-400"></div>
                             ${c.doctor || 'No asignado'}
                         </div>
                     </td>
-                    
                     <td class="px-6 py-4">
                         <span class="${estadoClass} border text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide inline-block min-w-[90px] text-center shadow-sm">
                             ${c.estado}
                         </span>
                     </td>
-                    
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
                             <button onclick="window.abrirModalEdicion(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all shadow-sm border border-emerald-100" title="Editar">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                             </button>
-                            
                             <button onclick="window.eliminarCita(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-slate-200" title="Eliminar/Cancelar">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                             </button>
@@ -172,7 +209,6 @@ function inicializarPaginador() {
                 </tr>
             `;
         },
-        
         updateInfo: (start, end, total) => {
             const info = document.getElementById('paginationInfo');
             if(info) info.innerHTML = `Mostrando <span class="font-bold text-slate-900">${start}-${end}</span> de <span class="font-bold text-slate-900">${total}</span> citas`;
@@ -208,13 +244,12 @@ function filtrarDatos() {
     miPaginadorCitas.setData(filtrados);
 }
 
-// 6. Funciones del Modal
+// 7. Funciones del Modal
 window.openModal = async function(modalID, mode = 'add') {
     const modal = document.getElementById(modalID);
     const title = document.getElementById('modalTitle');
     const form = document.getElementById('formCita');
     
-    // Esperamos a que se carguen los doctores y pacientes
     await cargarDatosFormulario();
 
     if(mode === 'add') {
@@ -222,6 +257,8 @@ window.openModal = async function(modalID, mode = 'add') {
         form.reset();
         form.id.value = '';
         form.fecha.value = new Date().toISOString().split('T')[0];
+        document.getElementById('buscador_paciente').value = ''; 
+        document.getElementById('paciente_id').value = ''; 
     } else {
         title.innerText = 'Editar Cita';
     }
@@ -246,36 +283,43 @@ window.closeModal = function(modalID) {
     }, 300);
 };
 
-// 7. Botón Lapicito
+// 8. Botón Lapicito
 window.abrirModalEdicion = async function(id) {
     const c = citasDB.find(x => x.id == id);
     if(!c) return;
 
-    // Abrimos el modal primero para asegurar que los selects estén listos
     await window.openModal('modalCitas', 'edit');
 
     const form = document.getElementById('formCita');
     form.id.value = c.id;
-    form.paciente_id.value = c.paciente_id;
     form.empleado_id.value = c.empleado_id;
     form.fecha.value = c.fecha;
     form.hora.value = c.hora;
     form.motivo.value = c.motivo;
     form.estado.value = c.estado;
     form.notas.value = c.notas || '';
+    
+    form.paciente_id.value = c.paciente_id;
+    document.getElementById('buscador_paciente').value = c.paciente || ''; 
 };
 
-// 8. Botón Basura (Soft Delete)
+// 9. Botón Basura con Alertas personalizadas
 window.eliminarCita = async function(id) {
-    if(confirm('¿Desea cancelar y ocultar esta cita de la programación?')) {
+    const confirmado = await Alerta.eliminar(
+        '¿Cancelar Cita?', 
+        'Esta cita desaparecerá de la lista activa.'
+    );
+
+    if(confirmado) {
         try {
             const response = await window.API.delete('/api/citas/' + id);
             if(response && response.success) {
+                Alerta.exito('¡Cancelada!', 'La cita ha sido ocultada exitosamente.');
                 cargarCitasDesdeBD(); 
             }
         } catch (error) {
             console.error("Error al eliminar:", error);
-            alert("Hubo un error al intentar eliminar la cita.");
+            Alerta.error('Hubo un problema', 'No se pudo cancelar la cita.');
         }
     }
 };

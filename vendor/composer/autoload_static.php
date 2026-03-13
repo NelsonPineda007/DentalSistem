@@ -533,9 +533,12 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
     public static $classMap = array (
         'App\\Http\\Controllers\\CitaController' => __DIR__ . '/../..' . '/app/Http/Controllers/CitaController.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
+        'App\\Http\\Controllers\\ExpedienteController' => __DIR__ . '/../..' . '/app/Http/Controllers/ExpedienteController.php',
         'App\\Http\\Controllers\\PacienteController' => __DIR__ . '/../..' . '/app/Http/Controllers/PacienteController.php',
         'App\\Http\\Controllers\\TratamientoController' => __DIR__ . '/../..' . '/app/Http/Controllers/TratamientoController.php',
         'App\\Models\\CategoriaTratamiento' => __DIR__ . '/../..' . '/app/Models/CategoriaTratamiento.php',
+        'App\\Models\\Consulta' => __DIR__ . '/../..' . '/app/Models/Consulta.php',
+        'App\\Models\\Odontograma' => __DIR__ . '/../..' . '/app/Models/Odontograma.php',
         'App\\Models\\Paciente' => __DIR__ . '/../..' . '/app/Models/Paciente.php',
         'App\\Models\\Tratamiento' => __DIR__ . '/../..' . '/app/Models/Tratamiento.php',
         'App\\Models\\User' => __DIR__ . '/../..' . '/app/Models/User.php',
