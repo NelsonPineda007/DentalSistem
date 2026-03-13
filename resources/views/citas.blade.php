@@ -19,12 +19,6 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Nueva Cita
             </button>
-
-            {{-- Botón corregido con url() de Laravel --}}
-            <button onclick="window.location.href='{{ url('/calendar') }}'" class="bg-blue-800 hover:bg-blue-900 text-white px-5 py-3 rounded-xl shadow-lg shadow-blue-900/20 font-semibold flex items-center gap-2 transition-all active:scale-95">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                Calendario
-            </button>
         </div>
     </div>
 
@@ -70,10 +64,11 @@
         </div>
         <select id="filtroEstado" class="px-4 py-3 bg-slate-50 rounded-xl text-slate-600 font-medium focus:ring-2 focus:ring-blue-800/20 outline-none cursor-pointer border-none min-w-[180px]">
             <option value="">Todos los estados</option>
+            <option value="Programada">Programada</option>
             <option value="Confirmada">Confirmada</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="Cancelada">Cancelada</option>
             <option value="Completada">Completada</option>
+            <option value="Cancelada">Cancelada</option>
+            <option value="Pendiente">Pendiente</option>
         </select>
     </div>
 
@@ -99,15 +94,12 @@
 
     <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-4">
         
-        <div class="md:col-span-2">
+        <div class="md:col-span-2 relative">
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Paciente *</label>
-            <div class="relative">
-                <select name="paciente_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white" required>
-                    <option value="">Seleccione un paciente...</option>
-                    <option value="1">María González</option>
-                    <option value="2">Carlos Martínez</option>
-                    <option value="3">Ana Rodríguez</option>
-                </select>
+            <input type="hidden" name="paciente_id" id="paciente_id" required>
+            <input type="text" id="buscador_paciente" placeholder="Escribe el nombre del paciente..." autocomplete="off" 
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white transition-colors">
+            <div id="dropdown_pacientes" class="absolute z-20 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 hidden max-h-48 overflow-y-auto">
             </div>
         </div>
 
@@ -126,18 +118,20 @@
         </div>
 
         <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Doctor Asignado</label>
-            <select name="doctor" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500">
-                <option>Dr. General</option>
-                <option>Dra. Ortodoncista</option>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Doctor Asignado *</label>
+            <select name="empleado_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500" required>
+                <option value="">Cargando doctores...</option>
             </select>
         </div>
-        <div>
+
+<div>
              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Estado</label>
              <select name="estado" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 bg-white outline-none focus:border-blue-500">
-                <option value="Pendiente">Pendiente</option>
+                <option value="Programada">Programada</option>
                 <option value="Confirmada">Confirmada</option>
+                <option value="En progreso">En progreso</option>
                 <option value="Completada">Completada</option>
+                <option value="No presentado">No presentado</option>
                 <option value="Cancelada">Cancelada</option>
             </select>
         </div>
@@ -146,6 +140,8 @@
              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Notas Adicionales</label>
              <textarea name="notas" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 bg-yellow-50/50"></textarea>
         </div>
+        
+        <button type="submit" id="btnSubmitOculto" class="hidden"></button>
     </div>
 </form>
 
@@ -156,7 +152,9 @@
 @endphp
 @include('components.modal_base')
 
-{{-- Scripts corregidos con asset() y sin static/ --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/utils/alertas.js') }}"></script>
+<script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
 <script src="{{ asset('js/utils/reportes.js') }}"></script>
 <script src="{{ asset('js/CitasControlador.js') }}"></script>

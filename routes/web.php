@@ -66,3 +66,21 @@ use App\Http\Controllers\ExpedienteController;
 Route::post('/api/expediente/{paciente_id}/guardar', [ExpedienteController::class, 'guardarFicha']);
 Route::get('/api/expediente/{paciente_id}', [ExpedienteController::class, 'obtenerFicha']); 
 
+// ==========================================
+// CITAS
+// ==========================================
+use App\Http\Controllers\CitaController; 
+Route::get('/api/citas/datos-formulario', [CitaController::class, 'obtenerDatosFormulario']);
+Route::get('/api/citas', [CitaController::class, 'obtenerCitas']);
+Route::post('/api/citas', [CitaController::class, 'guardarCita']);
+Route::put('/api/citas/{id}', [CitaController::class, 'actualizarCita']); 
+Route::delete('/api/citas/{id}', [CitaController::class, 'eliminarCita']);
+
+// ==========================================
+// CALENDARIO
+// ==========================================
+use App\Http\Controllers\CalendarioController; 
+Route::get('/api/calendario', [CalendarioController::class, 'obtenerEventos']);
+Route::post('/api/calendario', [CalendarioController::class, 'guardarEvento']);
+Route::put('/api/calendario/{id}', [CalendarioController::class, 'actualizarEvento']); 
+Route::delete('/api/calendario/{id}', [CalendarioController::class, 'eliminarEvento']);
