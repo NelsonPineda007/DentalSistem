@@ -183,7 +183,10 @@ class ExpedienteController extends Controller
                 }
             }
 
+            // 6. Guardar Items y Tratamientos Aplicados
             foreach ($request->tratamientos as $tratamiento) {
+                
+                // A) Guardar en el Expediente Clínico (AQUÍ SÍ GUARDAMOS TODOS LOS DIENTES AFECTADOS)
                 $tratAplicado = \App\Models\TratamientoAplicado::create([
                     'consulta_id' => $consulta->id, 
                     'tratamiento_id' => $tratamiento['id'] ?? 1,
@@ -192,10 +195,11 @@ class ExpedienteController extends Controller
                     'notas' => 'Agregado desde facturación'
                 ]);
 
+                // B) Guardar en el Ticket/Factura (AQUÍ PONEMOS EL NOMBRE COMPLETAMENTE LIMPIO)
                 \App\Models\FacturaItem::create([
                     'factura_id' => $factura->id,
                     'tipo_item' => 'tratamiento',
-                    'descripcion' => $tratamiento['nombre'] . ' (Diente: ' . ($request->diente ?? 'General') . ')',
+                    'descripcion' => $tratamiento['nombre'], // <-- MAGIA: Solo dirá "Limpieza Dental"
                     'cantidad' => 1,
                     'precio_unitario' => $tratamiento['precio'],
                     'total_item' => $tratamiento['precio'],
@@ -292,6 +296,50 @@ class ExpedienteController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
+        }
+    }
+
+    // =========================================================
+    // 6. GENERAR PDF DE LA FACTURA
+    // =========================================================
+    public function imprimirFactura($factura_id)
+    {
+        try {
+            // Recolectamos toda la información manualmente para no fallar
+            $factura = \App\Models\Factura::findOrFail($factura_id);
+            $paciente = \App\Models\Paciente::findOrFail($factura->paciente_id);
+            $items = \App\Models\FacturaItem::where('factura_id', $factura->id)->get();
+            $pagos = \App\Models\Pago::where('factura_id', $factura->id)->orderBy('fecha_pago', 'asc')->get();
+
+            // Calculamos cuánto se ha pagado en total
+            $total_pagado = $pagos->sum('monto');
+
+            // Preparamos el paquete de datos para la vista
+            $data = [
+                'factura' => $factura,
+                'paciente' => $paciente,
+                'items' => $items,
+                'pagos' => $pagos,
+                'total_pagado' => $total_pagado,
+                'clinica' => [
+                    'nombre' => 'DentalSistem Clínica Odontológica',
+                    'telefono' => '+503 2222-3333',
+                    'email' => 'contacto@dentalsistem.com',
+                    'direccion' => 'San Salvador, El Salvador'
+                ]
+            ];
+
+            // Generamos el PDF
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.factura', $data);
+            
+            // Opcional: Configurar tamaño de papel (Ticket o Carta). Usaremos Carta (A4)
+            $pdf->setPaper('A4', 'portrait');
+
+            // stream() abre el PDF en el navegador. download() lo descarga directo.
+            return $pdf->stream('Factura_' . $factura->numero . '.pdf');
+
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }
