@@ -88,12 +88,6 @@ class ExpedienteController extends Controller
         try {
             $facturas = \App\Models\Factura::where('paciente_id', $paciente_id)->orderBy('fecha_emision', 'desc')->get();
             
-<<<<<<< HEAD
-<<<<<<< HEAD
-        } catch (\Exception $e) {
-=======
-=======
->>>>>>> fa1c0af (Se arreglo facturación)
             $datosFormateados = $facturas->map(function($f) {
                 return [
                     'id' => $f->id,
@@ -189,14 +183,10 @@ class ExpedienteController extends Controller
                 }
             }
 
-<<<<<<< HEAD
             // 6. Guardar Items y Tratamientos Aplicados
             foreach ($request->tratamientos as $tratamiento) {
                 
                 // A) Guardar en el Expediente Clínico (AQUÍ SÍ GUARDAMOS TODOS LOS DIENTES AFECTADOS)
-=======
-            foreach ($request->tratamientos as $tratamiento) {
->>>>>>> fa1c0af (Se arreglo facturación)
                 $tratAplicado = \App\Models\TratamientoAplicado::create([
                     'consulta_id' => $consulta->id, 
                     'tratamiento_id' => $tratamiento['id'] ?? 1,
@@ -205,18 +195,11 @@ class ExpedienteController extends Controller
                     'notas' => 'Agregado desde facturación'
                 ]);
 
-<<<<<<< HEAD
                 // B) Guardar en el Ticket/Factura (AQUÍ PONEMOS EL NOMBRE COMPLETAMENTE LIMPIO)
                 \App\Models\FacturaItem::create([
                     'factura_id' => $factura->id,
                     'tipo_item' => 'tratamiento',
                     'descripcion' => $tratamiento['nombre'], // <-- MAGIA: Solo dirá "Limpieza Dental"
-=======
-                \App\Models\FacturaItem::create([
-                    'factura_id' => $factura->id,
-                    'tipo_item' => 'tratamiento',
-                    'descripcion' => $tratamiento['nombre'] . ' (Diente: ' . ($request->diente ?? 'General') . ')',
->>>>>>> fa1c0af (Se arreglo facturación)
                     'cantidad' => 1,
                     'precio_unitario' => $tratamiento['precio'],
                     'total_item' => $tratamiento['precio'],
@@ -243,13 +226,11 @@ class ExpedienteController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack(); 
-<<<<<<< HEAD
-=======
             return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
         }
     }
 
-// =========================================================
+    // =========================================================
     // 5. REGISTRAR UN NUEVO ABONO A UNA FACTURA EXISTENTE
     // =========================================================
     public function abonarFactura(Request $request, $factura_id)
@@ -314,77 +295,6 @@ class ExpedienteController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
->>>>>>> fa1c0af (Se arreglo facturación)
-            return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
-        }
-    }
-
-// =========================================================
-    // 5. REGISTRAR UN NUEVO ABONO A UNA FACTURA EXISTENTE
-    // =========================================================
-    public function abonarFactura(Request $request, $factura_id)
-    {
-        try {
-            DB::beginTransaction();
-            
-            // APAGAMOS LAS RESTRICCIONES PARA QUE NO BUSQUE AL EMPLEADO 1
-            Schema::disableForeignKeyConstraints();
-            
-            $factura = \App\Models\Factura::findOrFail($factura_id);
-            $abono = (float) $request->abono;
-
-            if ($abono <= 0 || $abono > $factura->saldo_pendiente) {
-                return response()->json(['error_real' => 'Monto de abono inválido'], 400);
-            }
-
-            // 1. Actualizar el saldo de la Factura
-            $factura->saldo_pendiente -= $abono;
-            $factura->estado_pago = ($factura->saldo_pendiente <= 0) ? 'pagado' : 'parcial';
-            $factura->save();
-
-            // 2. Actualizar la Cuota (si era crédito)
-            $cuota = \App\Models\FacturaCuota::where('factura_id', $factura->id)->where('estado', '!=', 'pagado_completo')->first();
-            if ($cuota) {
-                $cuota->monto_abonado += $abono;
-                $nuevo_saldo_cuota = $cuota->monto_programado - $cuota->monto_abonado;
-                
-                $cuota->estado = ($nuevo_saldo_cuota <= 0) ? 'pagado_completo' : 'pagado_parcial';
-                if ($nuevo_saldo_cuota <= 0) {
-                    $cuota->fecha_pago = now();
-                }
-                $cuota->save();
-            }
-
-            // 3. Crear el recibo en la tabla Pagos
-            \App\Models\Pago::create([
-                'factura_id' => $factura->id,
-                'cuota_id' => $cuota ? $cuota->id : null,
-                'empleado_id' => 1, // Esto daba error, pero ya apagamos la restricción
-                'monto' => $abono,
-                'metodo_pago' => $request->metodo_pago,
-                'estado' => 'confirmado',
-                'nota' => 'Abono posterior a la emisión'
-            ]);
-
-            // 4. Dejar rastro en el Historial
-            \App\Models\FacturaEstadoHistorial::create([
-                'factura_id' => $factura->id,
-                'tipo_cambio' => 'estado_pago',
-                'valor_nuevo' => $factura->estado_pago,
-                'cambiado_por' => 1,
-                'motivo' => 'Registro de nuevo abono',
-                'ip_address' => $request->ip()
-            ]);
-
-            // ENCENDEMOS LAS RESTRICCIONES DE NUEVO
-            Schema::enableForeignKeyConstraints();
-            DB::commit();
-            
-            return response()->json(['mensaje' => 'Abono registrado correctamente']);
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
->>>>>>> 9b1c555 (Se agrego la opción de generar factura)
             return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
         }
     }
