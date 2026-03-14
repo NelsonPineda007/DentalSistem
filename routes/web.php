@@ -65,6 +65,19 @@ Route::delete('/api/tratamientos/{id}', [TratamientoController::class, 'eliminar
 use App\Http\Controllers\ExpedienteController;
 Route::post('/api/expediente/{paciente_id}/guardar', [ExpedienteController::class, 'guardarFicha']);
 Route::get('/api/expediente/{paciente_id}', [ExpedienteController::class, 'obtenerFicha']); 
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+Route::get('/api/expediente/{paciente_id}/facturas', [\App\Http\Controllers\ExpedienteController::class, 'obtenerFacturas']);
+Route::post('/api/expediente/{paciente_id}/facturas', [\App\Http\Controllers\ExpedienteController::class, 'guardarFactura']);
+Route::post('/api/expediente/facturas/{factura_id}/abonar', [\App\Http\Controllers\ExpedienteController::class, 'abonarFactura']);
+Route::get('/api/expediente/facturas/{factura_id}/pdf', [\App\Http\Controllers\ExpedienteController::class, 'imprimirFactura']);
+>>>>>>> 9b1c555 (Se agrego la opción de generar factura)
+=======
+Route::get('/api/expediente/{paciente_id}/facturas', [\App\Http\Controllers\ExpedienteController::class, 'obtenerFacturas']);
+Route::post('/api/expediente/{paciente_id}/facturas', [\App\Http\Controllers\ExpedienteController::class, 'guardarFactura']);
+Route::post('/api/expediente/facturas/{factura_id}/abonar', [\App\Http\Controllers\ExpedienteController::class, 'abonarFactura']);
+>>>>>>> fa1c0af (Se arreglo facturación)
 
 // ==========================================
 // CITAS
