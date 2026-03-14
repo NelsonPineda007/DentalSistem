@@ -9,10 +9,11 @@ let consultasDB = [];
 let catalogoTratamientos = [];
 let tratamientosSeleccionados = [];
 let pagosDB = []; 
+let citaActivaId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     cargarDatosPacienteDesdeURL(); 
-    cargarCatalogoTratamientos(); // Carga los tratamientos para el buscador del modal
+    cargarCatalogoTratamientos(); 
     configurarTabsExpediente();
     renderizarOdontogramaDiagnostico();
     renderizarOdontogramaOperatoria();
@@ -27,7 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
 // 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL Y CARGA DE DATOS)
 // =========================================================================
 
-// Cargar Tratamientos Reales al abrir la página
 async function cargarCatalogoTratamientos() {
     try {
         catalogoTratamientos = await API.get('/api/obtener-tratamientos');
@@ -36,7 +36,6 @@ async function cargarCatalogoTratamientos() {
     }
 }
 
-// Cargar Historial de Facturas del Paciente
 async function cargarFacturasPaciente(idPaciente) {
     try {
         pagosDB = await API.get(`/api/expediente/${idPaciente}/facturas`);
@@ -144,10 +143,9 @@ async function cargarDatosPacienteDesdeURL() {
             console.error("Error al cargar el odontograma:", errorFicha);
         }
 
-        // ========================================================
-        // ¡ESTA ES LA LÍNEA MÁGICA QUE CARGA LAS FACTURAS EN LA TABLA!
-        // ========================================================
         await cargarFacturasPaciente(idPaciente);
+        await detectarCitaDeHoy(idPaciente);
+
 
     } catch (error) {
         console.error("Error cargando paciente:", error);
@@ -155,6 +153,74 @@ async function cargarDatosPacienteDesdeURL() {
     }
 }
 
+
+async function detectarCitaDeHoy(idPaciente) {
+    try {
+        const citas = await API.get(`/api/pacientes/${idPaciente}/citas`);
+
+        citas.sort((a, b) => b.id - a.id);
+        
+        const fechaLocal = new Date();
+        fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
+        const hoy = fechaLocal.toISOString().split('T')[0]; 
+
+        // Separar las citas que no se han tocado y las que ya están vinculadas
+        const citaPendiente = citas.find(c => c.fecha_cita === hoy && (c.estado === 'Programada' || c.estado === 'Confirmada'));
+        const citaEnProgreso = citas.find(c => c.fecha_cita === hoy && c.estado === 'En progreso');
+
+        if (citaPendiente) {
+            const resp = await Swal.fire({
+                title: '¡Cita detectada!',
+                html: `Este paciente tiene una cita hoy a las <b>${citaPendiente.hora_inicio}</b>.<br><br><b>Motivo:</b> <i>${citaPendiente.motivo_consulta}</i><br><br>¿Deseas vincular tu consulta de hoy y la factura a esta cita?`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#1e3a8a',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, vincular cita',
+                cancelButtonText: 'No, hacer consulta libre'
+            });
+
+            if (resp.isConfirmed) {
+                try {
+                    const respuestaBackend = await API.post(`/citas/${citaPendiente.id}/iniciar-consulta`, {});
+                    citaActivaId = citaPendiente.id; 
+                    
+                    if (respuestaBackend.consulta && respuestaBackend.consulta.id) {
+                        document.getElementById('hc_consulta_id').value = respuestaBackend.consulta.id;
+                        document.getElementById('hc_motivo').value = respuestaBackend.consulta.motivo_consulta || citaPendiente.motivo_consulta;
+                    }
+                    
+                    Alerta.exito("Enlazado", "La cita está en progreso y el expediente está listo para llenarse.");
+                } catch (error) {
+                    console.error("Error al iniciar consulta:", error);
+                }
+            }
+        } 
+        // ¡LA RECUPERACIÓN MÁGICA!
+        // Si no hay cita pendiente pero la cita está "En progreso", recuperamos el ID oculto y el motivo de forma silenciosa
+        else if (citaEnProgreso) {
+            try {
+                // Hacemos ping a la ruta. Como ya está en progreso, Laravel nos devuelve el borrador sin alterarlo
+                const respuestaBackend = await API.post(`/citas/${citaEnProgreso.id}/iniciar-consulta`, {});
+                
+                if (respuestaBackend.consulta) {
+                    citaActivaId = citaEnProgreso.id;
+                    document.getElementById('hc_consulta_id').value = respuestaBackend.consulta.id;
+                    
+                    // Llenamos las cajas con lo que tenga el borrador
+                    document.getElementById('hc_motivo').value = respuestaBackend.consulta.motivo_consulta || citaEnProgreso.motivo_consulta || '';
+                    document.getElementById('hc_sintomas').value = respuestaBackend.consulta.sintomas || '';
+                    document.getElementById('hc_observaciones').value = respuestaBackend.consulta.observaciones || '';
+                    document.getElementById('hc_diagnostico').value = respuestaBackend.consulta.diagnostico || '';
+                }
+            } catch (error) {
+                console.error("Error al recuperar borrador de consulta:", error);
+            }
+        }
+    } catch (error) {
+        console.error("Error detectando citas de hoy:", error);
+    }
+}
 // =========================================================================
 // 1. LÓGICA DE PESTAÑAS (TABS)
 // =========================================================================
@@ -398,7 +464,6 @@ function renderizarOdontogramaOperatoria() {
 // 4. LÓGICA DE FACTURACIÓN Y PAGOS (POS REAL)
 // =========================================================================
 
-// Dibujar Tratamientos en el Carrito
 function renderizarBadgesTratamientos() {
     const contenedor = document.getElementById('lista_tratamientos');
     if (!contenedor) return;
@@ -510,6 +575,7 @@ if(inputSearch) {
     inputSearch.addEventListener("input", (e) => { renderizarResultadosBuscador(e.target.value); });
     document.addEventListener("click", (e) => { if (!inputSearch.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.add("hidden"); });
 }
+
 function inicializarPaginadorPagos() {
     if (!document.getElementById("pagosTableContainer")) return;
     
@@ -521,7 +587,6 @@ function inicializarPaginadorPagos() {
             let estadoBadge = `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">${p.estado_pago}</span>`;
             if (p.estado_pago === 'pagado') estadoBadge = `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pagado</span>`;
 
-            // MAGIA: El botón de abonar solo se crea si el paciente debe dinero (saldo > 0)
             const btnAbonar = p.saldo > 0 
                 ? `<button type="button" onclick="window.abrirModalEdicion(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-200" title="Registrar Abono">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -539,19 +604,9 @@ function inicializarPaginadorPagos() {
                     <td class="px-6 py-4 ${saldoColor}">$${parseFloat(p.saldo).toFixed(2)}</td>
                     <td class="px-6 py-4">${estadoBadge}</td>
                     <td class="px-6 py-4">
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        <div class="flex items-center gap-2">
-                            <button type="button" onclick="Alerta.info('Próximamente', 'Generador de Facturas en PDF en desarrollo.')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Imprimir Factura">
-=======
                         <div class="flex gap-2">
-                            <button type="button" onclick="Alerta.info('Próximamente', 'Generador de PDF en la siguiente fase.')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Ver Factura">
->>>>>>> fa1c0af (Se arreglo facturación)
+                            <button type="button" onclick="window.imprimirFacturaPDF(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Ver / Imprimir PDF">                                
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-=======
-                        <div class="flex gap-2">
-<button type="button" onclick="window.imprimirFacturaPDF(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Ver / Imprimir PDF">                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
->>>>>>> 9b1c555 (Se agrego la opción de generar factura)
                             </button>
                             ${btnAbonar}
                         </div>
@@ -562,10 +617,9 @@ function inicializarPaginadorPagos() {
 }
 
 // =========================================================================
-// 5. LÓGICA DE ABONOS (Cobro posterior)
+// 5. LÓGICA DE ABONOS Y GUARDADO DE DATOS
 // =========================================================================
 
-// Esta función se ejecuta al darle al botón azul de "Editar / Abonar" en la tabla
 window.abrirModalEdicion = function(facturaId) {
     const fac = pagosDB.find(f => f.id === facturaId);
     if (!fac) return;
@@ -574,7 +628,6 @@ window.abrirModalEdicion = function(facturaId) {
         return Alerta.info("Factura Pagada", "Esta factura ya no tiene saldo pendiente.");
     }
 
-    // Llenamos el modal chiquito
     document.getElementById('abono_factura_id').value = fac.id;
     document.getElementById('abono_numero_factura').innerText = fac.numero;
     document.getElementById('abono_total').innerText = parseFloat(fac.valor).toFixed(2);
@@ -585,12 +638,10 @@ window.abrirModalEdicion = function(facturaId) {
     window.openModal("modalAbono", "edit");
 };
 
-// Matemática en vivo para el modal de abono
 window.calcularNuevoSaldo = function() {
     const saldo = parseFloat(document.getElementById('abono_saldo_actual').innerText) || 0;
     let abono = parseFloat(document.getElementById('input_nuevo_abono').value) || 0;
     
-    // Evitar que el cajero cobre más de lo que debe
     if (abono > saldo) {
         abono = saldo;
         document.getElementById('input_nuevo_abono').value = abono.toFixed(2);
@@ -599,12 +650,10 @@ window.calcularNuevoSaldo = function() {
     document.getElementById('abono_nuevo_saldo').innerText = (saldo - abono).toFixed(2);
 };
 
-// BOTÓN GUARDAR INTELIGENTE (Detecta qué modal está abierto)
 window.guardarDatos = async function () {
     const urlParams = new URLSearchParams(window.location.search);
     const idPaciente = urlParams.get('id');
 
-    // MODO A: ¿Está abierto el modal de Abono?
     const modalAbono = document.getElementById("modalAbono");
     if (modalAbono && !modalAbono.classList.contains('hidden')) {
         const formAbono = document.getElementById("formAbono");
@@ -621,15 +670,14 @@ window.guardarDatos = async function () {
             });
             Alerta.exito("¡Dinero Recibido!", "El saldo de la factura se ha actualizado.");
             window.closeModal("modalAbono");
-            await cargarFacturasPaciente(idPaciente); // Refrescar la tabla
+            await cargarFacturasPaciente(idPaciente); 
         } catch (error) {
             console.error("Error al abonar:", error);
             Alerta.error("Error", "No se pudo registrar el pago.");
         }
-        return; // Detenemos aquí para que no siga con el código de abajo
+        return; 
     }
 
-    // MODO B: Está abierto el modal grande de Nueva Factura
     const form = document.getElementById("formVisita");
     const formData = new FormData(form);
 
@@ -647,7 +695,8 @@ window.guardarDatos = async function () {
         observaciones_factura: formData.get("observaciones_factura"),
         subtotal: document.getElementById('resumen_subtotal').innerText,
         total: document.getElementById('resumen_total').innerText,
-        tratamientos: tratamientosSeleccionados
+        tratamientos: tratamientosSeleccionados,
+        cita_id: citaActivaId
     };
 
     try {
@@ -675,6 +724,7 @@ window.openModal = function (modalID, mode = "add") {
         tratamientosSeleccionados = [];
         renderizarBadgesTratamientos();
 
+        // ¡AQUÍ ESTÁ LA MAGIA! VOLVEMOS A ACTIVAR EL AUTO-LLENADO DEL MODAL
         let dientesAfectados = new Set();
         document.querySelectorAll('#tab-odontograma [data-estado]').forEach(elemento => {
             const estado = elemento.getAttribute('data-estado');
@@ -709,7 +759,7 @@ window.closeModal = function (modalID) {
 };
 
 // =========================================================================
-// 5. GUARDADO REAL EN BASE DE DATOS (ODONTOGRAMA E HISTORIA)
+// 6. GUARDADO DE ODONTOGRAMA Y GENERACIÓN DE PDF
 // =========================================================================
 window.guardarFichaClinica = async function() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -758,6 +808,7 @@ window.guardarFichaClinica = async function() {
         diagnostico: document.getElementById('hc_diagnostico')?.value || '',
         prescripciones: document.getElementById('hc_prescripciones')?.value || '',
         proxima_cita: document.getElementById('hc_proxima_cita')?.value || null,
+        cita_id: citaActivaId
     };
 
     const payload = {
@@ -795,9 +846,6 @@ window.guardarFichaClinica = async function() {
     }
 };
 
-// =========================================================================
-// 6. GENERACIÓN DE PDF PERFECTO (Ficha Clínica)
-// =========================================================================
 window.imprimirFichaPDF = async function() {
     const elNombre = document.getElementById("exp-nombre");
     const nombrePaciente = elNombre ? elNombre.innerText : "Paciente";
