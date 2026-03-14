@@ -9,11 +9,13 @@ use Illuminate\Support\Facades\DB;
 class ExpedienteController extends Controller
 {
     // =========================================================
-    // 1. GUARDAR FICHA Y ODONTOGRAMA
+    // 1. GUARDAR FICHA Y ODONTOGRAMA (MOMENTO 3)
     // =========================================================
     public function guardarFicha(Request $request, $paciente_id)
     {
         try {
+            DB::beginTransaction();
+
             $odontograma = \App\Models\Odontograma::updateOrCreate(
                 ['paciente_id' => $paciente_id], 
                 [
@@ -28,9 +30,12 @@ class ExpedienteController extends Controller
             if (!empty($historia['motivo_consulta']) || !empty($historia['diagnostico'])) {
                 Schema::disableForeignKeyConstraints();
 
+                // SI ESTAMOS ACTUALIZANDO EL BORRADOR
                 if (!empty($historia['consulta_id'])) {
                     $consultaGuardada = \App\Models\Consulta::find($historia['consulta_id']);
+                    
                     if ($consultaGuardada) {
+                        // 1. Actualizamos los textos normales
                         $consultaGuardada->update([
                             'motivo_consulta' => $historia['motivo_consulta'] ?? null,
                             'sintomas' => $historia['sintomas'] ?? null,
@@ -38,12 +43,26 @@ class ExpedienteController extends Controller
                             'diagnostico' => $historia['diagnostico'] ?? null,
                             'prescripciones' => $historia['prescripciones'] ?? null,
                             'proxima_cita_recomendada' => $historia['proxima_cita'] ?? null,
+                            'cita_id' => $historia['cita_id'] ?? $consultaGuardada->cita_id,
                         ]);
+
+                        // 2. ¡FORZAMOS EL ESTADO! (Esto se salta el bloqueo de Laravel)
+                        $consultaGuardada->estado = 'completada';
+                        $consultaGuardada->save();
+
+                        // 3. ACTUALIZAMOS LA CITA A COMPLETADA
+                        if ($consultaGuardada->cita_id) {
+                            \App\Models\Cita::where('id', $consultaGuardada->cita_id)
+                                            ->update(['estado' => 'Completada']);
+                        }
                     }
-                } else {
+                } 
+                // SI ES UNA CONSULTA LIBRE (Sin cita previa)
+                else {
                     $consultaGuardada = \App\Models\Consulta::create([
                         'paciente_id' => $paciente_id,
                         'empleado_id' => 1, 
+                        'cita_id' => $historia['cita_id'] ?? null,
                         'motivo_consulta' => $historia['motivo_consulta'] ?? null,
                         'sintomas' => $historia['sintomas'] ?? null,
                         'observaciones' => $historia['observaciones'] ?? null,
@@ -51,17 +70,28 @@ class ExpedienteController extends Controller
                         'prescripciones' => $historia['prescripciones'] ?? null,
                         'proxima_cita_recomendada' => $historia['proxima_cita'] ?? null,
                     ]);
+
+                    // Forzamos el estado también aquí
+                    $consultaGuardada->estado = 'completada';
+                    $consultaGuardada->save();
+
+                    if ($consultaGuardada->cita_id) {
+                        \App\Models\Cita::where('id', $consultaGuardada->cita_id)
+                                        ->update(['estado' => 'Completada']);
+                    }
                 }
                 Schema::enableForeignKeyConstraints();
             }
 
+            DB::commit();
+
             return response()->json(['mensaje' => 'Ficha procesada correctamente', 'odontograma_bd' => $odontograma, 'consulta_bd' => $consultaGuardada]);
 
         } catch (\Throwable $e) {
+            DB::rollBack();
             return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
         }
     }
-
     // =========================================================
     // 2. LEER FICHA Y CONSULTAS
     // =========================================================
@@ -129,6 +159,7 @@ class ExpedienteController extends Controller
             $consulta = \App\Models\Consulta::create([
                 'paciente_id' => $paciente_id,
                 'empleado_id' => 1, 
+                'cita_id' => $request->cita_id ?? null, // <-- AQUÍ SE VINCULA LA CONSULTA CON LA CITA
                 'fecha_consulta' => $request->fecha,
                 'motivo_consulta' => 'Facturación y Aplicación de Tratamientos',
                 'observaciones' => $request->observaciones_factura ?? 'Facturación desde caja'
@@ -141,6 +172,7 @@ class ExpedienteController extends Controller
                 'numero' => $numeroFactura,
                 'paciente_id' => $paciente_id,
                 'empleado_id' => 1, 
+                'cita_id' => $request->cita_id ?? null, // <-- AQUÍ SE VINCULA LA FACTURA CON LA CITA
                 'fecha_emision' => $request->fecha,
                 'subtotal' => $request->subtotal,
                 'descuento' => $request->descuento,
@@ -199,7 +231,7 @@ class ExpedienteController extends Controller
                 \App\Models\FacturaItem::create([
                     'factura_id' => $factura->id,
                     'tipo_item' => 'tratamiento',
-                    'descripcion' => $tratamiento['nombre'], // <-- MAGIA: Solo dirá "Limpieza Dental"
+                    'descripcion' => $tratamiento['nombre'], 
                     'cantidad' => 1,
                     'precio_unitario' => $tratamiento['precio'],
                     'total_item' => $tratamiento['precio'],
@@ -340,6 +372,66 @@ class ExpedienteController extends Controller
 
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
+    // =========================================================
+    // 7. INICIAR CONSULTA DESDE UNA CITA (MOMENTO 2)
+    // =========================================================
+    public function iniciarConsultaDesdeCita(Request $request, $citaId)
+    {
+        try {
+            $cita = \App\Models\Cita::findOrFail($citaId);
+
+            // 1. Prevención: Si la cita ya está "En progreso", buscamos su borrador
+            if ($cita->estado === 'En progreso') {
+                $consultaBorrador = \App\Models\Consulta::where('cita_id', $cita->id)
+                                            ->where('estado', 'borrador')
+                                            ->orderBy('id', 'desc') // <--- ¡AÑADE ESTA LÍNEA MÁGICA!
+                                            ->first();
+                                            
+                if ($consultaBorrador) {
+                    return response()->json([
+                        'mensaje' => 'Continuando con la consulta en curso.',
+                        'consulta' => $consultaBorrador
+                    ]);
+                }
+            }
+
+            // 2. Transacción Segura (Todo o Nada)
+            DB::beginTransaction();
+
+            // Apagamos las restricciones de llaves foráneas igual que en el resto de tu código
+            // por si acaso tienes otros datos fantasma en tu base local
+            \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+
+            // Cambiamos el estado de la cita
+            $cita->estado = 'En progreso';
+            $cita->save();
+
+            // Creamos el borrador inmediatamente
+            $consulta = \App\Models\Consulta::create([
+                'cita_id' => $cita->id,
+                'paciente_id' => $cita->paciente_id,
+                'empleado_id' => $cita->empleado_id, // <--- ¡AQUÍ ESTÁ LA MAGIA! Usamos el doctor de la cita.
+                'fecha_consulta' => now()->toDateString(),
+                'motivo_consulta' => $cita->motivo_consulta,
+                'estado' => 'borrador' 
+            ]);
+
+            // Volvemos a encender la seguridad
+            \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+
+            DB::commit();
+
+            return response()->json([
+                'mensaje' => 'Cita vinculada y borrador creado correctamente.',
+                'consulta' => $consulta
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
         }
     }
 }
