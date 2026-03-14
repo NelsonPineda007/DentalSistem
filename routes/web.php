@@ -69,6 +69,7 @@ Route::get('/api/expediente/{paciente_id}/facturas', [\App\Http\Controllers\Expe
 Route::post('/api/expediente/{paciente_id}/facturas', [\App\Http\Controllers\ExpedienteController::class, 'guardarFactura']);
 Route::post('/api/expediente/facturas/{factura_id}/abonar', [\App\Http\Controllers\ExpedienteController::class, 'abonarFactura']);
 Route::get('/api/expediente/facturas/{factura_id}/pdf', [\App\Http\Controllers\ExpedienteController::class, 'imprimirFactura']);
+Route::post('/citas/{citaId}/iniciar-consulta', [\App\Http\Controllers\ExpedienteController::class, 'iniciarConsultaDesdeCita']);
 
 // ==========================================
 // CITAS
@@ -79,6 +80,7 @@ Route::get('/api/citas', [CitaController::class, 'obtenerCitas']);
 Route::post('/api/citas', [CitaController::class, 'guardarCita']);
 Route::put('/api/citas/{id}', [CitaController::class, 'actualizarCita']); 
 Route::delete('/api/citas/{id}', [CitaController::class, 'eliminarCita']);
+Route::get('/api/pacientes/{id}/citas', [CitaController::class, 'obtenerCitasPaciente']);
 
 // ==========================================
 // CALENDARIO
