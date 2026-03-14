@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Cita; // <-- ¡Aquí estamos llamando a nuestro Modelo!
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -11,8 +12,8 @@ class CitaController extends Controller
     // 1. Traer todas las citas (Ocultando las Canceladas de la vista)
     public function obtenerCitas()
     {
-        $citas = DB::table('citas')
-            ->join('pacientes', 'citas.paciente_id', '=', 'pacientes.id')
+        // Usamos Eloquent con joins para mantener la misma estructura que esperaba el JS
+        $citas = Cita::join('pacientes', 'citas.paciente_id', '=', 'pacientes.id')
             ->join('empleados', 'citas.empleado_id', '=', 'empleados.id')
             ->select(
                 'citas.id',
@@ -39,7 +40,8 @@ class CitaController extends Controller
     {
         $hora_fin = Carbon::parse($request->hora)->addHour()->format('H:i:s');
 
-        $id = DB::table('citas')->insertGetId([
+        // Eloquent 'create' devuelve el modelo recién creado
+        $cita = Cita::create([
             'paciente_id' => $request->paciente_id,
             'empleado_id' => $request->empleado_id,
             'fecha_cita' => $request->fecha,
@@ -50,7 +52,7 @@ class CitaController extends Controller
             'notas' => $request->notas
         ]);
 
-        return response()->json(['success' => true, 'mensaje' => 'Cita creada con éxito', 'id' => $id]);
+        return response()->json(['success' => true, 'mensaje' => 'Cita creada con éxito', 'id' => $cita->id]);
     }
 
     // 3. Actualizar Cita (Editar)
@@ -58,7 +60,9 @@ class CitaController extends Controller
     {
         $hora_fin = Carbon::parse($request->hora)->addHour()->format('H:i:s');
 
-        DB::table('citas')->where('id', $id)->update([
+        // Eloquent 'findOrFail' busca o tira error 404, luego actualizamos
+        $cita = Cita::findOrFail($id);
+        $cita->update([
             'paciente_id' => $request->paciente_id,
             'empleado_id' => $request->empleado_id,
             'fecha_cita' => $request->fecha,
@@ -75,7 +79,9 @@ class CitaController extends Controller
     // 4. Soft Delete (Cancelar para ocultar)
     public function eliminarCita($id)
     {
-        DB::table('citas')->where('id', $id)->update(['estado' => 'Cancelada']);
+        $cita = Cita::findOrFail($id);
+        $cita->update(['estado' => 'Cancelada']);
+        
         return response()->json(['success' => true, 'mensaje' => 'Cita ocultada correctamente']);
     }
 
@@ -91,8 +97,7 @@ class CitaController extends Controller
     // 6. Obtener citas de un paciente específico (Para el Expediente)
     public function obtenerCitasPaciente($paciente_id)
     {
-        $citas = DB::table('citas')
-            ->where('paciente_id', $paciente_id)
+        $citas = Cita::where('paciente_id', $paciente_id)
             ->where('estado', '!=', 'Cancelada')
             ->orderBy('fecha_cita', 'desc')
             ->get();
