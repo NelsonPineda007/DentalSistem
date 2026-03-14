@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function cargarCategorias() {
     try {
         const categorias = await API.get('/api/categorias-tratamientos');
-        console.log("✅ Categorías cargadas desde MySQL:", categorias);
+        // console.log("Categorías cargadas desde MySQL:", categorias); // Puedes comentarlo en producción
         
         let opcionesFiltro = '<option value="">Todas las categorías</option>';
         let opcionesForm = '<option value="">Seleccione una categoría</option>';
@@ -41,7 +41,13 @@ async function cargarCategorias() {
         if (selectForm) selectForm.innerHTML = opcionesForm;
 
     } catch (error) {
-        console.error("❌ Error cargando categorías:", error);
+        console.error("Error cargando categorías:", error);
+        
+        // ¡Aquí disparamos tu alerta visual Nivel Dios!
+        Alerta.error(
+            "Error de Conexión", 
+            "No se pudieron cargar las categorías de tratamientos. Por favor, verifica tu conexión o recarga la página."
+        );
     }
 }
 
