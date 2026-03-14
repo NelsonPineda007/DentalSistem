@@ -54,7 +54,7 @@ async function cargarDatosFormulario() {
     }
 }
 
-// 3. Lógica del buscador de pacientes en el modal
+// 3. Lógica del buscador de pacientes en el modal (V2 - Buscador Fuerte)
 function configurarBuscadorPacientes() {
     const inputBuscador = document.getElementById('buscador_paciente');
     const dropdown = document.getElementById('dropdown_pacientes');
@@ -62,17 +62,24 @@ function configurarBuscadorPacientes() {
 
     if(!inputBuscador) return;
 
-    inputBuscador.addEventListener('input', function() {
-        const termino = this.value.toLowerCase();
+    // Función auxiliar que hace el trabajo pesado
+    const renderizarLista = (termino = "") => {
         dropdown.innerHTML = '';
 
-        if (termino.length < 1) {
-            dropdown.classList.add('hidden');
-            inputOcultoId.value = ''; 
-            return;
+        // Si el doctor borra el texto, limpiamos el ID para evitar guardar datos erróneos
+        if (termino.trim().length === 0) {
+            inputOcultoId.value = '';
         }
 
-        const filtrados = pacientesGlobal.filter(p => p.nombre_completo.toLowerCase().includes(termino));
+        // BÚSQUEDA FUERTE: Separamos lo que escribe el usuario por espacios
+        // Así si escribe "Pérez Juan", igual encontrará a "Juan Pérez"
+        const palabrasBusqueda = termino.toLowerCase().split(' ').filter(p => p.trim() !== '');
+
+        const filtrados = pacientesGlobal.filter(p => {
+            const nombreCompleto = p.nombre_completo.toLowerCase();
+            // El paciente debe coincidir con TODAS las palabras escritas, sin importar el orden
+            return palabrasBusqueda.every(palabra => nombreCompleto.includes(palabra));
+        });
 
         if (filtrados.length === 0) {
             dropdown.innerHTML = `<div class="px-4 py-3 text-sm text-slate-500 italic">No se encontraron pacientes</div>`;
@@ -80,7 +87,9 @@ function configurarBuscadorPacientes() {
             filtrados.forEach(p => {
                 const item = document.createElement('div');
                 item.className = "px-4 py-2.5 cursor-pointer hover:bg-blue-50 text-sm text-slate-700 font-medium transition-colors border-b border-slate-50 last:border-0";
-                item.textContent = p.nombre_completo;
+                
+                // Resaltar en negrita (opcional, le da un toque muy pro)
+                item.innerHTML = p.nombre_completo;
                 
                 item.onclick = () => {
                     inputBuscador.value = p.nombre_completo;
@@ -91,8 +100,19 @@ function configurarBuscadorPacientes() {
             });
         }
         dropdown.classList.remove('hidden');
+    };
+
+    // Evento 1: Cuando el usuario escribe
+    inputBuscador.addEventListener('input', function() {
+        renderizarLista(this.value);
     });
 
+    // Evento 2: ¡La Magia! Cuando el usuario hace clic en el input vacío, muestra TODOS los pacientes
+    inputBuscador.addEventListener('focus', function() {
+        renderizarLista(this.value);
+    });
+
+    // Evento 3: Ocultar si hace clic en cualquier otra parte de la pantalla
     document.addEventListener('click', (e) => {
         if (!inputBuscador.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.add('hidden');
