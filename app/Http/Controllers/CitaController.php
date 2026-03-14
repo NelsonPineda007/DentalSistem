@@ -87,4 +87,16 @@ class CitaController extends Controller
 
         return response()->json(['pacientes' => $pacientes, 'doctores' => $doctores]);
     }
+
+    // 6. Obtener citas de un paciente específico (Para el Expediente)
+    public function obtenerCitasPaciente($paciente_id)
+    {
+        $citas = DB::table('citas')
+            ->where('paciente_id', $paciente_id)
+            ->where('estado', '!=', 'Cancelada')
+            ->orderBy('fecha_cita', 'desc')
+            ->get();
+            
+        return response()->json($citas);
+    }
 }
