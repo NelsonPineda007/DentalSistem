@@ -110,7 +110,7 @@ class ExpedienteController extends Controller
         }
     }
 
-    // =========================================================
+// =========================================================
     // 3. OBTENER FACTURAS PARA LA TABLA DE FINANZAS
     // =========================================================
     public function obtenerFacturas($paciente_id)
@@ -127,7 +127,8 @@ class ExpedienteController extends Controller
                     'valor' => $f->total,
                     'abono' => $f->total - $f->saldo_pendiente,
                     'saldo' => $f->saldo_pendiente,
-                    'estado_pago' => $f->estado_pago
+                    'estado_pago' => $f->estado_pago,
+                    'cita_id' => $f->cita_id // <--- ¡AQUÍ ESTÁ LA COLUMNA AGREGADA!
                 ];
             });
 
@@ -331,7 +332,7 @@ class ExpedienteController extends Controller
         }
     }
 
-    // =========================================================
+// =========================================================
     // 6. GENERAR PDF DE LA FACTURA
     // =========================================================
     public function imprimirFactura($factura_id)
@@ -343,6 +344,11 @@ class ExpedienteController extends Controller
             $items = \App\Models\FacturaItem::where('factura_id', $factura->id)->get();
             $pagos = \App\Models\Pago::where('factura_id', $factura->id)->orderBy('fecha_pago', 'asc')->get();
 
+            $cita = null;
+            if ($factura->cita_id) {
+                $cita = \App\Models\Cita::find($factura->cita_id);
+            }
+
             // Calculamos cuánto se ha pagado en total
             $total_pagado = $pagos->sum('monto');
 
@@ -352,6 +358,7 @@ class ExpedienteController extends Controller
                 'paciente' => $paciente,
                 'items' => $items,
                 'pagos' => $pagos,
+                'cita' => $cita, // <--- NUEVO: Pasamos la cita al PDF
                 'total_pagado' => $total_pagado,
                 'clinica' => [
                     'nombre' => 'DentalSistem Clínica Odontológica',
@@ -374,7 +381,7 @@ class ExpedienteController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-    
+
     // =========================================================
     // 7. INICIAR CONSULTA DESDE UNA CITA (MOMENTO 2)
     // =========================================================

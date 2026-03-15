@@ -10,6 +10,7 @@ let catalogoTratamientos = [];
 let tratamientosSeleccionados = [];
 let pagosDB = []; 
 let citaActivaId = null;
+let citasPacienteDB = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     cargarDatosPacienteDesdeURL(); 
@@ -22,6 +23,12 @@ document.addEventListener("DOMContentLoaded", () => {
         inicializarPaginadorPagos();
         inicializarPaginadorConsultas();
     }
+
+    document.addEventListener("submit", (e) => {
+        if (e.target.id === "formAbono" || e.target.id === "formVisita") {
+            e.preventDefault(); // Bloquea el comportamiento nativo
+        }
+    });
 });
 
 // =========================================================================
@@ -157,6 +164,9 @@ async function cargarDatosPacienteDesdeURL() {
 async function detectarCitaDeHoy(idPaciente) {
     try {
         const citas = await API.get(`/api/pacientes/${idPaciente}/citas`);
+        
+        // Guardamos las citas globalmente para usarlas en el selector de facturación
+        citasPacienteDB = citas;
 
         citas.sort((a, b) => b.id - a.id);
         
@@ -164,14 +174,13 @@ async function detectarCitaDeHoy(idPaciente) {
         fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
         const hoy = fechaLocal.toISOString().split('T')[0]; 
 
-        // Separar las citas que no se han tocado y las que ya están vinculadas
         const citaPendiente = citas.find(c => c.fecha_cita === hoy && (c.estado === 'Programada' || c.estado === 'Confirmada'));
         const citaEnProgreso = citas.find(c => c.fecha_cita === hoy && c.estado === 'En progreso');
 
         if (citaPendiente) {
             const resp = await Swal.fire({
-                title: '¡Cita detectada!',
-                html: `Este paciente tiene una cita hoy a las <b>${citaPendiente.hora_inicio}</b>.<br><br><b>Motivo:</b> <i>${citaPendiente.motivo_consulta}</i><br><br>¿Deseas vincular tu consulta de hoy y la factura a esta cita?`,
+                title: 'Alerta de Cita',
+                html: `Este paciente tiene una cita hoy a las <b>${citaPendiente.hora_inicio}</b>.<br><br><b>Motivo:</b> <i>${citaPendiente.motivo_consulta}</i><br><br>¿Deseas vincular tu consulta de hoy a esta cita?`,
                 icon: 'info',
                 showCancelButton: true,
                 confirmButtonColor: '#1e3a8a',
@@ -196,18 +205,14 @@ async function detectarCitaDeHoy(idPaciente) {
                 }
             }
         } 
-        // ¡LA RECUPERACIÓN MÁGICA!
-        // Si no hay cita pendiente pero la cita está "En progreso", recuperamos el ID oculto y el motivo de forma silenciosa
         else if (citaEnProgreso) {
             try {
-                // Hacemos ping a la ruta. Como ya está en progreso, Laravel nos devuelve el borrador sin alterarlo
                 const respuestaBackend = await API.post(`/citas/${citaEnProgreso.id}/iniciar-consulta`, {});
                 
                 if (respuestaBackend.consulta) {
                     citaActivaId = citaEnProgreso.id;
                     document.getElementById('hc_consulta_id').value = respuestaBackend.consulta.id;
                     
-                    // Llenamos las cajas con lo que tenga el borrador
                     document.getElementById('hc_motivo').value = respuestaBackend.consulta.motivo_consulta || citaEnProgreso.motivo_consulta || '';
                     document.getElementById('hc_sintomas').value = respuestaBackend.consulta.sintomas || '';
                     document.getElementById('hc_observaciones').value = respuestaBackend.consulta.observaciones || '';
@@ -654,6 +659,7 @@ window.guardarDatos = async function () {
     const urlParams = new URLSearchParams(window.location.search);
     const idPaciente = urlParams.get('id');
 
+    // 1. LÓGICA PARA EL MODAL DE ABONOS
     const modalAbono = document.getElementById("modalAbono");
     if (modalAbono && !modalAbono.classList.contains('hidden')) {
         const formAbono = document.getElementById("formAbono");
@@ -678,7 +684,15 @@ window.guardarDatos = async function () {
         return; 
     }
 
+    // 2. LÓGICA PARA EL MODAL DE NUEVA FACTURA
     const form = document.getElementById("formVisita");
+
+    // AQUÍ ESTÁ LA VALIDACIÓN EXACTA
+    if (!form.checkValidity()) {
+        form.reportValidity(); // Muestra el mensajito rojo de "Completa este campo"
+        return; // Detiene la función para que no explote el backend
+    }
+
     const formData = new FormData(form);
 
     if (tratamientosSeleccionados.length === 0) {
@@ -696,7 +710,7 @@ window.guardarDatos = async function () {
         subtotal: document.getElementById('resumen_subtotal').innerText,
         total: document.getElementById('resumen_total').innerText,
         tratamientos: tratamientosSeleccionados,
-        cita_id: citaActivaId
+        cita_id: formData.get("cita_id") || null
     };
 
     try {
@@ -721,10 +735,43 @@ window.openModal = function (modalID, mode = "add") {
         form.reset();
         form.id.value = "";
         
+        // Auto-llenar la fecha de hoy por comodidad
+        const hoy = new Date();
+        hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset());
+        form.fecha.value = hoy.toISOString().split('T')[0];
+        
         tratamientosSeleccionados = [];
         renderizarBadgesTratamientos();
 
-        // ¡AQUÍ ESTÁ LA MAGIA! VOLVEMOS A ACTIVAR EL AUTO-LLENADO DEL MODAL
+        // 1. LLENAR EL SELECTOR DE CITAS ASOCIADAS
+        const selectCita = document.getElementById('select_cita_factura');
+        if (selectCita && typeof citasPacienteDB !== 'undefined') {
+            selectCita.innerHTML = '<option value="">Ninguna (Libre)</option>';
+            
+            // Convertimos a número de forma segura para evitar fallos de tipo (string vs int)
+            const citasYaFacturadas = pagosDB
+                .filter(f => f.cita_id !== null && f.cita_id !== undefined)
+                .map(f => parseInt(f.cita_id));
+            
+            citasPacienteDB.forEach(c => {
+                // Validación estricta: Si el ID de esta cita ya está en las facturas, la ignoramos.
+                if (citasYaFacturadas.includes(parseInt(c.id))) {
+                    return; 
+                }
+
+                const partesFecha = c.fecha_cita.split('-');
+                const fechaLegible = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2]).toLocaleDateString();
+                
+                const textoMotivo = c.motivo_consulta ? c.motivo_consulta.substring(0, 35) : 'Sin motivo';
+                const textoOpcion = `${fechaLegible} - ${textoMotivo}... (${c.estado})`;
+                
+                const selected = (citaActivaId === c.id) ? 'selected' : '';
+                
+                selectCita.innerHTML += `<option value="${c.id}" ${selected}>${textoOpcion}</option>`;
+            });
+        }
+        
+        // 2. AUTO-LLENADO DE DIENTES AFECTADOS DEL ODONTOGRAMA
         let dientesAfectados = new Set();
         document.querySelectorAll('#tab-odontograma [data-estado]').forEach(elemento => {
             const estado = elemento.getAttribute('data-estado');

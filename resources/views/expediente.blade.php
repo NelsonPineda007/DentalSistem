@@ -177,10 +177,16 @@
         
         {{-- COLUMNA IZQUIERDA: Detalles de la Consulta e Items (Ocupa 2/3) --}}
         <div class="lg:col-span-2 flex flex-col gap-5 h-full">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha Emisión *</label>
                     <input type="date" name="fecha" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-slate-50" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cita Asociada</label>
+                    <select name="cita_id" id="select_cita_factura" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white text-sm font-medium text-slate-700">
+                        <option value="">Ninguna (Libre)</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Dientes Afectados</label>

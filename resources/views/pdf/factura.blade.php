@@ -68,6 +68,13 @@
         <strong>Datos del Paciente:</strong>
         <p>Nombre: {{ $paciente->nombre }} {{ $paciente->apellido }} (Exp: {{ $paciente->numero_expediente }})</p>
         <p>Teléfono: {{ $paciente->telefono ?? 'N/A' }} | Email: {{ $paciente->email ?? 'N/A' }}</p>
+        
+        @if($cita)
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
+            <strong>Cita Vinculada:</strong> {{ date('d/m/Y', strtotime($cita->fecha_cita)) }} a las {{ date('H:i', strtotime($cita->hora_inicio)) }} hrs.
+            <p style="color: #64748b; font-size: 12px; margin-top: 3px;">Motivo: {{ $cita->motivo_consulta ?? 'No especificado' }}</p>
+        </div>
+        @endif
     </div>
 
     <table class="items">
