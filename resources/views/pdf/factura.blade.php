@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Factura {{ $factura->numero }}</title>
+    <title>Recibo {{ $factura->numero }}</title>
     <style>
         body { font-family: 'Helvetica', 'Arial', sans-serif; color: #333; font-size: 14px; margin: 0; padding: 20px; }
         .header { width: 100%; border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; }
@@ -50,7 +50,7 @@
                     <div>Tel: {{ $clinica['telefono'] }} | Email: {{ $clinica['email'] }}</div>
                 </td>
                 <td class="invoice-info">
-                    <div class="title">DOCUMENTO DE COBRO</div>
+                    <div class="title">RECIBO DE PAGO</div>
                     <div><strong>N° Documento:</strong> {{ $factura->numero }}</div>
                     <div><strong>Fecha Emisión:</strong> {{ date('d/m/Y', strtotime($factura->fecha_emision)) }}</div>
                     <div style="margin-top: 10px;">
@@ -91,9 +91,8 @@
             <tr>
                 <td>{{ number_format($item->cantidad, 0) }}</td>
                 @php
-                    // Limpiamos el texto usando tu lógica: quitamos la lista de dientes solo para el PDF
                     $nombreLimpio = preg_replace('/\s*\(Diente:.*?\)/', '', $item->descripcion);
-                    $nombreLimpio = preg_replace('/\s*\([\d,\s]+\)/', '', $nombreLimpio); // Por si lee las facturas más viejitas
+                    $nombreLimpio = preg_replace('/\s*\([\d,\s]+\)/', '', $nombreLimpio);
                 @endphp
                 <td>{{ $nombreLimpio }}</td>
                 <td style="text-align: right;">${{ number_format($item->precio_unitario, 2) }}</td>

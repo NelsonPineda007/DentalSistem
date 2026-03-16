@@ -46,7 +46,7 @@ class ExpedienteController extends Controller
                             'cita_id' => $historia['cita_id'] ?? $consultaGuardada->cita_id,
                         ]);
 
-                        // 2. ¡FORZAMOS EL ESTADO! (Esto se salta el bloqueo de Laravel)
+                        // 2. ¡FORZAMOS EL ESTADO! 
                         $consultaGuardada->estado = 'completada';
                         $consultaGuardada->save();
 
@@ -85,13 +85,18 @@ class ExpedienteController extends Controller
 
             DB::commit();
 
-            return response()->json(['mensaje' => 'Ficha procesada correctamente', 'odontograma_bd' => $odontograma, 'consulta_bd' => $consultaGuardada]);
+            return response()->json([
+                'mensaje' => 'Ficha procesada correctamente', 
+                'odontograma_bd' => $odontograma, 
+                'consulta_bd' => $consultaGuardada
+            ]);
 
         } catch (\Throwable $e) {
             DB::rollBack();
             return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
         }
     }
+
     // =========================================================
     // 2. LEER FICHA Y CONSULTAS
     // =========================================================
@@ -110,8 +115,8 @@ class ExpedienteController extends Controller
         }
     }
 
-// =========================================================
-    // 3. OBTENER FACTURAS PARA LA TABLA DE FINANZAS
+    // =========================================================
+    // 3. OBTENER RECIBOS PARA LA TABLA DE FINANZAS
     // =========================================================
     public function obtenerFacturas($paciente_id)
     {
@@ -128,7 +133,7 @@ class ExpedienteController extends Controller
                     'abono' => $f->total - $f->saldo_pendiente,
                     'saldo' => $f->saldo_pendiente,
                     'estado_pago' => $f->estado_pago,
-                    'cita_id' => $f->cita_id // <--- ¡AQUÍ ESTÁ LA COLUMNA AGREGADA!
+                    'cita_id' => $f->cita_id
                 ];
             });
 
@@ -139,7 +144,7 @@ class ExpedienteController extends Controller
     }
 
     // =========================================================
-    // 4. GUARDAR FACTURA NUEVA (Y EXPEDIENTE)
+    // 4. GUARDAR RECIBO NUEVO (Y EXPEDIENTE)
     // =========================================================
     public function guardarFactura(Request $request, $paciente_id)
     {
@@ -154,17 +159,35 @@ class ExpedienteController extends Controller
             $tipo_factura = ($saldo_pendiente > 0) ? 'cuotas' : $request->tipo_factura;
             
             $estado_pago = 'pendiente';
-            if ($abono >= $total) $estado_pago = 'pagado';
-            else if ($abono > 0) $estado_pago = 'parcial';
+            if ($abono >= $total) {
+                $estado_pago = 'pagado';
+            } else if ($abono > 0) {
+                $estado_pago = 'parcial';
+            }
 
-            $consulta = \App\Models\Consulta::create([
-                'paciente_id' => $paciente_id,
-                'empleado_id' => 1, 
-                'cita_id' => $request->cita_id ?? null, // <-- AQUÍ SE VINCULA LA CONSULTA CON LA CITA
-                'fecha_consulta' => $request->fecha,
-                'motivo_consulta' => 'Facturación y Aplicación de Tratamientos',
-                'observaciones' => $request->observaciones_factura ?? 'Facturación desde caja'
-            ]);
+            $consulta_id = null;
+
+            // 1. Si el recibo viene de una cita, buscamos el expediente que el doctor ya llenó
+            if (!empty($request->cita_id)) {
+                $consultaExistente = \App\Models\Consulta::where('cita_id', $request->cita_id)->first();
+                if ($consultaExistente) {
+                    $consulta_id = $consultaExistente->id;
+                }
+            }
+
+            // 2. Si NO hay cita (es un recibo Libre), CREAMOS un expediente administrativo para sostener los tratamientos
+            if (!$consulta_id) {
+                $consultaNueva = \App\Models\Consulta::create([
+                    'paciente_id' => $paciente_id,
+                    'empleado_id' => 1, 
+                    'cita_id' => null,
+                    'fecha_consulta' => $request->fecha,
+                    'motivo_consulta' => 'Tratamiento Directo (Caja)', // Un nombre más limpio
+                    'observaciones' => $request->observaciones_factura ?? 'Facturación directa sin consulta médica previa'
+                ]);
+                $consulta_id = $consultaNueva->id;
+            }
+            // 👆 FIN DE LA NUEVA LÓGICA 👆
 
             $ultimoId = \App\Models\Factura::max('id') ?? 0;
             $numeroFactura = 'FAC-' . str_pad($ultimoId + 1, 5, '0', STR_PAD_LEFT);
@@ -173,7 +196,7 @@ class ExpedienteController extends Controller
                 'numero' => $numeroFactura,
                 'paciente_id' => $paciente_id,
                 'empleado_id' => 1, 
-                'cita_id' => $request->cita_id ?? null, // <-- AQUÍ SE VINCULA LA FACTURA CON LA CITA
+                'cita_id' => $request->cita_id ?? null,
                 'fecha_emision' => $request->fecha,
                 'subtotal' => $request->subtotal,
                 'descuento' => $request->descuento,
@@ -216,19 +239,17 @@ class ExpedienteController extends Controller
                 }
             }
 
-            // 6. Guardar Items y Tratamientos Aplicados
+            // Guardar Items y Tratamientos Aplicados usando el ID inteligente ($consulta_id)
             foreach ($request->tratamientos as $tratamiento) {
                 
-                // A) Guardar en el Expediente Clínico (AQUÍ SÍ GUARDAMOS TODOS LOS DIENTES AFECTADOS)
                 $tratAplicado = \App\Models\TratamientoAplicado::create([
-                    'consulta_id' => $consulta->id, 
+                    'consulta_id' => $consulta_id, // <-- Usamos el ID inteligente
                     'tratamiento_id' => $tratamiento['id'] ?? 1,
                     'diente' => $request->diente ?? 'General',
                     'realizado_por' => 1,
                     'notas' => 'Agregado desde facturación'
                 ]);
 
-                // B) Guardar en el Ticket/Factura (AQUÍ PONEMOS EL NOMBRE COMPLETAMENTE LIMPIO)
                 \App\Models\FacturaItem::create([
                     'factura_id' => $factura->id,
                     'tipo_item' => 'tratamiento',
@@ -238,7 +259,7 @@ class ExpedienteController extends Controller
                     'total_item' => $tratamiento['precio'],
                     'tratamiento_id' => $tratamiento['id'] ?? null,
                     'tratamiento_aplicado_id' => $tratAplicado->id, 
-                    'consulta_id' => $consulta->id 
+                    'consulta_id' => $consulta_id // <-- Usamos el ID inteligente
                 ]);
             }
 
@@ -248,14 +269,14 @@ class ExpedienteController extends Controller
                 'valor_nuevo' => 'emitida',
                 'cuota_id' => $cuota ? $cuota->id : null, 
                 'cambiado_por' => 1,
-                'motivo' => 'Creación de factura',
+                'motivo' => 'Creación de recibo',
                 'ip_address' => $request->ip()
             ]);
 
             Schema::enableForeignKeyConstraints();
             DB::commit(); 
 
-            return response()->json(['mensaje' => 'Factura y Expediente guardados con éxito']);
+            return response()->json(['mensaje' => 'Recibo y Expediente guardados con éxito']);
 
         } catch (\Throwable $e) {
             DB::rollBack(); 
@@ -264,14 +285,12 @@ class ExpedienteController extends Controller
     }
 
     // =========================================================
-    // 5. REGISTRAR UN NUEVO ABONO A UNA FACTURA EXISTENTE
+    // 5. REGISTRAR UN NUEVO ABONO A UN RECIBO EXISTENTE
     // =========================================================
     public function abonarFactura(Request $request, $factura_id)
     {
         try {
             DB::beginTransaction();
-            
-            // APAGAMOS LAS RESTRICCIONES PARA QUE NO BUSQUE AL EMPLEADO 1
             Schema::disableForeignKeyConstraints();
             
             $factura = \App\Models\Factura::findOrFail($factura_id);
@@ -281,12 +300,10 @@ class ExpedienteController extends Controller
                 return response()->json(['error_real' => 'Monto de abono inválido'], 400);
             }
 
-            // 1. Actualizar el saldo de la Factura
             $factura->saldo_pendiente -= $abono;
             $factura->estado_pago = ($factura->saldo_pendiente <= 0) ? 'pagado' : 'parcial';
             $factura->save();
 
-            // 2. Actualizar la Cuota (si era crédito)
             $cuota = \App\Models\FacturaCuota::where('factura_id', $factura->id)->where('estado', '!=', 'pagado_completo')->first();
             if ($cuota) {
                 $cuota->monto_abonado += $abono;
@@ -299,18 +316,16 @@ class ExpedienteController extends Controller
                 $cuota->save();
             }
 
-            // 3. Crear el recibo en la tabla Pagos
             \App\Models\Pago::create([
                 'factura_id' => $factura->id,
                 'cuota_id' => $cuota ? $cuota->id : null,
-                'empleado_id' => 1, // Esto daba error, pero ya apagamos la restricción
+                'empleado_id' => 1, 
                 'monto' => $abono,
                 'metodo_pago' => $request->metodo_pago,
                 'estado' => 'confirmado',
                 'nota' => 'Abono posterior a la emisión'
             ]);
 
-            // 4. Dejar rastro en el Historial
             \App\Models\FacturaEstadoHistorial::create([
                 'factura_id' => $factura->id,
                 'tipo_cambio' => 'estado_pago',
@@ -320,7 +335,6 @@ class ExpedienteController extends Controller
                 'ip_address' => $request->ip()
             ]);
 
-            // ENCENDEMOS LAS RESTRICCIONES DE NUEVO
             Schema::enableForeignKeyConstraints();
             DB::commit();
             
@@ -332,13 +346,12 @@ class ExpedienteController extends Controller
         }
     }
 
-// =========================================================
-    // 6. GENERAR PDF DE LA FACTURA
+    // =========================================================
+    // 6. GENERAR PDF DEL RECIBO
     // =========================================================
     public function imprimirFactura($factura_id)
     {
         try {
-            // Recolectamos toda la información manualmente para no fallar
             $factura = \App\Models\Factura::findOrFail($factura_id);
             $paciente = \App\Models\Paciente::findOrFail($factura->paciente_id);
             $items = \App\Models\FacturaItem::where('factura_id', $factura->id)->get();
@@ -349,16 +362,14 @@ class ExpedienteController extends Controller
                 $cita = \App\Models\Cita::find($factura->cita_id);
             }
 
-            // Calculamos cuánto se ha pagado en total
             $total_pagado = $pagos->sum('monto');
 
-            // Preparamos el paquete de datos para la vista
             $data = [
                 'factura' => $factura,
                 'paciente' => $paciente,
                 'items' => $items,
                 'pagos' => $pagos,
-                'cita' => $cita, // <--- NUEVO: Pasamos la cita al PDF
+                'cita' => $cita,
                 'total_pagado' => $total_pagado,
                 'clinica' => [
                     'nombre' => 'DentalSistem Clínica Odontológica',
@@ -368,14 +379,10 @@ class ExpedienteController extends Controller
                 ]
             ];
 
-            // Generamos el PDF
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.factura', $data);
-            
-            // Opcional: Configurar tamaño de papel (Ticket o Carta). Usaremos Carta (A4)
             $pdf->setPaper('A4', 'portrait');
 
-            // stream() abre el PDF en el navegador. download() lo descarga directo.
-            return $pdf->stream('Factura_' . $factura->numero . '.pdf');
+            return $pdf->stream('Recibo_' . $factura->numero . '.pdf');
 
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -390,11 +397,10 @@ class ExpedienteController extends Controller
         try {
             $cita = \App\Models\Cita::findOrFail($citaId);
 
-            // 1. Prevención: Si la cita ya está "En progreso", buscamos su borrador
             if ($cita->estado === 'En progreso') {
                 $consultaBorrador = \App\Models\Consulta::where('cita_id', $cita->id)
                                             ->where('estado', 'borrador')
-                                            ->orderBy('id', 'desc') // <--- ¡AÑADE ESTA LÍNEA MÁGICA!
+                                            ->orderBy('id', 'desc') 
                                             ->first();
                                             
                 if ($consultaBorrador) {
@@ -405,30 +411,22 @@ class ExpedienteController extends Controller
                 }
             }
 
-            // 2. Transacción Segura (Todo o Nada)
             DB::beginTransaction();
-
-            // Apagamos las restricciones de llaves foráneas igual que en el resto de tu código
-            // por si acaso tienes otros datos fantasma en tu base local
             \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
 
-            // Cambiamos el estado de la cita
             $cita->estado = 'En progreso';
             $cita->save();
 
-            // Creamos el borrador inmediatamente
             $consulta = \App\Models\Consulta::create([
                 'cita_id' => $cita->id,
                 'paciente_id' => $cita->paciente_id,
-                'empleado_id' => $cita->empleado_id, // <--- ¡AQUÍ ESTÁ LA MAGIA! Usamos el doctor de la cita.
+                'empleado_id' => $cita->empleado_id, 
                 'fecha_consulta' => now()->toDateString(),
                 'motivo_consulta' => $cita->motivo_consulta,
                 'estado' => 'borrador' 
             ]);
 
-            // Volvemos a encender la seguridad
             \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
-
             DB::commit();
 
             return response()->json([
@@ -439,6 +437,136 @@ class ExpedienteController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             return response()->json(['error_real' => $e->getMessage(), 'linea' => $e->getLine()], 500);
+        }
+    }
+
+    // =========================================================
+    // 8. OBTENER DETALLE DE RECIBO PARA EDITAR
+    // =========================================================
+    public function obtenerDetalleFactura($id)
+    {
+        try {
+            $factura = \App\Models\Factura::findOrFail($id);
+            $itemsDb = \App\Models\FacturaItem::where('factura_id', $id)->get();
+            
+            $items = $itemsDb->map(function($i) {
+                return [
+                    'id' => $i->tratamiento_id,
+                    'nombre' => preg_replace('/\s*\(Diente:.*?\)/', '', $i->descripcion), 
+                    'precio' => (float) $i->precio_unitario,
+                    'codigo' => 'S/C'
+                ];
+            });
+
+            // LÓGICA NUEVA: Buscar los Dientes Afectados
+            $dientesAfectados = '';
+            $primerItem = $itemsDb->firstWhere('tratamiento_aplicado_id', '!=', null);
+            if ($primerItem) {
+                $tratAplicado = \App\Models\TratamientoAplicado::find($primerItem->tratamiento_aplicado_id);
+                if ($tratAplicado) {
+                    $dientesAfectados = $tratAplicado->diente;
+                }
+            }
+            
+            return response()->json([
+                'factura' => $factura,
+                'items' => $items,
+                'dientes' => $dientesAfectados // Enviamos el dato al frontend
+            ]);
+
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // =========================================================
+    // 9. ACTUALIZAR RECIBO (EDICIÓN DE TRATAMIENTOS)
+    // =========================================================
+    public function actualizarFactura(Request $request, $id)
+    {
+        try {
+            DB::beginTransaction();
+            Schema::disableForeignKeyConstraints();
+
+            $factura = \App\Models\Factura::findOrFail($id);
+            $total = (float) $request->total;
+            
+            $pagos_existentes = \App\Models\Pago::where('factura_id', $factura->id)->sum('monto');
+            $nuevo_saldo = $total - $pagos_existentes;
+            
+            $estado_pago = 'pendiente';
+            if ($pagos_existentes >= $total) {
+                $estado_pago = 'pagado';
+            } else if ($pagos_existentes > 0) {
+                $estado_pago = 'parcial';
+            }
+
+            $factura->update([
+                'cita_id' => $request->cita_id ?? null,
+                'fecha_emision' => $request->fecha,
+                'subtotal' => $request->subtotal,
+                'descuento' => $request->descuento,
+                'total' => $total,
+                'saldo_pendiente' => $nuevo_saldo > 0 ? $nuevo_saldo : 0,
+                'estado_pago' => $estado_pago,
+                'observaciones' => $request->observaciones_factura
+            ]);
+
+            // Eliminamos items viejos
+            $old_items = \App\Models\FacturaItem::where('factura_id', $factura->id)->get();
+            foreach($old_items as $oi) {
+                if($oi->tratamiento_aplicado_id) {
+                    \App\Models\TratamientoAplicado::where('id', $oi->tratamiento_aplicado_id)->delete();
+                }
+                $oi->delete();
+            }
+
+            $consulta_id = null;
+            if($factura->cita_id) {
+                $consulta = \App\Models\Consulta::where('cita_id', $factura->cita_id)->first();
+                $consulta_id = $consulta ? $consulta->id : null;
+            }
+
+            // Guardamos los items corregidos
+            foreach ($request->tratamientos as $tratamiento) {
+                $tratAplicado = \App\Models\TratamientoAplicado::create([
+                    'consulta_id' => $consulta_id, 
+                    'tratamiento_id' => $tratamiento['id'] ?? 1,
+                    'diente' => $request->diente ?? 'General',
+                    'realizado_por' => 1,
+                    'notas' => 'Actualizado tras edición de recibo'
+                ]);
+
+                \App\Models\FacturaItem::create([
+                    'factura_id' => $factura->id,
+                    'tipo_item' => 'tratamiento',
+                    'descripcion' => $tratamiento['nombre'], 
+                    'cantidad' => 1,
+                    'precio_unitario' => $tratamiento['precio'],
+                    'total_item' => $tratamiento['precio'],
+                    'tratamiento_id' => $tratamiento['id'] ?? null,
+                    'tratamiento_aplicado_id' => $tratAplicado->id, 
+                    'consulta_id' => $consulta_id 
+                ]);
+            }
+
+            // Actualizamos la cuota
+            $cuota = \App\Models\FacturaCuota::where('factura_id', $factura->id)->first();
+            if($cuota) {
+                $cuota->update([
+                    'monto_programado' => $total,
+                    'saldo_cuota' => $nuevo_saldo > 0 ? $nuevo_saldo : 0,
+                    'estado' => $nuevo_saldo <= 0 ? 'pagado_completo' : 'pagado_parcial'
+                ]);
+            }
+
+            Schema::enableForeignKeyConstraints();
+            DB::commit(); 
+            return response()->json(['mensaje' => 'Recibo actualizado con éxito']);
+
+        } catch (\Throwable $e) {
+            DB::rollBack(); 
+            return response()->json(['error_real' => $e->getMessage()], 500);
         }
     }
 }

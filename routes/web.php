@@ -27,7 +27,7 @@ Route::get('/calendar', function () {
 });
 
 Route::get('/expediente', function () {
-    return view('expediente'); // Carga resources/views/expediente.blade.php
+    return view('expediente'); 
 });
 
 // Gestión de Catálogo de Tratamientos
@@ -40,19 +40,19 @@ Route::get('/perfil', function () {
     return view('perfil');
 });
 
-//PACIENTES
+// ==========================================
+// PACIENTES
+// ==========================================
 use App\Http\Controllers\PacienteController;
 Route::get('/api/obtener-pacientes', [PacienteController::class, 'obtenerTodos']);
 Route::get('/api/pacientes/{id}', [PacienteController::class, 'obtenerUno']);
-//guardar
 Route::post('/api/guardar-paciente', [PacienteController::class, 'guardar']);
-//actualizar
 Route::put('/api/pacientes/{id}', [PacienteController::class, 'actualizar']);
-//soft delete
 Route::delete('/api/pacientes/{id}', [PacienteController::class, 'eliminar']);
 
-
-//TRATAMIENTOS
+// ==========================================
+// TRATAMIENTOS
+// ==========================================
 use App\Http\Controllers\TratamientoController;
 Route::get('/api/categorias-tratamientos', [TratamientoController::class, 'obtenerCategorias']);
 Route::get('/api/obtener-tratamientos', [TratamientoController::class, 'obtenerTodos']);
@@ -60,16 +60,23 @@ Route::post('/api/guardar-tratamiento', [TratamientoController::class, 'guardar'
 Route::put('/api/tratamientos/{id}', [TratamientoController::class, 'actualizar']);
 Route::delete('/api/tratamientos/{id}', [TratamientoController::class, 'eliminar']);
 
-
-//EXPEDIENTE
+// ==========================================
+// EXPEDIENTE Y RECIBOS (FACTURACIÓN)
+// ==========================================
 use App\Http\Controllers\ExpedienteController;
 Route::post('/api/expediente/{paciente_id}/guardar', [ExpedienteController::class, 'guardarFicha']);
 Route::get('/api/expediente/{paciente_id}', [ExpedienteController::class, 'obtenerFicha']); 
-Route::get('/api/expediente/{paciente_id}/facturas', [\App\Http\Controllers\ExpedienteController::class, 'obtenerFacturas']);
-Route::post('/api/expediente/{paciente_id}/facturas', [\App\Http\Controllers\ExpedienteController::class, 'guardarFactura']);
-Route::post('/api/expediente/facturas/{factura_id}/abonar', [\App\Http\Controllers\ExpedienteController::class, 'abonarFactura']);
-Route::get('/api/expediente/facturas/{factura_id}/pdf', [\App\Http\Controllers\ExpedienteController::class, 'imprimirFactura']);
-Route::post('/citas/{citaId}/iniciar-consulta', [\App\Http\Controllers\ExpedienteController::class, 'iniciarConsultaDesdeCita']);
+
+// Rutas Originales
+Route::get('/api/expediente/{paciente_id}/facturas', [ExpedienteController::class, 'obtenerFacturas']);
+Route::post('/api/expediente/{paciente_id}/facturas', [ExpedienteController::class, 'guardarFactura']);
+Route::post('/api/expediente/facturas/{factura_id}/abonar', [ExpedienteController::class, 'abonarFactura']);
+Route::get('/api/expediente/facturas/{factura_id}/pdf', [ExpedienteController::class, 'imprimirFactura']);
+Route::post('/citas/{citaId}/iniciar-consulta', [ExpedienteController::class, 'iniciarConsultaDesdeCita']);
+
+// Nuevas Rutas para Editar Recibos
+Route::get('/api/expediente/facturas/detalle/{id}', [ExpedienteController::class, 'obtenerDetalleFactura']);
+Route::put('/api/expediente/facturas/{id}', [ExpedienteController::class, 'actualizarFactura']);
 
 // ==========================================
 // CITAS
