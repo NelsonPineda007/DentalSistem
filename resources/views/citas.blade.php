@@ -53,7 +53,7 @@
         </div>
     </div>
 
-    {{-- Filtros --}}
+    {{-- Filtros (¡AQUÍ ESTÁ LA CORRECCIÓN!) --}}
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-col md:flex-row gap-4">
         <div class="relative flex-1">
             <svg class="w-5 h-5 absolute left-3 top-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -64,15 +64,16 @@
             <option value="">Todos los estados</option>
             <option value="Programada">Programada</option>
             <option value="Confirmada">Confirmada</option>
+            <option value="En progreso">En progreso</option>
             <option value="Completada">Completada</option>
+            <option value="No presentado">No presentado</option>
             <option value="Cancelada">Cancelada</option>
-            <option value="Pendiente">Pendiente</option>
         </select>
     </div>
 
     {{-- Tabla (Componente Laravel) --}}
     @php 
-        $tableColumns = ['Fecha / Hora', 'Paciente', 'Motivo', 'Doctor', 'Estado', 'Acciones'];
+        $tableColumns = ['Fecha / Hora Rango', 'Paciente', 'Motivo', 'Doctor', 'Estado', 'Acciones'];
         $tableID = 'citasTableBody'; 
     @endphp
     @include('components.tabla_base')
@@ -101,27 +102,43 @@
             </div>
         </div>
 
-        <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha *</label>
+        <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha de la cita *</label>
             <input type="date" name="fecha" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required>
         </div>
         
         <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora Exacta *</label>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora Inicio *</label>
             <div class="flex items-center gap-2">
                 <div class="relative flex-1">
-                    <input type="text" id="hora_input" placeholder="08:00" maxlength="5"
-                        class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-center font-bold text-slate-700 tracking-wider bg-white transition-colors" 
+                    <input type="text" id="hora_input_inicio" placeholder="08:00" maxlength="5"
+                        class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-center font-bold text-slate-700 tracking-wider bg-white transition-colors" 
                         oninput="window.formatearHora(this)" onblur="window.validarHora(this)" required>
                 </div>
-                
                 <div class="flex bg-slate-100 p-1 rounded-xl shrink-0">
-                    <button type="button" id="btn_am" onclick="window.setAMPM('AM')" class="px-3 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-blue-600 transition-all">AM</button>
-                    <button type="button" id="btn_pm" onclick="window.setAMPM('PM')" class="px-3 py-1.5 rounded-lg font-bold text-sm text-slate-500 hover:text-slate-800 transition-all">PM</button>
+                    <button type="button" id="btn_am_inicio" onclick="window.setAMPM('inicio', 'AM')" class="px-2 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-blue-600 transition-all">AM</button>
+                    <button type="button" id="btn_pm_inicio" onclick="window.setAMPM('inicio', 'PM')" class="px-2 py-1.5 rounded-lg font-bold text-sm text-slate-500 hover:text-slate-800 transition-all">PM</button>
                 </div>
             </div>
-            <input type="hidden" id="hora_ampm" value="AM">
-            <input type="hidden" name="hora" id="hora_oculta">
+            <input type="hidden" id="hora_ampm_inicio" value="AM">
+            <input type="hidden" name="hora" id="hora_oculta_inicio">
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora Fin *</label>
+            <div class="flex items-center gap-2">
+                <div class="relative flex-1">
+                    <input type="text" id="hora_input_fin" placeholder="08:30" maxlength="5"
+                        class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-center font-bold text-slate-700 tracking-wider bg-white transition-colors" 
+                        oninput="window.formatearHora(this)" onblur="window.validarHora(this)" required>
+                </div>
+                <div class="flex bg-slate-100 p-1 rounded-xl shrink-0">
+                    <button type="button" id="btn_am_fin" onclick="window.setAMPM('fin', 'AM')" class="px-2 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-blue-600 transition-all">AM</button>
+                    <button type="button" id="btn_pm_fin" onclick="window.setAMPM('fin', 'PM')" class="px-2 py-1.5 rounded-lg font-bold text-sm text-slate-500 hover:text-slate-800 transition-all">PM</button>
+                </div>
+            </div>
+            <input type="hidden" id="hora_ampm_fin" value="AM">
+            <input type="hidden" name="hora_fin" id="hora_oculta_fin">
         </div>
 
         <div class="md:col-span-2">
