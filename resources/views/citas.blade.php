@@ -2,8 +2,6 @@
 @include('header')
 @include('nav')
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <main class="flex-1 p-8 bg-[#f8fafc] overflow-y-auto h-screen">
     
     {{-- Encabezado --}}
@@ -107,9 +105,23 @@
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha *</label>
             <input type="date" name="fecha" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required>
         </div>
+        
         <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora *</label>
-            <input type="time" name="hora" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora Exacta *</label>
+            <div class="flex items-center gap-2">
+                <div class="relative flex-1">
+                    <input type="text" id="hora_input" placeholder="08:00" maxlength="5"
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-center font-bold text-slate-700 tracking-wider bg-white transition-colors" 
+                        oninput="window.formatearHora(this)" onblur="window.validarHora(this)" required>
+                </div>
+                
+                <div class="flex bg-slate-100 p-1 rounded-xl shrink-0">
+                    <button type="button" id="btn_am" onclick="window.setAMPM('AM')" class="px-3 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-blue-600 transition-all">AM</button>
+                    <button type="button" id="btn_pm" onclick="window.setAMPM('PM')" class="px-3 py-1.5 rounded-lg font-bold text-sm text-slate-500 hover:text-slate-800 transition-all">PM</button>
+                </div>
+            </div>
+            <input type="hidden" id="hora_ampm" value="AM">
+            <input type="hidden" name="hora" id="hora_oculta">
         </div>
 
         <div class="md:col-span-2">
@@ -124,7 +136,7 @@
             </select>
         </div>
 
-<div>
+        <div>
              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Estado</label>
              <select name="estado" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 bg-white outline-none focus:border-blue-500">
                 <option value="Programada">Programada</option>
@@ -152,6 +164,7 @@
 @endphp
 @include('components.modal_base')
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('js/utils/alertas.js') }}"></script>
 <script src="{{ asset('js/utils/api.js') }}"></script>

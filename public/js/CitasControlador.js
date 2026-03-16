@@ -15,6 +15,47 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarBuscadorPacientes();
 });
 
+// ==========================================
+// MAGIA DEL INPUT DE HORA INTUITIVO
+// ==========================================
+window.formatearHora = function(input) {
+    // Quita cualquier cosa que no sea número
+    let val = input.value.replace(/\D/g, ''); 
+    // Auto pone los dos puntos ":"
+    if (val.length > 2) {
+        val = val.substring(0, 2) + ':' + val.substring(2, 4);
+    }
+    input.value = val;
+};
+
+window.validarHora = function(input) {
+    let val = input.value;
+    if(val.length === 5) {
+        let [h, m] = val.split(':');
+        // Si el usuario pone horas locas como 15 o 00, lo reparamos a 12h
+        if(parseInt(h) > 12) h = '12';
+        if(parseInt(h) === 0) h = '12';
+        // Si pone minutos como 89, lo topamos a 59
+        if(parseInt(m) > 59) m = '59';
+        input.value = `${h}:${m}`;
+    }
+};
+
+window.setAMPM = function(valor) {
+    document.getElementById('hora_ampm').value = valor;
+    const btnAM = document.getElementById('btn_am');
+    const btnPM = document.getElementById('btn_pm');
+
+    if(valor === 'AM') {
+        btnAM.className = "px-3 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-blue-600 transition-all";
+        btnPM.className = "px-3 py-1.5 rounded-lg font-bold text-sm text-slate-500 hover:text-slate-800 transition-all";
+    } else {
+        btnPM.className = "px-3 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-blue-600 transition-all";
+        btnAM.className = "px-3 py-1.5 rounded-lg font-bold text-sm text-slate-500 hover:text-slate-800 transition-all";
+    }
+};
+// ==========================================
+
 // 1. Cargar las citas a la tabla
 async function cargarCitasDesdeBD() {
     try {
@@ -38,7 +79,6 @@ async function cargarDatosFormulario() {
 
         const datos = await respuesta.json();
 
-        // Guardamos los pacientes en la variable global para el buscador
         if(datos.pacientes) {
             pacientesGlobal = datos.pacientes;
         }
@@ -54,7 +94,7 @@ async function cargarDatosFormulario() {
     }
 }
 
-// 3. Lógica del buscador de pacientes en el modal (V2 - Buscador Fuerte)
+// 3. Buscador de pacientes
 function configurarBuscadorPacientes() {
     const inputBuscador = document.getElementById('buscador_paciente');
     const dropdown = document.getElementById('dropdown_pacientes');
@@ -62,22 +102,17 @@ function configurarBuscadorPacientes() {
 
     if(!inputBuscador) return;
 
-    // Función auxiliar que hace el trabajo pesado
     const renderizarLista = (termino = "") => {
         dropdown.innerHTML = '';
 
-        // Si el doctor borra el texto, limpiamos el ID para evitar guardar datos erróneos
         if (termino.trim().length === 0) {
             inputOcultoId.value = '';
         }
 
-        // BÚSQUEDA FUERTE: Separamos lo que escribe el usuario por espacios
-        // Así si escribe "Pérez Juan", igual encontrará a "Juan Pérez"
         const palabrasBusqueda = termino.toLowerCase().split(' ').filter(p => p.trim() !== '');
 
         const filtrados = pacientesGlobal.filter(p => {
             const nombreCompleto = p.nombre_completo.toLowerCase();
-            // El paciente debe coincidir con TODAS las palabras escritas, sin importar el orden
             return palabrasBusqueda.every(palabra => nombreCompleto.includes(palabra));
         });
 
@@ -87,8 +122,6 @@ function configurarBuscadorPacientes() {
             filtrados.forEach(p => {
                 const item = document.createElement('div');
                 item.className = "px-4 py-2.5 cursor-pointer hover:bg-blue-50 text-sm text-slate-700 font-medium transition-colors border-b border-slate-50 last:border-0";
-                
-                // Resaltar en negrita (opcional, le da un toque muy pro)
                 item.innerHTML = p.nombre_completo;
                 
                 item.onclick = () => {
@@ -102,17 +135,9 @@ function configurarBuscadorPacientes() {
         dropdown.classList.remove('hidden');
     };
 
-    // Evento 1: Cuando el usuario escribe
-    inputBuscador.addEventListener('input', function() {
-        renderizarLista(this.value);
-    });
+    inputBuscador.addEventListener('input', function() { renderizarLista(this.value); });
+    inputBuscador.addEventListener('focus', function() { renderizarLista(this.value); });
 
-    // Evento 2: ¡La Magia! Cuando el usuario hace clic en el input vacío, muestra TODOS los pacientes
-    inputBuscador.addEventListener('focus', function() {
-        renderizarLista(this.value);
-    });
-
-    // Evento 3: Ocultar si hace clic en cualquier otra parte de la pantalla
     document.addEventListener('click', (e) => {
         if (!inputBuscador.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.add('hidden');
@@ -120,17 +145,29 @@ function configurarBuscadorPacientes() {
     });
 }
 
-// 4. Procesar el botón Guardar usando las alertas
+// 4. Procesar el botón Guardar
 window.guardarDatos = async function() {
     const form = document.getElementById('formCita');
     const pacienteSeleccionado = document.getElementById('paciente_id').value;
+    const horaVisual = document.getElementById('hora_input').value;
+    const ampm = document.getElementById('hora_ampm').value;
     
-    if (!form.checkValidity() || pacienteSeleccionado === '') {
+    if (!form.checkValidity() || pacienteSeleccionado === '' || horaVisual.length < 5) {
         form.reportValidity(); 
-        Alerta.advertencia('Campos incompletos', 'Por favor completa los campos obligatorios (*) y selecciona un paciente de la lista.');
+        Alerta.advertencia('Campos incompletos', 'Por favor completa todos los campos y asegúrate que la hora esté completa (Ej: 08:30).');
         return;
     }
 
+    // Traducir formato intuitivo a formato BD (24h)
+    let [hours, minutes] = horaVisual.split(':');
+    let hours24 = parseInt(hours, 10);
+    
+    if (ampm === 'PM' && hours24 < 12) hours24 += 12;
+    if (ampm === 'AM' && hours24 === 12) hours24 = 0;
+    
+    document.getElementById('hora_oculta').value = `${hours24.toString().padStart(2, '0')}:${minutes}:00`;
+
+    // Enviar datos
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
@@ -150,7 +187,12 @@ window.guardarDatos = async function() {
 
     } catch (error) {
         console.error("Error al guardar los datos:", error);
-        Alerta.error('Error del servidor', 'Hubo un problema al guardar la cita.');
+        
+        if (error.status === 422 && error.data && error.data.error) {
+            Alerta.error('Horario Ocupado', error.data.error);
+        } else {
+            Alerta.error('Error del servidor', 'Hubo un problema al guardar la cita.');
+        }
     }
 };
 
@@ -158,10 +200,11 @@ window.guardarDatos = async function() {
 function actualizarEstadisticas() {
     const hoy = new Date().toISOString().split('T')[0];
     
-    const countHoy = citasDB.filter(c => c.fecha === hoy).length;
+    const countHoy = citasDB.filter(c => c.fecha === hoy && c.estado !== 'Cancelada').length;
     const countPendientes = citasDB.filter(c => c.estado === 'Programada' || c.estado === 'Confirmada').length;
     
     const countSemana = citasDB.filter(c => {
+        if(c.estado === 'Cancelada') return false;
         const fechaCita = new Date(c.fecha);
         const fechaHoy = new Date();
         const diffTime = Math.abs(fechaCita - fechaHoy);
@@ -174,7 +217,7 @@ function actualizarEstadisticas() {
     document.getElementById('statPendientes').innerText = countPendientes;
 }
 
-// 6. Armar la tabla
+// 6. Armar la tabla 
 function inicializarPaginador() {
     miPaginadorCitas = new PaginadorTabla(citasDB, 6, {
         tableBodyId: 'citasTableBody',
@@ -189,16 +232,28 @@ function inicializarPaginador() {
                 default: estadoClass = "bg-slate-100 text-slate-500 border-slate-200";
             }
 
-            const fechaObj = new Date(c.fecha + 'T' + c.hora);
+            const fechaObj = new Date(c.fecha + 'T' + (c.hora || '00:00:00'));
             const fechaLegible = fechaObj.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-            const horaMin = c.hora ? c.hora.substring(0, 5) : '';
+            
+            // Convertir hora de BD (24h) a 12h
+            let horaFormateada = "";
+            if (c.hora) {
+                let [horaStr, minStr] = c.hora.split(':');
+                let horaNum = parseInt(horaStr, 10);
+                let ampm = horaNum >= 12 ? 'PM' : 'AM';
+                horaNum = horaNum % 12;
+                horaNum = horaNum ? horaNum : 12; 
+                horaFormateada = `${horaNum.toString().padStart(2, '0')}:${minStr} ${ampm}`;
+            }
+
+            let filaEstilo = c.estado === 'Cancelada' ? 'opacity-50 bg-slate-50' : 'hover:bg-slate-50';
 
             return `
-                <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
+                <tr class="${filaEstilo} border-b border-slate-100 transition-colors">
                     <td class="px-6 py-4">
                         <div class="flex flex-col">
                             <span class="font-bold text-slate-700 text-sm">${fechaLegible}</span>
-                            <span class="text-xs text-slate-400 font-medium">${horaMin} hrs</span>
+                            <span class="text-xs text-slate-400 font-medium">${horaFormateada}</span>
                         </div>
                     </td>
                     <td class="px-6 py-4">
@@ -221,7 +276,7 @@ function inicializarPaginador() {
                             <button onclick="window.abrirModalEdicion(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all shadow-sm border border-emerald-100" title="Editar">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                             </button>
-                            <button onclick="window.eliminarCita(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-slate-200" title="Eliminar/Cancelar">
+                            <button onclick="window.eliminarCita(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-slate-200" title="Cancelar Cita">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                             </button>
                         </div>
@@ -279,6 +334,11 @@ window.openModal = async function(modalID, mode = 'add') {
         form.fecha.value = new Date().toISOString().split('T')[0];
         document.getElementById('buscador_paciente').value = ''; 
         document.getElementById('paciente_id').value = ''; 
+
+        // Reseteo visual a las 08:00 AM
+        document.getElementById('hora_input').value = '08:00';
+        window.setAMPM('AM');
+
     } else {
         title.innerText = 'Editar Cita';
     }
@@ -314,31 +374,42 @@ window.abrirModalEdicion = async function(id) {
     form.id.value = c.id;
     form.empleado_id.value = c.empleado_id;
     form.fecha.value = c.fecha;
-    form.hora.value = c.hora;
     form.motivo.value = c.motivo;
     form.estado.value = c.estado;
     form.notas.value = c.notas || '';
-    
     form.paciente_id.value = c.paciente_id;
     document.getElementById('buscador_paciente').value = c.paciente || ''; 
+
+    // Leer la hora de la BD y separarla para los botones visuales
+    if (c.hora) {
+        let [hours, minutes] = c.hora.split(':');
+        let hours12 = parseInt(hours, 10);
+        const ampm = hours12 >= 12 ? 'PM' : 'AM';
+        
+        hours12 = hours12 % 12;
+        hours12 = hours12 ? hours12 : 12;
+        
+        document.getElementById('hora_input').value = `${hours12.toString().padStart(2, '0')}:${minutes}`;
+        window.setAMPM(ampm);
+    }
 };
 
-// 9. Botón Basura con Alertas personalizadas
+// 9. Botón Basura: Cancelar
 window.eliminarCita = async function(id) {
     const confirmado = await Alerta.eliminar(
         '¿Cancelar Cita?', 
-        'Esta cita desaparecerá de la lista activa.'
+        'Esta cita se marcará como "Cancelada" y pasará al final de la lista.'
     );
 
     if(confirmado) {
         try {
             const response = await window.API.delete('/api/citas/' + id);
             if(response && response.success) {
-                Alerta.exito('¡Cancelada!', 'La cita ha sido ocultada exitosamente.');
+                Alerta.exito('Cancelada', 'La cita fue enviada al fondo de la tabla.');
                 cargarCitasDesdeBD(); 
             }
         } catch (error) {
-            console.error("Error al eliminar:", error);
+            console.error("Error al cancelar:", error);
             Alerta.error('Hubo un problema', 'No se pudo cancelar la cita.');
         }
     }
