@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener("submit", (e) => {
         if (e.target.id === "formAbono" || e.target.id === "formVisita") {
-            e.preventDefault(); // Bloquea el comportamiento nativo
+            e.preventDefault(); 
         }
     });
 });
@@ -48,7 +48,7 @@ async function cargarFacturasPaciente(idPaciente) {
         pagosDB = await API.get(`/api/expediente/${idPaciente}/facturas`);
         if(pagosPaginador) pagosPaginador.setData(pagosDB);
     } catch (error) {
-        console.error("Error al cargar facturas:", error);
+        console.error("Error al cargar recibos:", error);
     }
 }
 
@@ -118,9 +118,13 @@ async function cargarDatosPacienteDesdeURL() {
                                     const estadoGuardado = carasCargadas[index];
                                     if (estadoGuardado !== 'sano') {
                                         cara.setAttribute('data-estado', estadoGuardado);
-                                        if (estadoGuardado === 'caries') cara.setAttribute('fill', '#f43f5e');
-                                        else if (estadoGuardado === 'restaurado') cara.setAttribute('fill', '#3b82f6');
-                                        else if (estadoGuardado === 'ausente') cara.setAttribute('fill', '#1e293b');
+                                        if (estadoGuardado === 'caries') {
+                                            cara.setAttribute('fill', '#f43f5e');
+                                        } else if (estadoGuardado === 'restaurado') {
+                                            cara.setAttribute('fill', '#3b82f6');
+                                        } else if (estadoGuardado === 'ausente') {
+                                            cara.setAttribute('fill', '#1e293b');
+                                        }
                                     }
                                 });
                             }
@@ -153,7 +157,6 @@ async function cargarDatosPacienteDesdeURL() {
         await cargarFacturasPaciente(idPaciente);
         await detectarCitaDeHoy(idPaciente);
 
-
     } catch (error) {
         console.error("Error cargando paciente:", error);
         document.getElementById("exp-nombre").textContent = "Error al cargar paciente";
@@ -165,9 +168,7 @@ async function detectarCitaDeHoy(idPaciente) {
     try {
         const citas = await API.get(`/api/pacientes/${idPaciente}/citas`);
         
-        // Guardamos las citas globalmente para usarlas en el selector de facturación
         citasPacienteDB = citas;
-
         citas.sort((a, b) => b.id - a.id);
         
         const fechaLocal = new Date();
@@ -226,6 +227,7 @@ async function detectarCitaDeHoy(idPaciente) {
         console.error("Error detectando citas de hoy:", error);
     }
 }
+
 // =========================================================================
 // 1. LÓGICA DE PESTAÑAS (TABS)
 // =========================================================================
@@ -408,8 +410,11 @@ function actualizarTextosDiagnostico() {
     if (inputAusentes) inputAusentes.value = ausentes.length > 0 ? ausentes.join(', ') : '';
     if (inputExtraccion) inputExtraccion.value = extracciones.length > 0 ? `Pieza(s): ${extracciones.join(', ')}` : '';
     if (inputFinal) {
-        if (caries.length > 0) inputFinal.value = `Se detectan caries en piezas: ${caries.join(', ')}`;
-        else if (inputFinal.value.includes('caries en piezas')) inputFinal.value = ""; 
+        if (caries.length > 0) {
+            inputFinal.value = `Se detectan caries en piezas: ${caries.join(', ')}`;
+        } else if (inputFinal.value.includes('caries en piezas')) {
+            inputFinal.value = ""; 
+        }
     }
 }
 
@@ -476,7 +481,7 @@ function renderizarBadgesTratamientos() {
     let subtotal = 0;
 
     if (tratamientosSeleccionados.length === 0) {
-        contenedor.innerHTML = `<span class="text-xs text-slate-400 italic px-2">Ningún tratamiento agregado a la factura...</span>`;
+        contenedor.innerHTML = `<span class="text-xs text-slate-400 italic px-2">Ningún tratamiento agregado...</span>`;
     } else {
         tratamientosSeleccionados.forEach((t, index) => {
             subtotal += t.precio;
@@ -499,7 +504,9 @@ function renderizarBadgesTratamientos() {
     }
 
     const spanSubtotal = document.getElementById('resumen_subtotal');
-    if(spanSubtotal) spanSubtotal.innerText = subtotal.toFixed(2);
+    if(spanSubtotal) {
+        spanSubtotal.innerText = subtotal.toFixed(2);
+    }
     calcularTotalesFactura();
 }
 
@@ -515,20 +522,29 @@ window.calcularTotalesFactura = function() {
     let subtotal = parseFloat(spanSubtotal.innerText) || 0;
     let descuento = parseFloat(inputDescuento.value) || 0;
     
-    if(descuento > subtotal) { descuento = subtotal; inputDescuento.value = descuento.toFixed(2); }
+    if(descuento > subtotal) { 
+        descuento = subtotal; 
+        inputDescuento.value = descuento.toFixed(2); 
+    }
 
     let total = subtotal - descuento;
     spanTotal.innerText = total.toFixed(2);
 
-    let abono = parseFloat(inputAbono.value) || 0;
+    let abono = parseFloat(inputAbono ? inputAbono.value : 0) || 0;
     let saldo = total - abono;
 
-    if(saldo < 0) { saldo = 0; inputAbono.value = total.toFixed(2); }
+    if(saldo < 0) { 
+        saldo = 0; 
+        if(inputAbono) inputAbono.value = total.toFixed(2); 
+    }
 
     spanSaldo.innerText = saldo.toFixed(2);
     
-    if(saldo === 0 && total > 0) spanSaldo.parentElement.classList.replace('text-rose-500', 'text-emerald-500');
-    else spanSaldo.parentElement.classList.replace('text-emerald-500', 'text-rose-500');
+    if(saldo === 0 && total > 0) {
+        spanSaldo.parentElement.classList.replace('text-rose-500', 'text-emerald-500');
+    } else {
+        spanSaldo.parentElement.classList.replace('text-emerald-500', 'text-rose-500');
+    }
 }
 
 window.removerTratamiento = function(index) {
@@ -576,9 +592,18 @@ function renderizarResultadosBuscador(filtro = "") {
 }
 
 if(inputSearch) {
-    inputSearch.addEventListener("focus", () => { renderizarResultadosBuscador(inputSearch.value); dropdown.classList.remove("hidden"); });
-    inputSearch.addEventListener("input", (e) => { renderizarResultadosBuscador(e.target.value); });
-    document.addEventListener("click", (e) => { if (!inputSearch.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.add("hidden"); });
+    inputSearch.addEventListener("focus", () => { 
+        renderizarResultadosBuscador(inputSearch.value); 
+        dropdown.classList.remove("hidden"); 
+    });
+    inputSearch.addEventListener("input", (e) => { 
+        renderizarResultadosBuscador(e.target.value); 
+    });
+    document.addEventListener("click", (e) => { 
+        if (!inputSearch.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add("hidden"); 
+        }
+    });
 }
 
 function inicializarPaginadorPagos() {
@@ -590,7 +615,9 @@ function inicializarPaginadorPagos() {
         renderRow: (p) => {
             const saldoColor = p.saldo > 0 ? "text-rose-500 font-bold" : "text-slate-400 font-bold";
             let estadoBadge = `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">${p.estado_pago}</span>`;
-            if (p.estado_pago === 'pagado') estadoBadge = `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pagado</span>`;
+            if (p.estado_pago === 'pagado') {
+                estadoBadge = `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Pagado</span>`;
+            }
 
             const btnAbonar = p.saldo > 0 
                 ? `<button type="button" onclick="window.abrirModalEdicion(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-200" title="Registrar Abono">
@@ -598,7 +625,7 @@ function inicializarPaginadorPagos() {
                    </button>` 
                 : '';
 
-            return `
+                return `
                 <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors h-[75px]">
                     <td class="px-6 py-4 font-bold text-slate-600">${p.fecha}</td>
                     <td class="px-6 py-4 font-mono text-xs text-blue-800 font-bold">${p.numero}</td>
@@ -610,7 +637,10 @@ function inicializarPaginadorPagos() {
                     <td class="px-6 py-4">${estadoBadge}</td>
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
-                            <button type="button" onclick="window.imprimirFacturaPDF(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Ver / Imprimir PDF">                                
+                            <button type="button" onclick="window.editarRecibo(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-200" title="Editar Recibo">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            </button>
+                            <button type="button" onclick="window.imprimirFacturaPDF(${p.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-800 hover:text-white transition-all shadow-sm border border-slate-200" title="Ver / Imprimir Recibo">                                
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                             </button>
                             ${btnAbonar}
@@ -630,7 +660,7 @@ window.abrirModalEdicion = function(facturaId) {
     if (!fac) return;
 
     if (fac.saldo <= 0) {
-        return Alerta.info("Factura Pagada", "Esta factura ya no tiene saldo pendiente.");
+        return Alerta.info("Recibo Pagado", "Este recibo ya no tiene saldo pendiente.");
     }
 
     document.getElementById('abono_factura_id').value = fac.id;
@@ -659,7 +689,6 @@ window.guardarDatos = async function () {
     const urlParams = new URLSearchParams(window.location.search);
     const idPaciente = urlParams.get('id');
 
-    // 1. LÓGICA PARA EL MODAL DE ABONOS
     const modalAbono = document.getElementById("modalAbono");
     if (modalAbono && !modalAbono.classList.contains('hidden')) {
         const formAbono = document.getElementById("formAbono");
@@ -674,7 +703,7 @@ window.guardarDatos = async function () {
                 abono: abono,
                 metodo_pago: formDataAbono.get("metodo_pago")
             });
-            Alerta.exito("¡Dinero Recibido!", "El saldo de la factura se ha actualizado.");
+            Alerta.exito("¡Dinero Recibido!", "El saldo del recibo se ha actualizado.");
             window.closeModal("modalAbono");
             await cargarFacturasPaciente(idPaciente); 
         } catch (error) {
@@ -684,28 +713,24 @@ window.guardarDatos = async function () {
         return; 
     }
 
-    // 2. LÓGICA PARA EL MODAL DE NUEVA FACTURA
     const form = document.getElementById("formVisita");
-
-    // AQUÍ ESTÁ LA VALIDACIÓN EXACTA
     if (!form.checkValidity()) {
-        form.reportValidity(); // Muestra el mensajito rojo de "Completa este campo"
-        return; // Detiene la función para que no explote el backend
+        form.reportValidity(); 
+        return; 
     }
-
     const formData = new FormData(form);
 
     if (tratamientosSeleccionados.length === 0) {
-        return Alerta.advertencia("Carrito vacío", "Debes agregar al menos un tratamiento a la factura.");
+        return Alerta.advertencia("Carrito vacío", "Debes agregar al menos un tratamiento.");
     }
 
     const payload = {
         fecha: formData.get("fecha"),
         diente: formData.get("diente"),
-        tipo_factura: formData.get("tipo_factura"),
-        metodo_pago: formData.get("metodo_pago"),
-        abono: formData.get("abono"),
-        descuento: formData.get("descuento"),
+        tipo_factura: formData.get("tipo_factura") || 'contado',
+        metodo_pago: formData.get("metodo_pago") || 'efectivo',
+        abono: formData.get("abono") || 0,
+        descuento: formData.get("descuento") || 0,
         observaciones_factura: formData.get("observaciones_factura"),
         subtotal: document.getElementById('resumen_subtotal').innerText,
         total: document.getElementById('resumen_total').innerText,
@@ -714,15 +739,22 @@ window.guardarDatos = async function () {
     };
 
     try {
-        await API.post(`/api/expediente/${idPaciente}/facturas`, payload);
-        Alerta.exito("¡Factura Generada!", "Se ha guardado la factura y registrado el cobro.");
+        const idReciboEditando = formData.get("id");
+        if(idReciboEditando && idReciboEditando !== "") {
+            await API.put(`/api/expediente/facturas/${idReciboEditando}`, payload);
+            Alerta.exito("¡Recibo Actualizado!", "Se han corregido los tratamientos y totales.");
+        } else {
+            await API.post(`/api/expediente/${idPaciente}/facturas`, payload);
+            Alerta.exito("¡Recibo Generado!", "Se ha guardado el recibo y registrado el cobro.");
+        }
         
         window.closeModal("modalVisita");
         await cargarFacturasPaciente(idPaciente); 
+        await cargarDatosPacienteDesdeURL();
         
     } catch (error) {
-        console.error("Error guardando factura:", error);
-        Alerta.error("Error de base de datos", "No se pudo generar la factura.");
+        console.error("Error guardando recibo:", error);
+        Alerta.error("Error de base de datos", "No se pudo generar/actualizar el recibo.");
     }
 };
 
@@ -731,11 +763,15 @@ window.openModal = function (modalID, mode = "add") {
     const form = document.getElementById("formVisita");
 
     if (mode === "add") {
-        document.getElementById("modalTitle").innerText = "Registrar Nueva Factura";
+        document.getElementById("modalTitle").innerText = "Registrar Nuevo Recibo";
         form.reset();
         form.id.value = "";
         
-        // Auto-llenar la fecha de hoy por comodidad
+        const seccionPago = document.getElementById('seccion_pago_inicial');
+        if(seccionPago) seccionPago.classList.remove('hidden');
+        const inputAbono = document.getElementById('input_abono');
+        if(inputAbono) inputAbono.setAttribute('required', 'true');
+
         const hoy = new Date();
         hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset());
         form.fecha.value = hoy.toISOString().split('T')[0];
@@ -743,35 +779,21 @@ window.openModal = function (modalID, mode = "add") {
         tratamientosSeleccionados = [];
         renderizarBadgesTratamientos();
 
-        // 1. LLENAR EL SELECTOR DE CITAS ASOCIADAS
         const selectCita = document.getElementById('select_cita_factura');
         if (selectCita && typeof citasPacienteDB !== 'undefined') {
             selectCita.innerHTML = '<option value="">Ninguna (Libre)</option>';
-            
-            // Convertimos a número de forma segura para evitar fallos de tipo (string vs int)
-            const citasYaFacturadas = pagosDB
-                .filter(f => f.cita_id !== null && f.cita_id !== undefined)
-                .map(f => parseInt(f.cita_id));
+            const citasYaFacturadas = pagosDB.filter(f => f.cita_id !== null && f.cita_id !== undefined).map(f => parseInt(f.cita_id));
             
             citasPacienteDB.forEach(c => {
-                // Validación estricta: Si el ID de esta cita ya está en las facturas, la ignoramos.
-                if (citasYaFacturadas.includes(parseInt(c.id))) {
-                    return; 
-                }
-
+                if (citasYaFacturadas.includes(parseInt(c.id))) return; 
                 const partesFecha = c.fecha_cita.split('-');
                 const fechaLegible = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2]).toLocaleDateString();
-                
                 const textoMotivo = c.motivo_consulta ? c.motivo_consulta.substring(0, 35) : 'Sin motivo';
-                const textoOpcion = `${fechaLegible} - ${textoMotivo}... (${c.estado})`;
-                
                 const selected = (citaActivaId === c.id) ? 'selected' : '';
-                
-                selectCita.innerHTML += `<option value="${c.id}" ${selected}>${textoOpcion}</option>`;
+                selectCita.innerHTML += `<option value="${c.id}" ${selected}>${fechaLegible} - ${textoMotivo}... (${c.estado})</option>`;
             });
         }
         
-        // 2. AUTO-LLENADO DE DIENTES AFECTADOS DEL ODONTOGRAMA
         let dientesAfectados = new Set();
         document.querySelectorAll('#tab-odontograma [data-estado]').forEach(elemento => {
             const estado = elemento.getAttribute('data-estado');
@@ -785,8 +807,10 @@ window.openModal = function (modalID, mode = "add") {
         if(inputDientes) {
             inputDientes.value = dientesAfectados.size > 0 ? Array.from(dientesAfectados).join(', ') : "";
         }
+    } else if (mode === "edit_recibo") {
+        // El título se setea en la función editarRecibo
     } else {
-        document.getElementById("modalTitle").innerText = "Abonar / Editar Factura";
+        document.getElementById("modalTitle").innerText = "Abonar / Editar";
     }
     
     modal.classList.remove("hidden");
@@ -795,6 +819,59 @@ window.openModal = function (modalID, mode = "add") {
         modal.querySelector(".modal-panel").classList.remove("opacity-0", "translate-y-4", "sm:scale-95");
         modal.querySelector(".modal-panel").classList.add("opacity-100", "translate-y-0", "sm:scale-100");
     }, 10);
+};
+
+window.editarRecibo = async function(id) {
+    try {
+        const res = await API.get(`/api/expediente/facturas/detalle/${id}`);
+        const fac = res.factura;
+        const items = res.items;
+        const dientesGuardados = res.dientes; // <--- AQUÍ RECIBIMOS LOS DIENTES AFECTADOS DEL BACKEND
+
+        document.getElementById("modalTitle").innerText = "Corregir Recibo " + fac.numero;
+        const form = document.getElementById('formVisita');
+        form.reset();
+        
+        form.id.value = fac.id;
+        document.querySelector('input[name="fecha"]').value = fac.fecha_emision.split(' ')[0];
+        document.querySelector('input[name="descuento"]').value = parseFloat(fac.descuento).toFixed(2);
+        document.querySelector('textarea[name="observaciones_factura"]').value = fac.observaciones || "";
+
+        // <--- LÓGICA NUEVA PARA LLENAR EL INPUT DE DIENTES --->
+        const inputDientes = document.getElementById('input_dientes_modal');
+        if (inputDientes) {
+            inputDientes.value = dientesGuardados || "";
+        }
+
+        const seccionPago = document.getElementById('seccion_pago_inicial');
+        if(seccionPago) seccionPago.classList.add('hidden');
+        const inputAbono = document.getElementById('input_abono');
+        if(inputAbono) inputAbono.removeAttribute('required'); 
+
+        const selectCita = document.getElementById('select_cita_factura');
+        if (selectCita && typeof citasPacienteDB !== 'undefined') {
+            selectCita.innerHTML = '<option value="">Ninguna (Libre)</option>';
+            const citasYaFacturadas = pagosDB.filter(f => f.cita_id !== null && f.id !== fac.id).map(f => parseInt(f.cita_id));
+            
+            citasPacienteDB.forEach(c => {
+                if (citasYaFacturadas.includes(parseInt(c.id))) return; 
+                const partesFecha = c.fecha_cita.split('-');
+                const fechaLegible = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2]).toLocaleDateString();
+                const textoMotivo = c.motivo_consulta ? c.motivo_consulta.substring(0, 35) : 'Sin motivo';
+                const selected = (fac.cita_id == c.id) ? 'selected' : '';
+                selectCita.innerHTML += `<option value="${c.id}" ${selected}>${fechaLegible} - ${textoMotivo}... (${c.estado})</option>`;
+            });
+        }
+
+        tratamientosSeleccionados = items;
+        renderizarBadgesTratamientos();
+
+        window.openModal('modalVisita', 'edit_recibo');
+        
+    } catch (error) {
+        console.error(error);
+        Alerta.error("Error", "No se pudo cargar la información del recibo.");
+    }
 };
 
 window.closeModal = function (modalID) {
@@ -835,7 +912,9 @@ window.guardarFichaClinica = async function() {
     document.querySelectorAll('#diag-c1 [data-numero], #diag-c2 [data-numero], #diag-c3 [data-numero], #diag-c4 [data-numero]').forEach(el => {
         const numero = el.getAttribute('data-numero');
         const estado = el.getAttribute('data-estado') || 'sano';
-        if(estado !== 'sano') odontogramaData.diagnostico[numero] = estado;
+        if(estado !== 'sano') {
+            odontogramaData.diagnostico[numero] = estado;
+        }
     });
 
     document.querySelectorAll('#oper-c1 [data-numero], #oper-c2 [data-numero], #oper-c3 [data-numero], #oper-c4 [data-numero]').forEach(el => {
@@ -844,7 +923,9 @@ window.guardarFichaClinica = async function() {
         el.querySelectorAll('.cara-circulo').forEach(cara => {
             caras.push(cara.getAttribute('data-estado') || 'sano');
         });
-        if(caras.some(c => c !== 'sano')) odontogramaData.operatoria[numero] = caras;
+        if(caras.some(c => c !== 'sano')) {
+            odontogramaData.operatoria[numero] = caras;
+        }
     });
 
     const historiaData = {
@@ -903,7 +984,9 @@ window.imprimirFichaPDF = async function() {
 
     const btn = document.querySelector('button[onclick="window.imprimirFichaPDF()"]');
     const btnText = btn ? btn.innerHTML : "";
-    if(btn) btn.innerHTML = `<svg class="w-4 h-4 animate-spin inline mr-2" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generando PDF...`;
+    if(btn) {
+        btn.innerHTML = `<svg class="w-4 h-4 animate-spin inline mr-2" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generando PDF...`;
+    }
 
     const contenedorImpresion = document.getElementById('contenedor-impresion');
 

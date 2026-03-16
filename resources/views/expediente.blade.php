@@ -48,7 +48,7 @@
             <i class="fas fa-history mr-2"></i>Consultas Previas
         </button>
         <button class="tab-btn pb-3 text-sm font-medium text-slate-500 hover:text-blue-600 border-b-2 border-transparent transition-colors whitespace-nowrap" data-target="tab-finanzas">
-            <i class="fas fa-file-invoice-dollar mr-2"></i>Facturación y Pagos
+            <i class="fas fa-file-invoice-dollar mr-2"></i>Recibos y Pagos
         </button>
     </div>
 
@@ -148,17 +148,17 @@
             @include('components.tabla_base')
         </div>
         
-        {{-- TAB 4: FACTURACIÓN Y PAGOS --}}
+        {{-- TAB 4: RECIBOS Y PAGOS --}}
         <div id="tab-finanzas" class="tab-content hidden flex-col h-full" data-html2canvas-ignore="true">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 flex-shrink-0">
-                <h3 class="font-bold text-slate-800 text-lg">Historial de Facturación y Pagos</h3>
+                <h3 class="font-bold text-slate-800 text-lg">Historial de Recibos y Pagos</h3>
                 <button onclick="window.openModal('modalVisita', 'add')" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/30 transition-all flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    Nueva Factura / Cobro
+                    Nuevo Recibo / Cobro
                 </button>
             </div>
             @php 
-                $tableColumns = ['Fecha', 'N° Factura', 'Concepto', 'Total', 'Saldo', 'Estado', 'Acciones'];
+                $tableColumns = ['Fecha', 'N° Recibo', 'Concepto', 'Total', 'Saldo', 'Estado', 'Acciones'];
                 $tableID = 'pagosTableBody'; 
                 $containerID = 'pagosTableContainer'; 
             @endphp
@@ -168,7 +168,7 @@
     </div>
 </main>
 
-{{-- MODAL PARA AGREGAR FACTURA Y PAGOS (DISEÑO PROFESIONAL / POS) --}}
+{{-- MODAL PARA AGREGAR RECIBO (DISEÑO PROFESIONAL / POS) --}}
 @section('modal_content')
 <form id="formVisita" class="flex flex-col gap-6 h-full">
     <input type="hidden" name="id">
@@ -196,7 +196,7 @@
 
             {{-- Buscador de Tratamientos (Factura Items) --}}
             <div class="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 relative">
-                <label class="block text-xs font-bold text-blue-800 uppercase mb-2">Agregar Tratamientos a la Factura *</label>
+                <label class="block text-xs font-bold text-blue-800 uppercase mb-2">Agregar Tratamientos al Recibo *</label>
                 <div class="relative">
                     <input type="text" id="tratamiento_search" autocomplete="off" placeholder="Buscar procedimiento o material..." class="w-full px-4 py-3 rounded-xl border border-blue-200 bg-white outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium text-slate-700 shadow-sm">
                     <svg class="absolute right-4 top-3.5 w-5 h-5 text-blue-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -207,9 +207,8 @@
                 <div id="lista_tratamientos" class="flex flex-col gap-2 mt-4 min-h-[60px]"></div>
             </div>
 
-            {{-- ESTA ES LA CAJA QUE AHORA SE ESTIRA AUTOMÁTICAMENTE --}}
             <div class="flex-1 flex flex-col">
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Observaciones en Factura</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Observaciones / Concepto</label>
                 <textarea name="observaciones_factura" class="flex-1 w-full px-4 py-3 rounded-xl border border-slate-200 outline-none resize-none focus:border-blue-500 placeholder:text-slate-400" placeholder="Ej: Pago de primera fase de ortodoncia..."></textarea>
             </div>
         </div>
@@ -234,31 +233,33 @@
                 <input type="hidden" id="input_total_oculto" name="valor">
             </div>
 
-            <h4 class="font-bold text-slate-800 text-sm border-b border-slate-200 pb-2 mt-4 mb-1">Registro de Pago</h4>
+            <div id="seccion_pago_inicial" class="flex flex-col gap-4 mt-2 border-t border-slate-200 pt-3">
+                <h4 class="font-bold text-slate-800 text-sm mb-1">Registro de Pago Inicial</h4>
 
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Factura</label>
-                <select name="tipo_factura" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white outline-none text-sm font-medium text-slate-700 focus:border-emerald-500">
-                    <option value="contado">Pago de Contado</option>
-                    <option value="cuotas">Pago en Cuotas / Crédito</option>
-                </select>
-            </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Recibo</label>
+                    <select name="tipo_factura" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white outline-none text-sm font-medium text-slate-700 focus:border-emerald-500">
+                        <option value="contado">Pago de Contado</option>
+                        <option value="cuotas">Pago en Cuotas / Crédito</option>
+                    </select>
+                </div>
 
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Método de Pago</label>
-                <select name="metodo_pago" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white outline-none text-sm font-medium text-slate-700 focus:border-emerald-500">
-                    <option value="efectivo">Efectivo</option>
-                    <option value="transferencia">Transferencia Bancaria</option>
-                    <option value="tarjeta_credito">Tarjeta de Crédito</option>
-                    <option value="tarjeta_debito">Tarjeta de Débito</option>
-                </select>
-            </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Método de Pago</label>
+                    <select name="metodo_pago" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white outline-none text-sm font-medium text-slate-700 focus:border-emerald-500">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia Bancaria</option>
+                        <option value="tarjeta_credito">Tarjeta de Crédito</option>
+                        <option value="tarjeta_debito">Tarjeta de Débito</option>
+                    </select>
+                </div>
 
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Monto Abonado Hoy *</label>
-                <div class="relative">
-                    <span class="absolute left-3 top-2 font-bold text-slate-400">$</span>
-                    <input type="number" step="0.01" id="input_abono" name="abono" class="w-full pl-7 pr-3 py-2 rounded-lg border-2 border-emerald-200 outline-none focus:border-emerald-500 font-bold text-emerald-700 text-lg bg-emerald-50/30" oninput="calcularTotalesFactura()" required>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Monto Abonado Hoy *</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 font-bold text-slate-400">$</span>
+                        <input type="number" step="0.01" id="input_abono" name="abono" class="w-full pl-7 pr-3 py-2 rounded-lg border-2 border-emerald-200 outline-none focus:border-emerald-500 font-bold text-emerald-700 text-lg bg-emerald-50/30" oninput="calcularTotalesFactura()" required>
+                    </div>
                 </div>
             </div>
 
@@ -277,7 +278,7 @@
 
 @include('components.modal_base', [
     'modalID' => 'modalVisita',
-    'modalTitle' => 'Nueva Factura',
+    'modalTitle' => 'Nuevo Recibo',
     'modalContent' => View::yieldContent('modal_content')
 ])
 
@@ -294,7 +295,7 @@
     
     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
         <div class="flex justify-between items-center text-sm mb-2">
-            <span class="text-slate-500 font-bold uppercase">Factura:</span>
+            <span class="text-slate-500 font-bold uppercase">Recibo N°:</span>
             <span class="font-bold text-blue-800 px-2 py-1 bg-blue-100 rounded-md" id="abono_numero_factura">--</span>
         </div>
         <div class="flex justify-between text-sm mb-2 mt-4">
