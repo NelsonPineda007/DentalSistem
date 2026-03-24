@@ -23,7 +23,7 @@
         </button>
     </div>
 
-    {{-- Tarjetas de Estadísticas (Stats) --}}
+   {{-- Tarjetas de Estadísticas (Stats) --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 flex-shrink-0">
         
         {{-- Total Tratamientos --}}
@@ -68,23 +68,35 @@
             </div>
         </div>
 
-        {{-- Costo Promedio --}}
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-yellow-200 flex flex-col justify-between h-40 relative overflow-hidden">
-            <div class="flex justify-between items-start z-10">
-                <p class="text-slate-500 font-medium">Costo Promedio</p>
+{{-- Costo Promedio y Total (EL NUEVO DISEÑO) --}}
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-yellow-200 flex flex-col justify-between h-40 relative overflow-hidden group">
+            <div class="flex justify-between items-start z-10 pointer-events-none">
+                <div class="flex flex-col">
+                    <p class="text-slate-500 font-medium">Costo Promedio</p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Total Acumulado</p>
+                </div>
                 <div class="w-8 h-8 bg-yellow-100 text-yellow-600 rounded-lg flex items-center justify-center">
                     <i class="fas fa-dollar-sign"></i>
                 </div>
             </div>
-            <div class="flex items-end justify-between mt-2 z-10">
-                <span id="statCosto" class="text-3xl font-bold text-yellow-600">$--</span>
-                <div class="w-1/2 h-16 relative"><canvas id="sparkCosto"></canvas></div>
+            
+            <div class="flex items-end justify-between mt-2 z-10 relative">
+                {{-- Texto traído al frente (z-20) para que reciba el mouse --}}
+                <div class="flex flex-col cursor-help relative z-20" id="contenedorCostoTooltip" title="Calculando...">
+                    <span id="statCosto" class="text-3xl font-bold text-yellow-600">$--</span>
+                    <span id="statCostoSuma" class="text-sm font-bold text-slate-400">$--</span>
+                </div>
+                
+                {{-- Gráfica enviada al fondo y le quitamos los eventos del mouse --}}
+                <div class="w-1/2 h-16 absolute right-0 bottom-0 z-0 pointer-events-none">
+                    <canvas id="sparkCosto"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
     {{-- Filtros y Búsqueda (CORREGIDO EL DISEÑO) --}}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
         <div class="md:col-span-3 relative">
             <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
