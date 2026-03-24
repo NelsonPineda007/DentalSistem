@@ -3,6 +3,7 @@
 let citasDB = []; 
 let miPaginadorCitas; 
 let pacientesGlobal = []; 
+let autoRefreshInterval; 
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof PaginadorTabla === 'undefined') {
@@ -13,14 +14,53 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarCitasDesdeBD();
     configurarFiltros();
     configurarBuscadorPacientes();
+
+    autoRefreshInterval = setInterval(() => {
+        cargarCitasSilencioso();
+    }, 15000); // 15 segundos para no matar el servidor
 });
 
-// 1. Cargar las citas a la tabla
+// ==========================================
+// MAGIA DEL INPUT DE HORA INTUITIVO
+// ==========================================
+window.formatearHora = function(input) {
+    let val = input.value.replace(/\D/g, ''); 
+    if (val.length > 2) {
+        val = val.substring(0, 2) + ':' + val.substring(2, 4);
+    }
+    input.value = val;
+};
+
+window.validarHora = function(input) {
+    let val = input.value;
+    if(val.length === 5) {
+        let [h, m] = val.split(':');
+        if(parseInt(h) > 12) h = '12';
+        if(parseInt(h) === 0) h = '12';
+        if(parseInt(m) > 59) m = '59';
+        input.value = `${h}:${m}`;
+    }
+};
+
+// Se actualizó para recibir 'inicio' o 'fin' y cambiar los botones correctos [cite: 4]
+window.setAMPM = function(tipo, valor) {
+    document.getElementById(`hora_ampm_${tipo}`).value = valor;
+    const btnAM = document.getElementById(`btn_am_${tipo}`);
+    const btnPM = document.getElementById(`btn_pm_${tipo}`);
+
+    if(valor === 'AM') {
+        btnAM.className = "px-2 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-blue-600 transition-all";
+        btnPM.className = "px-2 py-1.5 rounded-lg font-bold text-sm text-slate-500 hover:text-slate-800 transition-all";
+    } else {
+        btnPM.className = "px-2 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-blue-600 transition-all";
+        btnAM.className = "px-2 py-1.5 rounded-lg font-bold text-sm text-slate-500 hover:text-slate-800 transition-all";
+    }
+};
+
 async function cargarCitasDesdeBD() {
     try {
         const datos = await window.API.get('/api/citas');
         citasDB = datos;
-        
         actualizarEstadisticas();
         inicializarPaginador();
     } catch (error) {
@@ -28,20 +68,25 @@ async function cargarCitasDesdeBD() {
     }
 }
 
-// 2. Llenar los Selects de Doctores y Memoria de Pacientes
+async function cargarCitasSilencioso() {
+    try {
+        const datos = await window.API.get('/api/citas');
+        citasDB = datos;
+        actualizarEstadisticas();
+        filtrarDatos();
+    } catch (error) {
+        console.error("Error en la recarga automática de citas:", error);
+    }
+}
+
 async function cargarDatosFormulario() {
     const selectDoctor = document.querySelector('select[name="empleado_id"]');
-
     try {
         const respuesta = await fetch('/api/citas/datos-formulario');
         if (!respuesta.ok) throw new Error("Error del servidor: " + respuesta.status);
 
         const datos = await respuesta.json();
-
-        // Guardamos los pacientes en la variable global para el buscador
-        if(datos.pacientes) {
-            pacientesGlobal = datos.pacientes;
-        }
+        if(datos.pacientes) pacientesGlobal = datos.pacientes;
 
         if(selectDoctor) {
             selectDoctor.innerHTML = '<option value="">Seleccione un doctor...</option>';
@@ -54,7 +99,6 @@ async function cargarDatosFormulario() {
     }
 }
 
-// 3. Lógica del buscador de pacientes en el modal (V2 - Buscador Fuerte)
 function configurarBuscadorPacientes() {
     const inputBuscador = document.getElementById('buscador_paciente');
     const dropdown = document.getElementById('dropdown_pacientes');
@@ -62,22 +106,14 @@ function configurarBuscadorPacientes() {
 
     if(!inputBuscador) return;
 
-    // Función auxiliar que hace el trabajo pesado
     const renderizarLista = (termino = "") => {
         dropdown.innerHTML = '';
+        if (termino.trim().length === 0) inputOcultoId.value = '';
 
-        // Si el doctor borra el texto, limpiamos el ID para evitar guardar datos erróneos
-        if (termino.trim().length === 0) {
-            inputOcultoId.value = '';
-        }
-
-        // BÚSQUEDA FUERTE: Separamos lo que escribe el usuario por espacios
-        // Así si escribe "Pérez Juan", igual encontrará a "Juan Pérez"
         const palabrasBusqueda = termino.toLowerCase().split(' ').filter(p => p.trim() !== '');
 
         const filtrados = pacientesGlobal.filter(p => {
             const nombreCompleto = p.nombre_completo.toLowerCase();
-            // El paciente debe coincidir con TODAS las palabras escritas, sin importar el orden
             return palabrasBusqueda.every(palabra => nombreCompleto.includes(palabra));
         });
 
@@ -87,8 +123,6 @@ function configurarBuscadorPacientes() {
             filtrados.forEach(p => {
                 const item = document.createElement('div');
                 item.className = "px-4 py-2.5 cursor-pointer hover:bg-blue-50 text-sm text-slate-700 font-medium transition-colors border-b border-slate-50 last:border-0";
-                
-                // Resaltar en negrita (opcional, le da un toque muy pro)
                 item.innerHTML = p.nombre_completo;
                 
                 item.onclick = () => {
@@ -102,66 +136,97 @@ function configurarBuscadorPacientes() {
         dropdown.classList.remove('hidden');
     };
 
-    // Evento 1: Cuando el usuario escribe
-    inputBuscador.addEventListener('input', function() {
-        renderizarLista(this.value);
-    });
-
-    // Evento 2: ¡La Magia! Cuando el usuario hace clic en el input vacío, muestra TODOS los pacientes
-    inputBuscador.addEventListener('focus', function() {
-        renderizarLista(this.value);
-    });
-
-    // Evento 3: Ocultar si hace clic en cualquier otra parte de la pantalla
+    inputBuscador.addEventListener('input', function() { renderizarLista(this.value); });
+    inputBuscador.addEventListener('focus', function() { renderizarLista(this.value); });
     document.addEventListener('click', (e) => {
-        if (!inputBuscador.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.add('hidden');
-        }
+        if (!inputBuscador.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.add('hidden');
     });
 }
 
-// 4. Procesar el botón Guardar usando las alertas
+// Función auxiliar para convertir a 24h
+function format24h(horaString, ampm) {
+    let [hours, minutes] = horaString.split(':');
+    let hours24 = parseInt(hours, 10);
+    if (ampm === 'PM' && hours24 < 12) hours24 += 12;
+    if (ampm === 'AM' && hours24 === 12) hours24 = 0;
+    return `${hours24.toString().padStart(2, '0')}:${minutes}:00`;
+}
+
+// 4. Guardar Datos 
 window.guardarDatos = async function() {
     const form = document.getElementById('formCita');
     const pacienteSeleccionado = document.getElementById('paciente_id').value;
     
-    if (!form.checkValidity() || pacienteSeleccionado === '') {
+    const horaVisualInicio = document.getElementById('hora_input_inicio').value;
+    const ampmInicio = document.getElementById('hora_ampm_inicio').value;
+    
+    const horaVisualFin = document.getElementById('hora_input_fin').value;
+    const ampmFin = document.getElementById('hora_ampm_fin').value;
+    
+    if (!form.checkValidity() || pacienteSeleccionado === '' || horaVisualInicio.length < 5 || horaVisualFin.length < 5) {
         form.reportValidity(); 
-        Alerta.advertencia('Campos incompletos', 'Por favor completa los campos obligatorios (*) y selecciona un paciente de la lista.');
+        Alerta.advertencia('Campos incompletos', 'Completa todos los campos y asegúrate de llenar correctamente Hora de Inicio y Fin.');
         return;
     }
+
+    // Convertir ambas horas a formato 24h [cite: 4]
+    const horaFinalInicio = format24h(horaVisualInicio, ampmInicio);
+    const horaFinalFin = format24h(horaVisualFin, ampmFin);
+    
+    document.getElementById('hora_oculta_inicio').value = horaFinalInicio;
+    document.getElementById('hora_oculta_fin').value = horaFinalFin;
 
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    try {
-        let response;
-        if (data.id && data.id !== '') {
-            response = await window.API.put('/api/citas/' + data.id, data);
-        } else {
-            response = await window.API.post('/api/citas', data);
-        }
-        
-        if (response && response.success) {
-            window.closeModal('modalCitas');
-            Alerta.exito('¡Éxito!', response.mensaje || 'La cita fue guardada correctamente.');
-            cargarCitasDesdeBD(); 
-        }
+    const intentarGuardar = async (payload) => {
+        try {
+            let response;
+            if (payload.id && payload.id !== '') {
+                response = await window.API.put('/api/citas/' + payload.id, payload);
+            } else {
+                response = await window.API.post('/api/citas', payload);
+            }
+            
+            if (response && response.success) {
+                window.closeModal('modalCitas');
+                Alerta.exito('¡Éxito!', response.mensaje || 'La cita fue guardada correctamente.');
+                cargarCitasDesdeBD(); 
+            }
 
-    } catch (error) {
-        console.error("Error al guardar los datos:", error);
-        Alerta.error('Error del servidor', 'Hubo un problema al guardar la cita.');
-    }
+        } catch (error) {
+            console.error("Error al guardar los datos:", error);
+            
+            if (error.status === 409 && error.data && error.data.warning) {
+                const confirmarForzado = await Alerta.confirmar(
+                    'Alerta de Choque', 
+                    error.data.mensaje,
+                    'Sí, encimar cita',
+                    'Cancelar'
+                );
+
+                if (confirmarForzado) {
+                    payload.forzar_guardado = true;
+                    await intentarGuardar(payload);
+                }
+            } else if (error.status === 422 && error.data && error.data.error) {
+                Alerta.error('Error', error.data.error);
+            } else {
+                Alerta.error('Error del servidor', 'Hubo un problema al guardar la cita.');
+            }
+        }
+    };
+
+    await intentarGuardar(data);
 };
 
-// 5. Actualizar Estadísticas
 function actualizarEstadisticas() {
     const hoy = new Date().toISOString().split('T')[0];
-    
-    const countHoy = citasDB.filter(c => c.fecha === hoy).length;
+    const countHoy = citasDB.filter(c => c.fecha === hoy && c.estado !== 'Cancelada').length;
     const countPendientes = citasDB.filter(c => c.estado === 'Programada' || c.estado === 'Confirmada').length;
     
     const countSemana = citasDB.filter(c => {
+        if(c.estado === 'Cancelada') return false;
         const fechaCita = new Date(c.fecha);
         const fechaHoy = new Date();
         const diffTime = Math.abs(fechaCita - fechaHoy);
@@ -174,7 +239,17 @@ function actualizarEstadisticas() {
     document.getElementById('statPendientes').innerText = countPendientes;
 }
 
-// 6. Armar la tabla
+// Auxiliar para parsear hora 24 a 12h
+function parseTo12h(timeString) {
+    if(!timeString) return '';
+    let [hours, minutes] = timeString.split(':');
+    let h12 = parseInt(hours, 10);
+    const ampm = h12 >= 12 ? 'PM' : 'AM';
+    h12 = h12 % 12;
+    h12 = h12 ? h12 : 12; 
+    return `${h12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+}
+
 function inicializarPaginador() {
     miPaginadorCitas = new PaginadorTabla(citasDB, 6, {
         tableBodyId: 'citasTableBody',
@@ -186,19 +261,24 @@ function inicializarPaginador() {
                 case 'Programada': estadoClass = "bg-amber-100 text-amber-700 border-amber-200"; break;
                 case 'Cancelada': estadoClass = "bg-rose-100 text-rose-700 border-rose-200"; break;
                 case 'Completada': estadoClass = "bg-emerald-100 text-emerald-700 border-emerald-200"; break;
+                case 'En progreso': estadoClass = "bg-purple-100 text-purple-700 border-purple-200 animate-pulse"; break;
                 default: estadoClass = "bg-slate-100 text-slate-500 border-slate-200";
             }
 
-            const fechaObj = new Date(c.fecha + 'T' + c.hora);
+            const fechaObj = new Date(c.fecha + 'T' + (c.hora || '00:00:00'));
             const fechaLegible = fechaObj.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-            const horaMin = c.hora ? c.hora.substring(0, 5) : '';
+            
+            // Unimos el inicio y el fin en un solo string para que se vea súper pro
+            let rangoHora = `${parseTo12h(c.hora)} - ${parseTo12h(c.hora_fin)}`;
+
+            let filaEstilo = c.estado === 'Cancelada' ? 'opacity-50 bg-slate-50' : 'hover:bg-slate-50';
 
             return `
-                <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
+                <tr class="${filaEstilo} border-b border-slate-100 transition-colors">
                     <td class="px-6 py-4">
                         <div class="flex flex-col">
                             <span class="font-bold text-slate-700 text-sm">${fechaLegible}</span>
-                            <span class="text-xs text-slate-400 font-medium">${horaMin} hrs</span>
+                            <span class="text-[11px] text-slate-400 font-bold tracking-tight">${rangoHora}</span>
                         </div>
                     </td>
                     <td class="px-6 py-4">
@@ -221,7 +301,7 @@ function inicializarPaginador() {
                             <button onclick="window.abrirModalEdicion(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all shadow-sm border border-emerald-100" title="Editar">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                             </button>
-                            <button onclick="window.eliminarCita(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-slate-200" title="Eliminar/Cancelar">
+                            <button onclick="window.eliminarCita(${c.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-slate-200" title="Cancelar Cita">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                             </button>
                         </div>
@@ -239,7 +319,6 @@ function inicializarPaginador() {
 function configurarFiltros() {
     const input = document.getElementById('searchInput');
     input.addEventListener('input', filtrarDatos);
-
     const select = document.getElementById('filtroEstado');
     select.addEventListener('change', filtrarDatos);
 }
@@ -252,11 +331,7 @@ function filtrarDatos() {
         const motivo = c.motivo || '';
         const paciente = c.paciente || '';
         const doctor = c.doctor || '';
-        
-        const matchText = paciente.toLowerCase().includes(term) || 
-                          motivo.toLowerCase().includes(term) ||
-                          doctor.toLowerCase().includes(term);
-                          
+        const matchText = paciente.toLowerCase().includes(term) || motivo.toLowerCase().includes(term) || doctor.toLowerCase().includes(term);
         const matchEstado = estado === "" || c.estado === estado;
         return matchText && matchEstado;
     });
@@ -264,7 +339,6 @@ function filtrarDatos() {
     miPaginadorCitas.setData(filtrados);
 }
 
-// 7. Funciones del Modal
 window.openModal = async function(modalID, mode = 'add') {
     const modal = document.getElementById(modalID);
     const title = document.getElementById('modalTitle');
@@ -279,6 +353,14 @@ window.openModal = async function(modalID, mode = 'add') {
         form.fecha.value = new Date().toISOString().split('T')[0];
         document.getElementById('buscador_paciente').value = ''; 
         document.getElementById('paciente_id').value = ''; 
+
+        // Setear hora por defecto para que sea más fácil (ej. de 08:00 AM a 08:30 AM)
+        document.getElementById('hora_input_inicio').value = '08:00';
+        window.setAMPM('inicio', 'AM');
+        
+        document.getElementById('hora_input_fin').value = '08:30';
+        window.setAMPM('fin', 'AM');
+
     } else {
         title.innerText = 'Editar Cita';
     }
@@ -303,7 +385,6 @@ window.closeModal = function(modalID) {
     }, 300);
 };
 
-// 8. Botón Lapicito
 window.abrirModalEdicion = async function(id) {
     const c = citasDB.find(x => x.id == id);
     if(!c) return;
@@ -314,31 +395,44 @@ window.abrirModalEdicion = async function(id) {
     form.id.value = c.id;
     form.empleado_id.value = c.empleado_id;
     form.fecha.value = c.fecha;
-    form.hora.value = c.hora;
     form.motivo.value = c.motivo;
     form.estado.value = c.estado;
     form.notas.value = c.notas || '';
-    
     form.paciente_id.value = c.paciente_id;
     document.getElementById('buscador_paciente').value = c.paciente || ''; 
+
+    // Cargar visualmente la Hora de Inicio [cite: 4]
+    if (c.hora) {
+        let [h, m] = c.hora.split(':');
+        let h12 = parseInt(h, 10);
+        const ampm = h12 >= 12 ? 'PM' : 'AM';
+        h12 = h12 % 12; h12 = h12 ? h12 : 12;
+        document.getElementById('hora_input_inicio').value = `${h12.toString().padStart(2, '0')}:${m}`;
+        window.setAMPM('inicio', ampm);
+    }
+    
+    // Cargar visualmente la Hora de Fin [cite: 4]
+    if (c.hora_fin) {
+        let [h, m] = c.hora_fin.split(':');
+        let h12 = parseInt(h, 10);
+        const ampm = h12 >= 12 ? 'PM' : 'AM';
+        h12 = h12 % 12; h12 = h12 ? h12 : 12;
+        document.getElementById('hora_input_fin').value = `${h12.toString().padStart(2, '0')}:${m}`;
+        window.setAMPM('fin', ampm);
+    }
 };
 
-// 9. Botón Basura con Alertas personalizadas
 window.eliminarCita = async function(id) {
-    const confirmado = await Alerta.eliminar(
-        '¿Cancelar Cita?', 
-        'Esta cita desaparecerá de la lista activa.'
-    );
-
+    const confirmado = await Alerta.eliminar('¿Cancelar Cita?', 'Esta cita se marcará como "Cancelada".');
     if(confirmado) {
         try {
             const response = await window.API.delete('/api/citas/' + id);
             if(response && response.success) {
-                Alerta.exito('¡Cancelada!', 'La cita ha sido ocultada exitosamente.');
+                Alerta.exito('Cancelada', 'La cita fue enviada al fondo de la tabla.');
                 cargarCitasDesdeBD(); 
             }
         } catch (error) {
-            console.error("Error al eliminar:", error);
+            console.error("Error al cancelar:", error);
             Alerta.error('Hubo un problema', 'No se pudo cancelar la cita.');
         }
     }
