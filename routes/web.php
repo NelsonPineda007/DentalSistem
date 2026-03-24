@@ -49,6 +49,8 @@ Route::get('/api/pacientes/{id}', [PacienteController::class, 'obtenerUno']);
 Route::post('/api/guardar-paciente', [PacienteController::class, 'guardar']);
 Route::put('/api/pacientes/{id}', [PacienteController::class, 'actualizar']);
 Route::delete('/api/pacientes/{id}', [PacienteController::class, 'eliminar']);
+//EXPEDIENTE PDF PACIENTES
+Route::get('/api/pacientes/{id}/pdf', [PacienteController::class, 'imprimirExpediente']);
 
 // ==========================================
 // TRATAMIENTOS
