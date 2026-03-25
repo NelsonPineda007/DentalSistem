@@ -92,4 +92,54 @@ class PacienteController extends Controller
             'mensaje' => 'Paciente archivado con éxito'
         ]);
     }
+
+    // =========================================================
+    // GENERAR PDF DEL EXPEDIENTE COMPLETO
+    // =========================================================
+    public function imprimirExpediente($id)
+    {
+        try {
+            $paciente = \App\Models\Paciente::findOrFail($id);
+            
+            // Traemos el historial de consultas
+            $consultas = \App\Models\Consulta::where('paciente_id', $id)
+                                             ->orderBy('fecha_consulta', 'desc')
+                                             ->get();
+
+            // Traemos los recibos y calculamos la deuda total
+            $facturas = \App\Models\Factura::where('paciente_id', $id)
+                                           ->orderBy('fecha_emision', 'desc')
+                                           ->get();
+            
+            $deudaTotal = $facturas->sum('saldo_pendiente');
+
+            // Edad calculada
+            $edad = 'N/A';
+            if($paciente->fecha_nacimiento) {
+                $edad = \Carbon\Carbon::parse($paciente->fecha_nacimiento)->age . ' años';
+            }
+
+            $data = [
+                'paciente' => $paciente,
+                'consultas' => $consultas,
+                'facturas' => $facturas,
+                'edad' => $edad,
+                'deudaTotal' => $deudaTotal,
+                'clinica' => [
+                    'nombre' => 'DentalSistem Clínica Odontológica',
+                    'telefono' => '+503 2222-3333',
+                    'email' => 'contacto@dentalsistem.com',
+                    'direccion' => 'San Salvador, El Salvador'
+                ]
+            ];
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.expediente_paciente', $data);
+            $pdf->setPaper('A4', 'portrait');
+
+            return $pdf->stream('Expediente_' . $paciente->numero_expediente . '.pdf');
+
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

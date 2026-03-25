@@ -24,7 +24,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function cargarCategorias() {
     try {
         const categorias = await API.get('/api/categorias-tratamientos');
-        // console.log("Categorías cargadas desde MySQL:", categorias); // Puedes comentarlo en producción
         
         let opcionesFiltro = '<option value="">Todas las categorías</option>';
         let opcionesForm = '<option value="">Seleccione una categoría</option>';
@@ -42,12 +41,7 @@ async function cargarCategorias() {
 
     } catch (error) {
         console.error("Error cargando categorías:", error);
-        
-        // ¡Aquí disparamos tu alerta visual Nivel Dios!
-        Alerta.error(
-            "Error de Conexión", 
-            "No se pudieron cargar las categorías de tratamientos. Por favor, verifica tu conexión o recarga la página."
-        );
+        Alerta.error("Error de Conexión", "No se pudieron cargar las categorías de tratamientos.");
     }
 }
 
@@ -94,13 +88,47 @@ function actualizarEstadisticas(datos) {
     const total = datos.length;
     const activos = datos.filter(t => t.estado === 'Activo').length;
     const categorias = new Set(datos.filter(t => t.categoria_id).map(t => t.categoria_id)).size;
-    const costoPromedio = total > 0 ? datos.reduce((sum, t) => sum + parseFloat(t.costo_base), 0) / total : 0;
+    
+    // 1. Cálculos de Costos (Promedio y Suma Total)
+    let sumaTotalCosto = 0;
+    if (total > 0) {
+        sumaTotalCosto = datos.reduce((sum, t) => sum + parseFloat(t.costo_base || 0), 0);
+    }
+    const costoPromedio = total > 0 ? (sumaTotalCosto / total) : 0;
 
+    // 2. Función Helper para simplificar números (K, M, B)
+    const formatearSimplificado = (num) => {
+        if (num >= 1000000000) return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+        if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+        return num.toFixed(0); 
+    };
+
+    // 3. Actualizar DOM Básico
     if(document.getElementById('statTotal')) document.getElementById('statTotal').textContent = total;
     if(document.getElementById('statActivos')) document.getElementById('statActivos').textContent = activos;
     if(document.getElementById('statCategorias')) document.getElementById('statCategorias').textContent = categorias;
-    if(document.getElementById('statCosto')) document.getElementById('statCosto').textContent = '$' + costoPromedio.toFixed(2);
+    
+    // 4. Actualizar DOM de Costos (Doble línea + Tooltip)
+    if(document.getElementById('statCosto')) {
+        // Promedio grande
+        document.getElementById('statCosto').textContent = '$' + costoPromedio.toFixed(2);
+        
+        // Suma pequeña simplificada
+        if(document.getElementById('statCostoSuma')) {
+            document.getElementById('statCostoSuma').textContent = '$' + formatearSimplificado(sumaTotalCosto);
+        }
+        
+        // Tooltip exacto
+        const tooltipContainer = document.getElementById('contenedorCostoTooltip');
+        if (tooltipContainer) {
+            const exactoPromedio = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(costoPromedio);
+            const exactoSuma = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sumaTotalCosto);
+            tooltipContainer.title = `Promedio exacto: ${exactoPromedio}\nSuma total exacta: ${exactoSuma}`;
+        }
+    }
 
+    // 5. Gráficas Sparkline
     if(typeof window.drawSparkline === 'function') {
         window.drawSparkline('sparkTotal', [total-2, total-1, total+1, total-1, total+2, total], '#2563eb', 'rgba(37, 99, 235, 0.2)'); 
         window.drawSparkline('sparkActivos', [activos-1, activos+1, activos-2, activos, activos+1, activos], '#059669', 'rgba(5, 150, 105, 0.2)'); 
@@ -204,7 +232,6 @@ window.abrirModalEdicion = function (id) {
 };
 
 window.eliminarTratamiento = async function (id) {
-    // Usamos tu nuevo modal con estilo "danger" (Rojo y gradiente)
     const confirmado = await Alerta.eliminar(
         "¿Archivar Tratamiento?", 
         "El tratamiento pasará a estado Inactivo. Podrás recuperarlo después.",
@@ -215,10 +242,7 @@ window.eliminarTratamiento = async function (id) {
     if (confirmado) {
         try {
             await API.delete(`/api/tratamientos/${id}`);
-            
-            // Usamos tu nuevo Toast verde de éxito
             Alerta.exito("¡Archivado!", "El tratamiento ha sido ocultado de la lista principal.");
-            
             await cargarTratamientosDesdeBD(); 
         } catch (error) {
             console.error("Error al archivar:", error);
@@ -235,7 +259,6 @@ window.guardarDatos = async function () {
     let datosForm = Object.fromEntries(formData.entries());
 
     if (!datosForm.codigo || !datosForm.nombre || !datosForm.costo_base) {
-        // Usamos tu nuevo Toast dorado de advertencia
         return Alerta.advertencia("Campos incompletos", "Por favor completa los campos con asterisco (*).");
     }
 
@@ -248,11 +271,9 @@ window.guardarDatos = async function () {
     try {
         if (id) {
             await API.put(`/api/tratamientos/${id}`, datosForm);
-            // Toast verde
             Alerta.exito("¡Actualizado!", "El tratamiento se actualizó correctamente.");
         } else {
             await API.post('/api/guardar-tratamiento', datosForm);
-            // Toast verde
             Alerta.exito("¡Guardado!", "El nuevo tratamiento está listo para usarse.");
         }
 
@@ -261,7 +282,6 @@ window.guardarDatos = async function () {
         
     } catch (error) {
         console.error("Error al guardar:", error);
-        // Toast rojo
         Alerta.error("Error del servidor", "Revisa tu conexión o contacta a soporte.");
     }
 };

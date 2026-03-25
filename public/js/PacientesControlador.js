@@ -215,33 +215,11 @@ window.eliminarPaciente = async function (id) {
 
 window.imprimirExpediente = function (id) {
     const p = pacientesDB.find((x) => x.id === id);
-    if (!p || typeof ReportePDF === "undefined") return;
+    if (!p) return;
     
-    const edad = p.fecha_nacimiento ? new Date().getFullYear() - new Date(p.fecha_nacimiento).getFullYear() : "N/A";
-
-    ReportePDF.generar({
-        folio: p.numero_expediente,
-        nombreArchivo: `Expediente_${p.numero_expediente}`,
-        data: {
-            nombre: `${p.nombre} ${p.apellido}`,
-            nacimiento: p.fecha_nacimiento,
-            edad: `${edad} años`,
-            genero: p.genero,
-            telefono: p.telefono,
-            email: p.email,
-            direccion: `${p.direccion || ''}, ${p.ciudad || ''}`,
-            cp: p.codigo_postal,
-            emergencia_nombre: p.contacto_emergencia_nombre,
-            emergencia_tel: p.contacto_emergencia_telefono,
-            seguro: p.seguro_medico,
-            alergias: p.alergias,
-            cronicas: p.enfermedades_cronicas,
-            medicamentos: p.medicamentos_actuales,
-            notas: p.notas_medicas,
-        },
-        citas: p.citas || [],
-        tratamientos: p.tratamientos || [],
-    });
+    Alerta.info("Generando Expediente...", "Abriendo documento en una nueva pestaña.");
+    // En lugar de usar reportes.js, ahora llamamos a nuestra ruta de Laravel
+    window.open(`/api/pacientes/${id}/pdf`, '_blank');
 };
 
 window.guardarDatos = async function () {
