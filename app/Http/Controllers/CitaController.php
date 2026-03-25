@@ -17,7 +17,6 @@ class CitaController extends Controller
         $citasActivas = Cita::whereIn('estado', ['Programada', 'Confirmada', 'En progreso'])->get();
 
         foreach ($citasActivas as $cita) {
-            // AHORA USAMOS LA HORA FIN REAL DE LA BASE DE DATOS [cite: 2]
             $fechaHoraCita = Carbon::parse($cita->fecha_cita . ' ' . $cita->hora_inicio, 'America/El_Salvador');
             $fechaHoraFin = Carbon::parse($cita->fecha_cita . ' ' . $cita->hora_fin, 'America/El_Salvador');
 
@@ -37,7 +36,7 @@ class CitaController extends Controller
                 'citas.empleado_id',
                 'citas.fecha_cita as fecha',
                 'citas.hora_inicio as hora',
-                'citas.hora_fin', // Traemos la hora fin para el Frontend [cite: 2]
+                'citas.hora_fin', 
                 DB::raw("CONCAT(pacientes.nombre, ' ', pacientes.apellido) as paciente"),
                 'citas.motivo_consulta as motivo',
                 DB::raw("CONCAT(empleados.nombre, ' ', empleados.apellido) as doctor"),
@@ -62,15 +61,16 @@ class CitaController extends Controller
         return response()->json($citas);
     }
 
-    // Método Privado para detectar choques usando los rangos dinámicos [cite: 2]
+    // Método Privado para detectar choques: AHORA SOLO VALIDA CITAS ACTIVAS
     private function detectarChoqueDeHorario($fecha, $hora_inicio, $hora_fin, $empleado_id, $ignorar_id = null)
     {
         $horaInicio = Carbon::parse($hora_inicio);
         $horaFin = Carbon::parse($hora_fin);
 
+        // Solo toma en cuenta las citas que realmente ocupan espacio
         $query = Cita::where('fecha_cita', $fecha)
                      ->where('empleado_id', $empleado_id)
-                     ->whereNotIn('estado', ['Cancelada', 'No presentado']);
+                     ->whereIn('estado', ['Programada', 'Confirmada', 'En progreso']);
         
         if ($ignorar_id) {
             $query->where('id', '!=', $ignorar_id);
@@ -80,9 +80,8 @@ class CitaController extends Controller
 
         foreach ($citasDelDia as $c) {
             $cInicio = Carbon::parse($c->hora_inicio);
-            $cFin = Carbon::parse($c->hora_fin); // Usamos la hora fin real [cite: 2]
+            $cFin = Carbon::parse($c->hora_fin);
 
-            // Si el rango de la nueva cita se cruza con el rango de una existente
             if ($horaInicio < $cFin && $horaFin > $cInicio) {
                 return true; 
             }
@@ -93,7 +92,6 @@ class CitaController extends Controller
     // 2. Guardar Cita Nueva
     public function guardarCita(Request $request)
     {
-        // Validar Rango de Horario General y consistencia lógica [cite: 2]
         $horaInicioReq = Carbon::parse($request->hora)->format('H:i:s');
         $horaFinReq = Carbon::parse($request->hora_fin)->format('H:i:s');
 
@@ -105,13 +103,12 @@ class CitaController extends Controller
             return response()->json(['error' => 'Las citas deben programarse dentro del horario de atención (6:00 AM a 6:00 PM).'], 422);
         }
 
-        // Si NO forzaron el guardado, comprobamos si hay choque
         if (!$request->has('forzar_guardado') || $request->forzar_guardado == false) {
             $hayChoque = $this->detectarChoqueDeHorario($request->fecha, $request->hora, $request->hora_fin, $request->empleado_id);
             if ($hayChoque) {
                 return response()->json([
                     'warning' => true, 
-                    'mensaje' => 'Este doctor ya tiene una cita programada que choca con este horario. ¿Deseas encimar y agendarla de todas formas?'
+                    'mensaje' => 'Este doctor ya tiene una cita programada que interfiere con este horario. ¿Qué acción deseas tomar?'
                 ], 409); 
             }
         }
@@ -120,8 +117,8 @@ class CitaController extends Controller
             'paciente_id' => $request->paciente_id,
             'empleado_id' => $request->empleado_id,
             'fecha_cita' => $request->fecha,
-            'hora_inicio' => $request->hora, // $request->hora trae la hora de inicio [cite: 2]
-            'hora_fin' => $request->hora_fin, // Guardamos la hora de fin personalizada [cite: 2]
+            'hora_inicio' => $request->hora, 
+            'hora_fin' => $request->hora_fin, 
             'estado' => $request->estado ?? 'Programada',
             'motivo_consulta' => $request->motivo,
             'notas' => $request->notas
@@ -149,7 +146,7 @@ class CitaController extends Controller
             if ($hayChoque) {
                 return response()->json([
                     'warning' => true, 
-                    'mensaje' => 'Este doctor ya tiene una cita programada que choca con este horario. ¿Deseas encimar y modificarla de todas formas?'
+                    'mensaje' => 'Este doctor ya tiene una cita programada que interfiere con este horario. ¿Qué acción deseas tomar?'
                 ], 409); 
             }
         }
@@ -160,7 +157,7 @@ class CitaController extends Controller
             'empleado_id' => $request->empleado_id,
             'fecha_cita' => $request->fecha,
             'hora_inicio' => $request->hora,
-            'hora_fin' => $request->hora_fin, // Actualizamos la hora fin [cite: 2]
+            'hora_fin' => $request->hora_fin,
             'estado' => $request->estado,
             'motivo_consulta' => $request->motivo,
             'notas' => $request->notas

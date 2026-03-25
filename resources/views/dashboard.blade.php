@@ -2,15 +2,15 @@
 @include('header')
 @include('nav')
 
-{{-- Contenido principal del dashboard --}}
-<main class="flex-1 p-8 bg-[#f8fafc] overflow-y-auto">
+{{-- Contenido principal del dashboard: Se cambió el padding para subirlo al tope --}}
+<main class="flex-1 px-8 pb-8 pt-4 bg-[#f8fafc] overflow-y-auto">
     <h2 class="text-3xl font-bold text-slate-800 mb-8">Bienvenido Usuluteco</h2>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
         <div class="bg-white p-6 rounded-3xl shadow-sm border border-emerald-200 flex flex-col justify-between h-48 relative overflow-hidden">
             <div class="flex justify-between items-start z-10">
-                <p class="text-slate-500 font-medium">Números de citas</p>
+                <p class="text-slate-500 font-medium">Citas realizadas</p>
                 <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md">Hoy</span>
             </div>
             <div class="flex items-end justify-between mt-4 z-10">
@@ -44,17 +44,21 @@
             </div>
         </div>
 
+        {{-- Tarjeta rediseñada: Número + Dona --}}
         <div class="bg-white p-6 rounded-3xl shadow-sm border border-blue-100 flex flex-col justify-between h-48 relative overflow-hidden">
             <div class="flex justify-between items-start z-10">
-                <p class="text-slate-500 font-medium leading-tight">Tasa de <br>re-agendamiento</p>
+                <p class="text-slate-500 font-medium leading-tight">Citas Completadas <br><span class="text-xs text-slate-400 font-normal">Citas Agendadas</span></p>
                 <span class="bg-blue-50 text-blue-800 text-[10px] font-bold px-2 py-1 rounded-md">Hoy</span>
             </div>
             <div class="flex items-center justify-between mt-4 z-10">
-                <span id="numTasa" class="text-5xl font-bold text-blue-800">--</span>
+                <div class="flex flex-col">
+                    <span id="numCompletadas" class="text-5xl font-bold text-blue-800 leading-none">--</span>
+                    <span class="text-xs font-bold text-blue-600/60 mt-2 uppercase tracking-wide">Completadas</span>
+                </div>
                 <div class="w-20 h-20 relative">
                     <canvas id="chartTasa"></canvas>
                     <div class="absolute inset-0 flex items-center justify-center">
-                        <span id="percentTasa" class="text-[10px] font-bold text-blue-800">--%</span>
+                        <span id="percentTasa" class="text-xs font-bold text-blue-800">--%</span>
                     </div>
                 </div>
             </div>
@@ -88,51 +92,40 @@
                          <canvas id="chartTratamientos"></canvas>
                     </div>
                     
-                    <div class="w-1/2 pl-4 space-y-2">
-                        <div class="flex items-center text-xs text-slate-600">
-                            <span class="w-2 h-2 rounded-full bg-[#2d9596] mr-2"></span> Extracción
-                        </div>
-                        <div class="flex items-center text-xs text-slate-600">
-                            <span class="w-2 h-2 rounded-full bg-[#3b82f6] mr-2"></span> Limpieza Dental
-                        </div>
-                        <div class="flex items-center text-xs text-slate-600">
-                            <span class="w-2 h-2 rounded-full bg-[#facc15] mr-2"></span> Reparar Caries
-                        </div>
-                        <div class="flex items-center text-xs text-slate-600">
-                            <span class="w-2 h-2 rounded-full bg-[#fb923c] mr-2"></span> Muelas de Juicio
-                        </div>
+                    <div id="leyendaTratamientos" class="w-1/2 pl-4 space-y-2">
+                        <p class="text-xs text-slate-400 italic">Cargando...</p>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex-1">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-slate-800">Notificaciones Citas</h3>
-                    <span class="text-sm font-bold text-blue-800 bg-blue-50 px-2 py-1 rounded">Hoy</span>
+            {{-- Tarjeta de Citas Pendientes Rediseñada (Separada en Hoy y Próximas) --}}
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex-1 overflow-hidden flex flex-col">
+                <div class="flex justify-between items-center mb-2 shrink-0">
+                    <h3 class="text-lg font-bold text-slate-800">Agenda</h3>
                 </div>
 
-                <div class="space-y-4">
-                    <div class="flex items-start gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-blue-100">
-                        <div class="bg-blue-800 text-white p-2 rounded-lg flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-sm text-slate-600">Tienes una cita con <span class="font-bold text-slate-800">Jaime Nelsen</span> a las 8:00 AM</p>
+                <div class="overflow-y-auto pr-2 custom-scrollbar flex-1 pb-2">
+                    
+                    {{-- Sección HOY --}}
+                    <div class="mb-5">
+                        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            Para Hoy <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[9px]">Prioridad</span>
+                        </h4>
+                        <div id="contenedorNotificacionesHoy" class="space-y-3">
+                            <p class="text-sm text-slate-400 italic">Cargando...</p>
                         </div>
                     </div>
 
-                    <div class="flex items-start gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-blue-100">
-                        <div class="bg-blue-800 text-white p-2 rounded-lg flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-sm text-slate-600">Tienes una cita con <span class="font-bold text-slate-800">Marta Stewart</span> a las 10:30 AM</p>
+                    {{-- Sección PRÓXIMAS --}}
+                    <div>
+                        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 pt-3 border-t border-slate-100">
+                            Próximos días
+                        </h4>
+                        <div id="contenedorNotificacionesProximas" class="space-y-3">
+                            <p class="text-sm text-slate-400 italic">Cargando...</p>
                         </div>
                     </div>
+
                 </div>
             </div>
 
@@ -141,6 +134,7 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+<script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/charts.js') }}" defer></script>
 <script src="{{ asset('js/horacolor.js') }}" defer></script>
 

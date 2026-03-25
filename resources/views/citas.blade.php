@@ -53,7 +53,7 @@
         </div>
     </div>
 
-    {{-- Filtros (¡AQUÍ ESTÁ LA CORRECCIÓN!) --}}
+    {{-- Filtros --}}
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-col md:flex-row gap-4">
         <div class="relative flex-1">
             <svg class="w-5 h-5 absolute left-3 top-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -111,7 +111,7 @@
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora Inicio *</label>
             <div class="flex items-center gap-2">
                 <div class="relative flex-1">
-                    <input type="text" id="hora_input_inicio" placeholder="08:00" maxlength="5"
+                    <input type="text" id="hora_input_inicio" placeholder="2:30" maxlength="5"
                         class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-center font-bold text-slate-700 tracking-wider bg-white transition-colors" 
                         oninput="window.formatearHora(this)" onblur="window.validarHora(this)" required>
                 </div>
@@ -128,7 +128,7 @@
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora Fin *</label>
             <div class="flex items-center gap-2">
                 <div class="relative flex-1">
-                    <input type="text" id="hora_input_fin" placeholder="08:30" maxlength="5"
+                    <input type="text" id="hora_input_fin" placeholder="2:30" maxlength="5"
                         class="w-full px-3 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-center font-bold text-slate-700 tracking-wider bg-white transition-colors" 
                         oninput="window.formatearHora(this)" onblur="window.validarHora(this)" required>
                 </div>

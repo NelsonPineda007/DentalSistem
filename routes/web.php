@@ -97,3 +97,9 @@ Route::get('/api/calendario', [CalendarioController::class, 'obtenerEventos']);
 Route::post('/api/calendario', [CalendarioController::class, 'guardarEvento']);
 Route::put('/api/calendario/{id}', [CalendarioController::class, 'actualizarEvento']); 
 Route::delete('/api/calendario/{id}', [CalendarioController::class, 'eliminarEvento']);
+
+// ==========================================
+// DASHBOARD
+// ==========================================
+use App\Http\Controllers\DashboardController; 
+Route::get('/api/dashboard', [DashboardController::class, 'obtenerDatos']);
