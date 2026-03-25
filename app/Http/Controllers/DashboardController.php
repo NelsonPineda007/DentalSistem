@@ -13,7 +13,6 @@ class DashboardController extends Controller
     {
         $hoy = Carbon::now('America/El_Salvador')->toDateString();
         
-        // Arrays para las Sparklines (Tendencias de los últimos 7 días)
         $sparkCitas = [];
         $sparkNoAsistidas = [];
         $sparkCanceladas = [];
@@ -46,19 +45,16 @@ class DashboardController extends Controller
         $noAsistidasHoy = end($sparkNoAsistidas);
         $canceladasHoy = end($sparkCanceladas);
 
-        // NUEVO: Citas Completadas HOY
         $completadasHoy = Cita::where('fecha_cita', $hoy)
                               ->where('estado', 'Completada')
                               ->count();
 
-        // Tasa de completación (Completadas vs Total agendadas hoy)
         $totalCitasHoy = Cita::where('fecha_cita', $hoy)
                              ->whereNotIn('estado', ['Cancelada'])
                              ->count();
                              
         $tasaPorcentaje = $totalCitasHoy > 0 ? round(($completadasHoy / $totalCitasHoy) * 100) : 0;
 
-        // Gráfica de Tratamientos
         $hace7Dias = Carbon::now('America/El_Salvador')->subDays(6)->toDateString();
         $tratamientosTop = DB::table('tratamientos_aplicados')
             ->join('tratamientos', 'tratamientos_aplicados.tratamiento_id', '=', 'tratamientos.id')
@@ -69,13 +65,13 @@ class DashboardController extends Controller
             ->limit(4)
             ->get();
 
-        // NUEVO: Separar Citas Pendientes de HOY
+        // AUMENTAMOS EL LÍMITE PARA EL MODAL
         $notificacionesHoy = Cita::join('pacientes', 'citas.paciente_id', '=', 'pacientes.id')
             ->where('citas.fecha_cita', $hoy)
             ->whereIn('citas.estado', ['Programada', 'Confirmada', 'En progreso'])
             ->orderBy('citas.hora_inicio')
             ->select('citas.hora_inicio', 'pacientes.nombre', 'pacientes.apellido')
-            ->limit(5)
+            ->limit(20)
             ->get()
             ->map(function($cita) {
                 return [
@@ -84,14 +80,14 @@ class DashboardController extends Controller
                 ];
             });
 
-        // NUEVO: Separar Citas Próximas (Mañana en adelante)
+        // AUMENTAMOS EL LÍMITE PARA EL MODAL
         $notificacionesProximas = Cita::join('pacientes', 'citas.paciente_id', '=', 'pacientes.id')
             ->where('citas.fecha_cita', '>', $hoy)
             ->whereIn('citas.estado', ['Programada', 'Confirmada'])
             ->orderBy('citas.fecha_cita')
             ->orderBy('citas.hora_inicio')
             ->select('citas.fecha_cita', 'citas.hora_inicio', 'pacientes.nombre', 'pacientes.apellido')
-            ->limit(5)
+            ->limit(20)
             ->get()
             ->map(function($cita) {
                 return [

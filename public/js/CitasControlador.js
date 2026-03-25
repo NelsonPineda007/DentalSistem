@@ -39,8 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    cargarCitasDesdeBD();
     configurarFiltros();
+    cargarCitasDesdeBD();
     configurarBuscadorPacientes();
 
     autoRefreshInterval = setInterval(() => {
@@ -109,6 +109,7 @@ async function cargarCitasDesdeBD() {
         citasDB = datos;
         actualizarEstadisticas();
         inicializarPaginador();
+        filtrarDatos(); // Aplicar el filtro "Activas" en la carga inicial
     } catch (error) {
         console.error("Error al cargar las citas:", error);
     }
@@ -207,7 +208,6 @@ window.guardarDatos = async function() {
     const horaVisualFin = document.getElementById('hora_input_fin').value;
     const ampmFin = document.getElementById('hora_ampm_fin').value;
     
-    // Ahora validamos que realmente haya algo escrito en las horas antes de guardar
     if (!form.checkValidity() || pacienteSeleccionado === '' || horaVisualInicio.length < 4 || horaVisualFin.length < 4) {
         form.reportValidity(); 
         if(window.Alerta) window.Alerta.advertencia('Campos incompletos', 'Completa todos los campos y asegúrate de llenar correctamente Hora de Inicio y Fin.');
@@ -379,25 +379,52 @@ function inicializarPaginador() {
 
 function configurarFiltros() {
     const input = document.getElementById('searchInput');
-    input.addEventListener('input', filtrarDatos);
+    if(input) input.addEventListener('input', filtrarDatos);
+    
     const select = document.getElementById('filtroEstado');
-    select.addEventListener('change', filtrarDatos);
+    if(select) {
+        // INYECCIÓN AUTOMÁTICA DEL FILTRO "ACTIVAS"
+        let optionActivas = Array.from(select.options).find(opt => opt.value === 'activas');
+        if (!optionActivas) {
+            optionActivas = document.createElement('option');
+            optionActivas.value = 'activas';
+            optionActivas.text = 'Pendientes y En Curso';
+            select.insertBefore(optionActivas, select.options[0]); // Lo pone de primero en la lista
+            
+            // Si el select estaba vacío o en "Todos", forzamos la nueva vista inteligente
+            if(select.value === "" || select.value === "Todos los estados") {
+                select.value = 'activas';
+            }
+        }
+        select.addEventListener('change', filtrarDatos);
+    }
 }
 
 function filtrarDatos() {
-    const term = document.getElementById('searchInput').value.toLowerCase();
-    const estado = document.getElementById('filtroEstado').value;
+    const input = document.getElementById('searchInput');
+    const term = input ? input.value.toLowerCase() : '';
+    
+    const select = document.getElementById('filtroEstado');
+    const estado = select ? select.value : '';
 
     const filtrados = citasDB.filter(c => {
         const motivo = c.motivo || '';
         const paciente = c.paciente || '';
         const doctor = c.doctor || '';
         const matchText = paciente.toLowerCase().includes(term) || motivo.toLowerCase().includes(term) || doctor.toLowerCase().includes(term);
-        const matchEstado = estado === "" || c.estado === estado;
+        
+        // LÓGICA DEL NUEVO FILTRO INTELIGENTE
+        let matchEstado = true;
+        if (estado === 'activas') {
+            matchEstado = ['Programada', 'Confirmada', 'En progreso'].includes(c.estado);
+        } else if (estado !== "") {
+            matchEstado = c.estado === estado;
+        }
+
         return matchText && matchEstado;
     });
 
-    miPaginadorCitas.setData(filtrados);
+    if (miPaginadorCitas) miPaginadorCitas.setData(filtrados);
 }
 
 window.openModal = async function(modalID, mode = 'add') {
@@ -415,7 +442,6 @@ window.openModal = async function(modalID, mode = 'add') {
         document.getElementById('buscador_paciente').value = ''; 
         document.getElementById('paciente_id').value = ''; 
 
-        // Aquí limpiamos los inputs para que se vea el placeholder "2:30"
         document.getElementById('hora_input_inicio').value = '';
         window.setAMPM('inicio', 'AM'); 
         

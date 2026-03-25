@@ -9,7 +9,7 @@ use Carbon\Carbon;
 
 class CitaController extends Controller
 {
-    // 1. Traer todas las citas (Auto-Estados Dinámicos y Ordenamiento)
+    // 1. Traer todas las citas (Auto-Estados Dinámicos y Ordenamiento Cronológico)
     public function obtenerCitas()
     {
         $ahora = Carbon::now('America/El_Salvador');
@@ -43,25 +43,21 @@ class CitaController extends Controller
                 'citas.estado',
                 'citas.notas'
             )
+            // NUEVO ORDENAMIENTO: Primero separa activas de inactivas, luego ordena por fecha y hora
             ->orderByRaw("
                 CASE 
-                    WHEN citas.estado = 'Confirmada' THEN 1
-                    WHEN citas.estado = 'Programada' THEN 2
-                    WHEN citas.estado = 'En progreso' THEN 3
-                    WHEN citas.estado = 'Pendiente' THEN 4
-                    WHEN citas.estado = 'Completada' THEN 5
-                    WHEN citas.estado = 'Cancelada' THEN 6
-                    ELSE 7
+                    WHEN citas.estado IN ('En progreso', 'Confirmada', 'Programada') THEN 1
+                    ELSE 2
                 END ASC
             ")
-            ->orderBy('citas.fecha_cita', 'asc') 
-            ->orderBy('citas.hora_inicio', 'asc')
+            ->orderBy('citas.fecha_cita', 'asc')  // Fecha más cercana primero
+            ->orderBy('citas.hora_inicio', 'asc') // Hora más temprana primero
             ->get();
 
         return response()->json($citas);
     }
 
-    // Método Privado para detectar choques: AHORA SOLO VALIDA CITAS ACTIVAS
+    // Método Privado para detectar choques: SOLO VALIDA CITAS ACTIVAS
     private function detectarChoqueDeHorario($fecha, $hora_inicio, $hora_fin, $empleado_id, $ignorar_id = null)
     {
         $horaInicio = Carbon::parse($hora_inicio);
