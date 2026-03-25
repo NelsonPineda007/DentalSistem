@@ -80,6 +80,9 @@ Route::post('/citas/{citaId}/iniciar-consulta', [ExpedienteController::class, 'i
 Route::get('/api/expediente/facturas/detalle/{id}', [ExpedienteController::class, 'obtenerDetalleFactura']);
 Route::put('/api/expediente/facturas/{id}', [ExpedienteController::class, 'actualizarFactura']);
 
+//pdf
+Route::get('/api/expediente/{paciente_id}/ficha/pdf', [\App\Http\Controllers\ExpedienteController::class, 'imprimirFicha']);
+
 // ==========================================
 // CITAS
 // ==========================================

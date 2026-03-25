@@ -592,4 +592,47 @@ class ExpedienteController extends Controller
             return response()->json(['error_real' => $e->getMessage()], 500);
         }
     }
+
+    // =========================================================
+    // 10. GENERAR PDF DE LA FICHA CLINICA Y ODONTOGRAMA
+    // =========================================================
+    public function imprimirFicha($paciente_id)
+    {
+        try {
+            $paciente = \App\Models\Paciente::findOrFail($paciente_id);
+            $odontograma = \App\Models\Odontograma::where('paciente_id', $paciente_id)->first();
+            $consultas = \App\Models\Consulta::where('paciente_id', $paciente_id)->orderBy('fecha_consulta', 'desc')->get();
+
+            // Decodificamos el JSON del Odontograma de forma segura
+            $estadoDientes = ['diagnostico' => [], 'operatoria' => [], 'detalles_extra' => []];
+            if ($odontograma && $odontograma->estado_dientes) {
+                $dec = is_string($odontograma->estado_dientes) ? json_decode($odontograma->estado_dientes, true) : $odontograma->estado_dientes;
+                if (is_array($dec)) {
+                    $estadoDientes = array_merge($estadoDientes, $dec);
+                }
+            }
+
+            $data = [
+                'paciente' => $paciente,
+                'odontograma' => $estadoDientes,
+                'consultas' => $consultas,
+                'clinica' => [
+                    'nombre' => 'DentalSistem Clínica Odontológica',
+                    'telefono' => '+503 2222-3333',
+                    'email' => 'contacto@dentalsistem.com',
+                    'direccion' => 'San Salvador, El Salvador'
+                ]
+            ];
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.ficha_clinica', $data);
+            
+            // Ponemos el papel en horizontal (landscape) para que quepan bien los dientes
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('Ficha_Clinica_' . $paciente->numero_expediente . '.pdf');
+
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

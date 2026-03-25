@@ -974,121 +974,17 @@ window.guardarFichaClinica = async function() {
     }
 };
 
-window.imprimirFichaPDF = async function() {
-    const elNombre = document.getElementById("exp-nombre");
-    const nombrePaciente = elNombre ? elNombre.innerText : "Paciente";
+window.imprimirFichaPDF = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idPaciente = urlParams.get('id');
+
+    if (!idPaciente) {
+        return Alerta.error("Error", "No se detectó el paciente actual.");
+    }
     
-    if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-        return Alerta.advertencia("Cargando...", "Espere un momento a que el creador de PDF termine de cargar.");
-    }
-
-    const btn = document.querySelector('button[onclick="window.imprimirFichaPDF()"]');
-    const btnText = btn ? btn.innerHTML : "";
-    if(btn) {
-        btn.innerHTML = `<svg class="w-4 h-4 animate-spin inline mr-2" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generando PDF...`;
-    }
-
-    const contenedorImpresion = document.getElementById('contenedor-impresion');
-
-    try {
-        const canvas = await html2canvas(contenedorImpresion, { 
-            scale: 2, 
-            backgroundColor: '#ffffff',
-            windowWidth: 1200,
-            onclone: function(clonedDoc) {
-                const clonedContainer = clonedDoc.getElementById('contenedor-impresion');
-                clonedContainer.style.width = '1200px';
-                clonedContainer.style.maxWidth = '1200px';
-                clonedContainer.style.height = 'max-content';
-                clonedContainer.style.overflow = 'visible';
-
-                const tabOdon = clonedDoc.getElementById('tab-odontograma');
-                const tabHist = clonedDoc.getElementById('tab-historia');
-                const tabCons = clonedDoc.getElementById('tab-consultas');
-                const tabFin = clonedDoc.getElementById('tab-finanzas');
-
-                if(tabOdon) { tabOdon.classList.remove('hidden'); tabOdon.style.display = 'flex'; }
-                if(tabHist) { tabHist.classList.remove('hidden', 'h-full'); tabHist.style.display = 'block'; tabHist.style.height = 'max-content'; }
-                if(tabCons) tabCons.style.display = 'none';
-                if(tabFin) tabFin.style.display = 'none';
-
-                const inputs = clonedContainer.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]');
-                inputs.forEach(input => {
-                    const originalInput = document.getElementById(input.id);
-                    const div = clonedDoc.createElement('div');
-                    div.className = input.className + " flex items-center"; 
-                    div.innerText = originalInput ? originalInput.value : input.value;
-                    input.parentNode.replaceChild(div, input);
-                });
-
-                const textareas = clonedContainer.querySelectorAll('textarea');
-                textareas.forEach(textarea => {
-                    const originalTextarea = document.getElementById(textarea.id);
-                    const div = clonedDoc.createElement('div');
-                    div.className = textarea.className;
-                    div.style.height = 'auto';
-                    div.style.minHeight = '60px';
-                    div.style.whiteSpace = 'pre-wrap';
-                    div.innerText = originalTextarea ? originalTextarea.value : textarea.value;
-                    textarea.parentNode.replaceChild(div, textarea);
-                });
-
-                const checkboxes = clonedContainer.querySelectorAll('input[type="checkbox"]');
-                checkboxes.forEach(cb => {
-                    const originalCb = document.getElementById(cb.id);
-                    const div = clonedDoc.createElement('div');
-                    div.className = 'w-4 h-4 border border-slate-300 rounded flex items-center justify-center text-blue-800';
-                    if(originalCb && originalCb.checked) {
-                        div.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" class="w-3 h-3"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-                    }
-                    cb.parentNode.replaceChild(div, cb);
-                });
-            }
-        });
-        
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        
-        const pdf = new jsPDF('l', 'mm', 'a4'); 
-        pdf.setFontSize(16);
-        pdf.setTextColor(30, 64, 175);
-        pdf.text(`Ficha Técnica Dental y Médica - ${nombrePaciente}`, 15, 15);
-        
-        pdf.setFontSize(10);
-        pdf.setTextColor(100, 116, 139);
-        pdf.text(`Fecha de Impresión: ${new Date().toLocaleDateString()}`, 15, 22);
-
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 15;
-        const topMargin = 28; 
-
-        const imgProps = pdf.getImageProperties(imgData);
-        let finalWidth = pageWidth - (margin * 2);
-        let finalHeight = (imgProps.height * finalWidth) / imgProps.width;
-
-        let heightLeft = finalHeight;
-        let position = topMargin;
-
-        pdf.addImage(imgData, 'PNG', margin, position, finalWidth, finalHeight);
-        heightLeft -= (pageHeight - topMargin);
-
-        while (heightLeft > 0) {
-            pdf.addPage();
-            let amountShown = finalHeight - heightLeft;
-            position = 15 - amountShown; 
-            pdf.addImage(imgData, 'PNG', margin, position, finalWidth, finalHeight);
-            heightLeft -= (pageHeight - 15);
-        }
-
-        pdf.save(`Ficha_Dental_${nombrePaciente.replace(/ /g, '_')}.pdf`);
-        
-    } catch (error) {
-        console.error("Error al generar PDF:", error);
-        Alerta.error("Error", "Hubo un error al crear el PDF. Revise la consola.");
-    } finally {
-        if(btn) btn.innerHTML = btnText;
-    }
+    Alerta.info("Generando PDF...", "Abriendo documento en una nueva pestaña.");
+    // Ahora Laravel hace el trabajo pesado
+    window.open(`/api/expediente/${idPaciente}/ficha/pdf`, '_blank');
 };
 
 window.imprimirFacturaPDF = function(facturaId) {
