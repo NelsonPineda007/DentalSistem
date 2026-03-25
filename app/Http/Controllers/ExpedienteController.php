@@ -479,7 +479,7 @@ class ExpedienteController extends Controller
         }
     }
 
-    // =========================================================
+// =========================================================
     // 9. ACTUALIZAR RECIBO (EDICIÓN DE TRATAMIENTOS)
     // =========================================================
     public function actualizarFactura(Request $request, $id)
@@ -512,19 +512,42 @@ class ExpedienteController extends Controller
                 'observaciones' => $request->observaciones_factura
             ]);
 
-            // Eliminamos items viejos
+            // 👇 AQUI ESTÁ LA MAGIA PARA QUE NO SE PIERDA EL ID 👇
             $old_items = \App\Models\FacturaItem::where('factura_id', $factura->id)->get();
+            
+            $consulta_id = null;
+            
+            // 1. Rescatamos el ID de la consulta del primer item que ya existía
+            $primerItem = $old_items->first();
+            if ($primerItem && $primerItem->consulta_id) {
+                $consulta_id = $primerItem->consulta_id;
+            }
+
+            // 2. Si por algún motivo estaba vacío, tratamos de buscar por la cita actual
+            if (!$consulta_id && $factura->cita_id) {
+                $consulta = \App\Models\Consulta::where('cita_id', $factura->cita_id)->first();
+                $consulta_id = $consulta ? $consulta->id : null;
+            }
+
+            // 3. Si sigue estando vacío (caso raro), creamos una de emergencia para no dar error 500
+            if (!$consulta_id) {
+                $consultaNueva = \App\Models\Consulta::create([
+                    'paciente_id' => $factura->paciente_id,
+                    'empleado_id' => 1, 
+                    'cita_id' => $factura->cita_id ?? null,
+                    'fecha_consulta' => $request->fecha,
+                    'motivo_consulta' => 'Tratamiento Directo (Caja)',
+                    'observaciones' => 'Expediente recuperado al editar recibo'
+                ]);
+                $consulta_id = $consultaNueva->id;
+            }
+
+            // AHORA SÍ: Eliminamos items viejos de forma segura
             foreach($old_items as $oi) {
                 if($oi->tratamiento_aplicado_id) {
                     \App\Models\TratamientoAplicado::where('id', $oi->tratamiento_aplicado_id)->delete();
                 }
                 $oi->delete();
-            }
-
-            $consulta_id = null;
-            if($factura->cita_id) {
-                $consulta = \App\Models\Consulta::where('cita_id', $factura->cita_id)->first();
-                $consulta_id = $consulta ? $consulta->id : null;
             }
 
             // Guardamos los items corregidos
