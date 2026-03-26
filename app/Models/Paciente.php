@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class Paciente extends Model
 {
+    use Auditable; // <-- ENCENDEMOS LA AUDITORÍA PARA ESTA TABLA
+
     // 1. Le decimos exactamente qué tabla usar
     protected $table = 'pacientes';
 

@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 1; i <= faltantes; i++) { crearCeldaMiniDia(i, miniMesActual + 1, miniAnioActual, true); }
     }
 
-    function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
+function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
         let m = mes; let a = anio;
         if (m < 0) { m = 11; a--; }
         if (m > 11) { m = 0; a++; }
@@ -296,10 +296,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const hoy = new Date();
         const esHoy = dia === hoy.getDate() && m === hoy.getMonth() && a === hoy.getFullYear();
 
+        // 1. Clases base que tienen todos los días
+        let clasesDia = 'p-1 flex items-center justify-center cursor-pointer rounded-full transition-colors w-6 h-6 md:w-7 md:h-7 mx-auto';
+
+        // 2. Aplicamos colores estrictamente separados
+        if (esMesDif) {
+            clasesDia += ' text-slate-300 font-medium';
+        } else if (esHoy) {
+            // Si es hoy, SOLO fondo azul y texto blanco
+            clasesDia += ' bg-blue-800 text-white hover:bg-blue-900 shadow-md font-bold'; 
+        } else {
+            // Si es un día normal del mes, texto gris
+            clasesDia += ' text-slate-700 hover:bg-slate-100 font-bold';
+        }
+
         const celda = document.createElement('div');
-        celda.className = `p-1 flex items-center justify-center cursor-pointer rounded-full transition-colors w-6 h-6 md:w-7 md:h-7 mx-auto
-                           ${esMesDif ? 'text-slate-300 font-medium' : 'text-slate-700 hover:bg-slate-100 font-bold'} 
-                           ${esHoy && !esMesDif ? 'bg-blue-800 text-white hover:bg-blue-900 shadow-md' : ''}`;
+        celda.className = clasesDia;
         celda.textContent = dia;
         celda.onclick = () => { mesActual = m; anioActual = a; actualizarVistas(); };
         miniGrid.appendChild(celda);

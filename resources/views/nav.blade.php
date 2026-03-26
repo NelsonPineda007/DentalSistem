@@ -38,11 +38,27 @@
         </button>
     </div>
 
+    {{-- LÓGICA BACKEND DE SESIÓN --}}
+    @php
+        $userRol = \Illuminate\Support\Facades\DB::table('roles')->where('id', Auth::user()->rol_id)->value('nombre') ?? 'Usuario';
+        
+        $nombre = Auth::user()->nombre;
+        $apellido = Auth::user()->apellido;
+        $iniciales = strtoupper(substr($nombre, 0, 1) . substr($apellido, 0, 1));
+        
+        // Colores aleatorios predefinidos
+        $colores = ['bg-rose-500', 'bg-blue-600', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-600', 'bg-cyan-600', 'bg-indigo-500', 'bg-pink-500'];
+        $colorIndex = (ord($iniciales[0]) + (isset($iniciales[1]) ? ord($iniciales[1]) : 0)) % count($colores);
+        $avatarColor = $colores[$colorIndex];
+    @endphp
+
     {{-- Comienzo del navbar --}}
     <nav class="flex-1 px-6 space-y-2 overflow-y-auto custom-scrollbar">
         <ul class="space-y-4">
 
             {{-- Enlaces actualizados a rutas de Laravel --}}
+            {{-- SOLO LOS ADMINS Y DENTISTAS PUEDEN VER EL DASHBOARD --}}
+            @if($userRol === 'Admin' || $userRol === 'Dentista')
             <li>
                 <a href="{{ url('/dashboard') }}"
                    class="nav-link flex items-center gap-4 px-4 py-3 text-blue-400 font-semibold hover:text-blue-200 hover:bg-blue-900/40 hover:shadow-lg hover:shadow-blue-900/20 rounded-xl transition">
@@ -54,6 +70,7 @@
                     Dashboard
                 </a>
             </li>
+            @endif
 
 <li>
                 <a href="{{ url('/citas') }}"
@@ -112,30 +129,31 @@
     <button onclick="window.location.href='{{ url('/perfil') }}'" 
             class="w-full flex items-center gap-3 mb-6 p-2 rounded-xl hover:bg-blue-50 transition-colors duration-200 group text-left">
         
-        <div class="w-10 h-10 flex-shrink-0 rounded-full bg-blue-800 shadow-lg shadow-blue-900/30 flex items-center justify-center text-blue-100 group-hover:scale-105 transition-transform">
-            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd"
-                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                      clip-rule="evenodd"></path>
-            </svg>
+        {{-- Avatar reemplazado con lógica, PERO CON TUS MISMAS CLASES DE DISEÑO --}}
+        <div class="w-10 h-10 flex-shrink-0 rounded-full {{ $avatarColor }} shadow-lg shadow-blue-900/30 flex items-center justify-center text-white text-sm font-bold group-hover:scale-105 transition-transform">
+            {{ $iniciales }}
         </div>
 
+        {{-- Nombres reemplazados con lógica --}}
         <div>
-            <p class="text-sm font-bold text-blue-800">Usuario</p>
-            <p class="text-xs text-blue-400">Administrador</p>
+            <p class="text-sm font-bold text-blue-800">{{ Auth::user()->nombre }} {{ Auth::user()->apellido }}</p>
+            <p class="text-xs text-blue-400">{{ $userRol }}</p>
         </div>
     </button>
 
-    {{-- Redireccion al login --}}
-    <button onclick="window.location.href='{{ url('/') }}'"
-        class="w-full flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-blue-100 py-2.5 px-4 rounded-xl shadow-xl shadow-blue-900/30 transition font-semibold">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
-            </path>
-        </svg>
-        Salir
-    </button>
+    {{-- Formulario de Logout seguro con TU diseño de botón intacto --}}
+    <form action="{{ route('logout') }}" method="POST" class="w-full">
+        @csrf
+        <button type="submit"
+            class="w-full flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-blue-100 py-2.5 px-4 rounded-xl shadow-xl shadow-blue-900/30 transition font-semibold">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                </path>
+            </svg>
+            Salir
+        </button>
+    </form>
 </div>
 
 </aside>

@@ -1,9 +1,12 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class Factura extends Model
 {
+    use Auditable;
+    
     protected $table = 'facturas';
     const CREATED_AT = 'creado_en';
     const UPDATED_AT = 'actualizado_en';

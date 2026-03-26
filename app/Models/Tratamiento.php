@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable; // 1. Lo importas
 
 class Tratamiento extends Model
 {
+    use Auditable;
     // Relación: Un tratamiento pertenece a una categoría
     public function categoria()
     {

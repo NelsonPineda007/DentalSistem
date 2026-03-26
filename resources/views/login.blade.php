@@ -15,9 +15,9 @@
           },
           colors: {
             brand: {
-              DEFAULT: '#1e40af', /* Exactamente el blue-800 de tu sidebar */
-              dark:    '#1e3a8a', /* blue-900 para el hover */
-              light:   '#eff6ff', /* blue-50 para fondos */
+              DEFAULT: '#1e40af', 
+              dark:    '#1e3a8a', 
+              light:   '#eff6ff', 
             }
           },
           keyframes: {
@@ -55,12 +55,21 @@
     <div class="animate-fade-up-2 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 sm:p-10">
 
       <h2 class="text-xl font-bold text-slate-800 mb-2 text-center">¡Bienvenido de nuevo!</h2>
-      <p class="text-sm text-slate-500 mb-8 text-center">Ingrese sus credenciales para acceder</p>
+      <p class="text-sm text-slate-500 mb-6 text-center">Ingrese sus credenciales para acceder</p>
 
-      <form onsubmit="window.location.href='dashboard'; return false;" class="space-y-5">
+      {{-- ALERTA DE ERRORES LARAVEL (Se adapta a tu diseño) --}}
+      @if ($errors->any())
+        <div class="mb-6 p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-bold text-center rounded-xl animate-fade-up-3">
+            {{ $errors->first() }}
+        </div>
+      @endif
+
+      {{-- FORMULARIO CONECTADO AL CONTROLADOR --}}
+      <form action="/login" method="POST" class="space-y-5">
+        @csrf
 
         <div class="animate-fade-up-3">
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Usuario</label>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Correo Electrónico</label>
           <div class="relative">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
               <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,8 +77,10 @@
               </svg>
             </span>
             <input
-              type="text"
-              placeholder="Ej: admin.user"
+              type="email"
+              name="email"
+              value="{{ old('email') }}"
+              placeholder="admin@dentalsistem.com"
               class="w-full pl-12 pr-4 py-3.5 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all font-medium"
               required
             />
@@ -79,8 +90,7 @@
         <div class="animate-fade-up-4">
           <div class="flex items-center justify-between mb-2">
             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Contraseña</label>
-            <a href="#" class="text-xs font-semibold text-brand hover:text-brand-dark transition-colors">¿Olvidaste tu contraseña?</a>
-          </div>
+<a href="{{ route('password.request') }}" class="text-xs font-semibold text-brand hover:text-brand-dark transition-colors">¿Olvidaste tu contraseña?</a>          </div>
           <div class="relative">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
               <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -90,6 +100,7 @@
             <input
               id="passInput"
               type="password"
+              name="password"
               placeholder="••••••••"
               class="w-full pl-12 pr-12 py-3.5 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl placeholder-slate-400 focus:outline-none focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all font-medium"
               required
@@ -122,7 +133,7 @@
     </div>
 
     <p class="text-center text-xs font-medium text-slate-400 mt-8 animate-fade-up-5">
-      &copy; 2026 Dentista. Acceso restringido.
+      &copy; {{ date('Y') }} Dentista. Acceso restringido.
     </p>
 
   </div>
