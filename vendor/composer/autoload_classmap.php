@@ -9,6 +9,7 @@ return array(
     'App\\Http\\Controllers\\CalendarioController' => $baseDir . '/app/Http/Controllers/CalendarioController.php',
     'App\\Http\\Controllers\\CitaController' => $baseDir . '/app/Http/Controllers/CitaController.php',
     'App\\Http\\Controllers\\Controller' => $baseDir . '/app/Http/Controllers/Controller.php',
+    'App\\Http\\Controllers\\DashboardController' => $baseDir . '/app/Http/Controllers/DashboardController.php',
     'App\\Http\\Controllers\\ExpedienteController' => $baseDir . '/app/Http/Controllers/ExpedienteController.php',
     'App\\Http\\Controllers\\PacienteController' => $baseDir . '/app/Http/Controllers/PacienteController.php',
     'App\\Http\\Controllers\\TratamientoController' => $baseDir . '/app/Http/Controllers/TratamientoController.php',
