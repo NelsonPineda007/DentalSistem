@@ -13,7 +13,7 @@ $containerID = isset($containerID) ? $containerID : 'tableContainer';
 ?>
 
 {{-- ─────────────────────────────────────────────────────────────
-     ESTILOS DEL COMPONENTE  (sólo mobile cards, no rompe nada)
+     ESTILOS DEL COMPONENTE  (sólo mobile cards)
 ───────────────────────────────────────────────────────────────── --}}
 <style>
 /* ── Accordion body ── */
@@ -55,7 +55,6 @@ $containerID = isset($containerID) ? $containerID : 'tableContainer';
 
     {{-- ════════════════════════════════════════════
          VISTA ESCRITORIO / TABLET / LAPTOP  (md+)
-         EXACTAMENTE igual que antes, sin tocar
     ═══════════════════════════════════════════════ --}}
     <div class="hidden md:flex flex-1 overflow-x-auto overflow-y-auto bg-white flex-col">
         <table class="w-full text-left border-collapse flex-1">
@@ -302,7 +301,7 @@ $containerID = isset($containerID) ? $containerID : 'tableContainer';
         });
     }
 
-    /* ── Inicializar con MutationObserver ───────────────────── */
+    /* ── Inicializar con MutationObserver  */
     function init() {
         const tbody = document.getElementById(tbodyId);
         if (!tbody) {
@@ -321,7 +320,7 @@ $containerID = isset($containerID) ? $containerID : 'tableContainer';
         obs.observe(tbody, { childList: true });
     }
 
-    /* ── Arrancar cuando el DOM esté listo ──────────────────── */
+    /* ── Arrancar cuando el DOM esté listo  */
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

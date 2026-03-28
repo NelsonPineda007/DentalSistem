@@ -2,25 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Cita; 
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Http\Requests\StoreCitaRequest;
 
 class CitaController extends Controller
 {
-    // 1. Traer todas las citas (Auto-Estados Dinámicos y Ordenamiento Cronológico)
     public function obtenerCitas()
     {
         $ahora = Carbon::now('America/El_Salvador');
-        
         $citasActivas = Cita::whereIn('estado', ['Programada', 'Confirmada', 'En progreso'])->get();
 
         foreach ($citasActivas as $cita) {
             $fechaHoraCita = Carbon::parse($cita->fecha_cita . ' ' . $cita->hora_inicio, 'America/El_Salvador');
             $fechaHoraFin = Carbon::parse($cita->fecha_cita . ' ' . $cita->hora_fin, 'America/El_Salvador');
 
-            // LOGICA AUTOMATICA DE TIEMPOS
             if ($ahora >= $fechaHoraFin && $cita->estado !== 'Completada') {
                 $cita->update(['estado' => 'Completada']);
             } elseif ($ahora >= $fechaHoraCita && $ahora < $fechaHoraFin && $cita->estado !== 'En progreso') {
@@ -31,46 +28,31 @@ class CitaController extends Controller
         $citas = Cita::join('pacientes', 'citas.paciente_id', '=', 'pacientes.id')
             ->join('empleados', 'citas.empleado_id', '=', 'empleados.id')
             ->select(
-                'citas.id',
-                'citas.paciente_id',
-                'citas.empleado_id',
-                'citas.fecha_cita as fecha',
-                'citas.hora_inicio as hora',
-                'citas.hora_fin', 
+                'citas.id', 'citas.paciente_id', 'citas.empleado_id',
+                'citas.fecha_cita as fecha', 'citas.hora_inicio as hora', 'citas.hora_fin', 
                 DB::raw("CONCAT(pacientes.nombre, ' ', pacientes.apellido) as paciente"),
                 'citas.motivo_consulta as motivo',
                 DB::raw("CONCAT(empleados.nombre, ' ', empleados.apellido) as doctor"),
-                'citas.estado',
-                'citas.notas'
+                'citas.estado', 'citas.notas'
             )
-            // NUEVO ORDENAMIENTO: Primero separa activas de inactivas, luego ordena por fecha y hora
-            ->orderByRaw("
-                CASE 
-                    WHEN citas.estado IN ('En progreso', 'Confirmada', 'Programada') THEN 1
-                    ELSE 2
-                END ASC
-            ")
-            ->orderBy('citas.fecha_cita', 'asc')  // Fecha más cercana primero
-            ->orderBy('citas.hora_inicio', 'asc') // Hora más temprana primero
+            ->orderByRaw("CASE WHEN citas.estado IN ('En progreso', 'Confirmada', 'Programada') THEN 1 ELSE 2 END ASC")
+            ->orderBy('citas.fecha_cita', 'asc')
+            ->orderBy('citas.hora_inicio', 'asc')
             ->get();
 
         return response()->json($citas);
     }
 
-    // Método Privado para detectar choques: SOLO VALIDA CITAS ACTIVAS
     private function detectarChoqueDeHorario($fecha, $hora_inicio, $hora_fin, $empleado_id, $ignorar_id = null)
     {
         $horaInicio = Carbon::parse($hora_inicio);
         $horaFin = Carbon::parse($hora_fin);
 
-        // Solo toma en cuenta las citas que realmente ocupan espacio
         $query = Cita::where('fecha_cita', $fecha)
                      ->where('empleado_id', $empleado_id)
                      ->whereIn('estado', ['Programada', 'Confirmada', 'En progreso']);
         
-        if ($ignorar_id) {
-            $query->where('id', '!=', $ignorar_id);
-        }
+        if ($ignorar_id) $query->where('id', '!=', $ignorar_id);
 
         $citasDelDia = $query->get();
 
@@ -85,78 +67,62 @@ class CitaController extends Controller
         return false;
     }
 
-    // 2. Guardar Cita Nueva
-    public function guardarCita(Request $request)
+    public function guardarCita(StoreCitaRequest $request)
     {
-        $horaInicioReq = Carbon::parse($request->hora)->format('H:i:s');
-        $horaFinReq = Carbon::parse($request->hora_fin)->format('H:i:s');
+        $datos = $request->validated();
+        
+        $horaInicioReq = Carbon::parse($datos['hora'])->format('H:i:s');
+        $horaFinReq = Carbon::parse($datos['hora_fin'])->format('H:i:s');
 
-        if ($horaInicioReq >= $horaFinReq) {
-             return response()->json(['error' => 'La hora de fin debe ser mayor a la hora de inicio.'], 422);
-        }
+        if ($horaInicioReq >= $horaFinReq) return response()->json(['error' => 'La hora de fin debe ser mayor a la hora de inicio.'], 422);
+        if ($horaInicioReq < '06:00:00' || $horaFinReq > '18:00:00') return response()->json(['error' => 'Las citas deben programarse dentro del horario de atención (6:00 AM a 6:00 PM).'], 422);
 
-        if ($horaInicioReq < '06:00:00' || $horaFinReq > '18:00:00') {
-            return response()->json(['error' => 'Las citas deben programarse dentro del horario de atención (6:00 AM a 6:00 PM).'], 422);
-        }
-
-        if (!$request->has('forzar_guardado') || $request->forzar_guardado == false) {
-            $hayChoque = $this->detectarChoqueDeHorario($request->fecha, $request->hora, $request->hora_fin, $request->empleado_id);
-            if ($hayChoque) {
-                return response()->json([
-                    'warning' => true, 
-                    'mensaje' => 'Este doctor ya tiene una cita programada que interfiere con este horario. ¿Qué acción deseas tomar?'
-                ], 409); 
+        if (!isset($datos['forzar_guardado']) || $datos['forzar_guardado'] == false) {
+            if ($this->detectarChoqueDeHorario($datos['fecha'], $datos['hora'], $datos['hora_fin'], $datos['empleado_id'])) {
+                return response()->json(['warning' => true, 'mensaje' => 'Este doctor ya tiene una cita programada que interfiere. ¿Qué deseas hacer?'], 409); 
             }
         }
 
         $cita = Cita::create([
-            'paciente_id' => $request->paciente_id,
-            'empleado_id' => $request->empleado_id,
-            'fecha_cita' => $request->fecha,
-            'hora_inicio' => $request->hora, 
-            'hora_fin' => $request->hora_fin, 
-            'estado' => $request->estado ?? 'Programada',
-            'motivo_consulta' => $request->motivo,
-            'notas' => $request->notas
+            'paciente_id' => $datos['paciente_id'],
+            'empleado_id' => $datos['empleado_id'],
+            'fecha_cita' => $datos['fecha'],
+            'hora_inicio' => $datos['hora'], 
+            'hora_fin' => $datos['hora_fin'], 
+            'estado' => $datos['estado'] ?? 'Programada',
+            'motivo_consulta' => $datos['motivo'],
+            'notas' => $datos['notas']
         ]);
 
         return response()->json(['success' => true, 'mensaje' => 'Cita creada con éxito', 'id' => $cita->id]);
     }
 
-    // 3. Actualizar Cita (Editar)
-    public function actualizarCita(Request $request, $id)
+    public function actualizarCita(StoreCitaRequest $request, $id)
     {
-        $horaInicioReq = Carbon::parse($request->hora)->format('H:i:s');
-        $horaFinReq = Carbon::parse($request->hora_fin)->format('H:i:s');
+        $datos = $request->validated();
 
-        if ($horaInicioReq >= $horaFinReq) {
-             return response()->json(['error' => 'La hora de fin debe ser mayor a la hora de inicio.'], 422);
-        }
+        $horaInicioReq = Carbon::parse($datos['hora'])->format('H:i:s');
+        $horaFinReq = Carbon::parse($datos['hora_fin'])->format('H:i:s');
 
-        if ($horaInicioReq < '06:00:00' || $horaFinReq > '18:00:00') {
-            return response()->json(['error' => 'Las citas deben programarse dentro del horario de atención (6:00 AM a 6:00 PM).'], 422);
-        }
+        if ($horaInicioReq >= $horaFinReq) return response()->json(['error' => 'La hora de fin debe ser mayor a la hora de inicio.'], 422);
+        if ($horaInicioReq < '06:00:00' || $horaFinReq > '18:00:00') return response()->json(['error' => 'Las citas deben programarse dentro del horario de atención (6:00 AM a 6:00 PM).'], 422);
 
-        if (!$request->has('forzar_guardado') || $request->forzar_guardado == false) {
-            $hayChoque = $this->detectarChoqueDeHorario($request->fecha, $request->hora, $request->hora_fin, $request->empleado_id, $id);
-            if ($hayChoque) {
-                return response()->json([
-                    'warning' => true, 
-                    'mensaje' => 'Este doctor ya tiene una cita programada que interfiere con este horario. ¿Qué acción deseas tomar?'
-                ], 409); 
+        if (!isset($datos['forzar_guardado']) || $datos['forzar_guardado'] == false) {
+            if ($this->detectarChoqueDeHorario($datos['fecha'], $datos['hora'], $datos['hora_fin'], $datos['empleado_id'], $id)) {
+                return response()->json(['warning' => true, 'mensaje' => 'Este doctor ya tiene una cita programada que interfiere. ¿Qué deseas hacer?'], 409); 
             }
         }
 
         $cita = Cita::findOrFail($id);
         $cita->update([
-            'paciente_id' => $request->paciente_id,
-            'empleado_id' => $request->empleado_id,
-            'fecha_cita' => $request->fecha,
-            'hora_inicio' => $request->hora,
-            'hora_fin' => $request->hora_fin,
-            'estado' => $request->estado,
-            'motivo_consulta' => $request->motivo,
-            'notas' => $request->notas
+            'paciente_id' => $datos['paciente_id'],
+            'empleado_id' => $datos['empleado_id'],
+            'fecha_cita' => $datos['fecha'],
+            'hora_inicio' => $datos['hora'],
+            'hora_fin' => $datos['hora_fin'],
+            'estado' => $datos['estado'],
+            'motivo_consulta' => $datos['motivo'],
+            'notas' => $datos['notas']
         ]);
 
         return response()->json(['success' => true, 'mensaje' => 'Cita actualizada con éxito']);
@@ -171,8 +137,8 @@ class CitaController extends Controller
 
     public function obtenerDatosFormulario()
     {
-        $pacientes = DB::table('pacientes')->select('id', DB::raw("CONCAT(nombre, ' ', apellido) as nombre_completo"))->get();
-        $doctores = DB::table('empleados')->select('id', DB::raw("CONCAT(nombre, ' ', apellido) as nombre_completo"))->get();
+        $pacientes = DB::table('pacientes')->select('id', DB::raw("CONCAT(nombre, ' ', apellido) as nombre_completo"))->where('estado', 'Activo')->get();
+        $doctores = DB::table('empleados')->select('id', DB::raw("CONCAT(nombre, ' ', apellido) as nombre_completo"))->where('estado', 'Activo')->get();
         return response()->json(['pacientes' => $pacientes, 'doctores' => $doctores]);
     }
 

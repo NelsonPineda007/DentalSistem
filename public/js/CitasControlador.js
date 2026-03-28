@@ -5,15 +5,11 @@ let miPaginadorCitas;
 let pacientesGlobal = []; 
 let autoRefreshInterval; 
 
-// ==========================================
-// FIX VISUAL: BOTONES DE ALERTA IGUALES
-// ==========================================
 (function fixAlertButtons() {
     if (document.getElementById('fix-alert-buttons')) return;
     const style = document.createElement('style');
     style.id = 'fix-alert-buttons';
     style.innerHTML = `
-        /* Fuerza a los botones a tener exactamente el mismo ancho sin importar el texto */
         .da-modal .swal2-actions .da-btn {
             flex: 1 1 0px !important; 
             padding: 12px 4px !important;
@@ -35,7 +31,7 @@ let autoRefreshInterval;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof PaginadorTabla === 'undefined') {
-        console.error("Error: paginadorTabla.js no cargado.");
+        window.Alerta.error("Error del sistema", "paginadorTabla.js no cargado.");
         return;
     }
 
@@ -109,9 +105,9 @@ async function cargarCitasDesdeBD() {
         citasDB = datos;
         actualizarEstadisticas();
         inicializarPaginador();
-        filtrarDatos(); // Aplicar el filtro "Activas" en la carga inicial
+        filtrarDatos(); 
     } catch (error) {
-        console.error("Error al cargar las citas:", error);
+        window.Alerta.error("Error de conexión", "No se pudieron cargar las citas.");
     }
 }
 
@@ -122,7 +118,7 @@ async function cargarCitasSilencioso() {
         actualizarEstadisticas();
         filtrarDatos();
     } catch (error) {
-        console.error("Error en la recarga automática de citas:", error);
+        // Modo silencioso, no asustamos al usuario si el internet falla 5 segundos
     }
 }
 
@@ -142,7 +138,7 @@ async function cargarDatosFormulario() {
             });
         }
     } catch (error) {
-        console.error("Hubo un problema al cargar selects:", error);
+        window.Alerta.error("Error de carga", "Hubo un problema al cargar los datos del formulario.");
     }
 }
 
@@ -239,8 +235,6 @@ window.guardarDatos = async function() {
             }
 
         } catch (error) {
-            console.error("Error al guardar los datos:", error);
-            
             if (error.status === 409 && error.data && error.data.warning) {
                 if (typeof Swal !== 'undefined') {
                     const result = await Swal.fire({
@@ -268,9 +262,7 @@ window.guardarDatos = async function() {
                     if (result.isConfirmed) {
                         payload.forzar_guardado = true;
                         await intentarGuardar(payload);
-                    } else if (result.isDenied) {
-                        console.log("El usuario decidió cambiar la hora.");
-                    }
+                    } 
                 }
             } else if (error.status === 422 && error.data && error.data.error) {
                 if(window.Alerta) window.Alerta.error('Error', error.data.error);
@@ -297,9 +289,13 @@ function actualizarEstadisticas() {
         return diffDays <= 7;
     }).length;
 
-    document.getElementById('statHoy').innerText = countHoy;
-    document.getElementById('statSemana').innerText = countSemana;
-    document.getElementById('statPendientes').innerText = countPendientes;
+    const statHoy = document.getElementById('statHoy');
+    const statSemana = document.getElementById('statSemana');
+    const statPend = document.getElementById('statPendientes');
+
+    if(statHoy) statHoy.innerText = countHoy;
+    if(statSemana) statSemana.innerText = countSemana;
+    if(statPend) statPend.innerText = countPendientes;
 }
 
 function parseTo12h(timeString) {
@@ -383,15 +379,13 @@ function configurarFiltros() {
     
     const select = document.getElementById('filtroEstado');
     if(select) {
-        // INYECCIÓN AUTOMÁTICA DEL FILTRO "ACTIVAS"
         let optionActivas = Array.from(select.options).find(opt => opt.value === 'activas');
         if (!optionActivas) {
             optionActivas = document.createElement('option');
             optionActivas.value = 'activas';
             optionActivas.text = 'Pendientes y En Curso';
-            select.insertBefore(optionActivas, select.options[0]); // Lo pone de primero en la lista
+            select.insertBefore(optionActivas, select.options[0]);
             
-            // Si el select estaba vacío o en "Todos", forzamos la nueva vista inteligente
             if(select.value === "" || select.value === "Todos los estados") {
                 select.value = 'activas';
             }
@@ -413,7 +407,6 @@ function filtrarDatos() {
         const doctor = c.doctor || '';
         const matchText = paciente.toLowerCase().includes(term) || motivo.toLowerCase().includes(term) || doctor.toLowerCase().includes(term);
         
-        // LÓGICA DEL NUEVO FILTRO INTELIGENTE
         let matchEstado = true;
         if (estado === 'activas') {
             matchEstado = ['Programada', 'Confirmada', 'En progreso'].includes(c.estado);
@@ -517,7 +510,6 @@ window.eliminarCita = async function(id) {
                 cargarCitasDesdeBD(); 
             }
         } catch (error) {
-            console.error("Error al cancelar:", error);
             window.Alerta.error('Hubo un problema', 'No se pudo cancelar la cita.');
         }
     }

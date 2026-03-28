@@ -4,78 +4,68 @@ namespace App\Http\Controllers;
 
 use App\Models\Paciente;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // <-- Inyectamos la clase de Autenticación
+use App\Http\Requests\StorePacienteRequest; // <-- Importamos a nuestro "Guardia"
 
 class PacienteController extends Controller
 {
-    // 1. Esta trae a TODOS los pacientes (Para tu pantalla de tabla general)
     public function obtenerTodos()
     {
-        // En lugar de filtrar por 'Activo', usamos all() para traer el historial completo
         $pacientes = Paciente::all(); 
-        
         return response()->json($pacientes);
     }
 
-    // 2. Esta trae a UN SOLO paciente por su ID (Para la cabecera del Expediente)
     public function obtenerUno($id)
     {
         $paciente = Paciente::find($id);
-
         if (!$paciente) {
             return response()->json(['mensaje' => 'Paciente no encontrado'], 404);
         }
-
         return response()->json($paciente);
     }
 
-    // NUEVA FUNCIÓN: Recibe los datos del JS y los guarda en MySQL
-    public function guardar(Request $request)
+    // USAMOS EL FORM REQUEST AQUÍ (StorePacienteRequest en lugar de Request)
+    public function guardar(StorePacienteRequest $request)
     {
-        // 1. Validamos que el expediente no exista ya en la base de datos para evitar errores de MySQL
-        $request->validate([
-            'nombre' => 'required',
-            'apellido' => 'required',
-            'numero_expediente' => 'required|unique:pacientes'
-        ]);
+        // 1. Extraemos todos los datos validados y limpios
+        $datos = $request->validated();
+        
+        // 2. Inyectamos silenciosamente quién está creando este registro
+        $datos['creado_por'] = Auth::id();
 
-        // 2. Le decimos al Modelo que cree el registro con todos los datos que llegaron
-        $paciente = Paciente::create($request->all());
+        // 3. Creamos el paciente
+        $paciente = Paciente::create($datos);
 
-        // 3. Le respondemos a tu JavaScript (api.js) que todo salió perfecto (Status 200)
         return response()->json([
             'mensaje' => 'Paciente creado exitosamente',
             'paciente' => $paciente
         ]);
     }
 
-    // NUEVA FUNCIÓN: Recibe los datos nuevos y actualiza el registro en MySQL
-    public function actualizar(Request $request, $id)
+    // USAMOS EL FORM REQUEST AQUÍ TAMBIÉN
+    public function actualizar(StorePacienteRequest $request, $id)
     {
-        // 1. Buscamos al paciente por su ID
         $paciente = Paciente::find($id);
 
         if (!$paciente) {
             return response()->json(['mensaje' => 'Paciente no encontrado'], 404);
         }
 
-        // 2. Validamos (Le decimos que el expediente es único, pero que ignore el ID actual)
-        $request->validate([
-            'nombre' => 'required',
-            'apellido' => 'required',
-            'numero_expediente' => 'required|unique:pacientes,numero_expediente,' . $id
-        ]);
+        // 1. Extraemos los datos validados
+        $datos = $request->validated();
+        
+        // 2. Inyectamos silenciosamente quién está actualizando
+        $datos['actualizado_por'] = Auth::id();
 
-        // 3. Actualizamos el registro con los datos que llegaron del JS
-        $paciente->update($request->all());
+        // 3. Actualizamos
+        $paciente->update($datos);
 
-        // 4. Le avisamos a tu JS que todo fue un éxito
         return response()->json([
             'mensaje' => 'Paciente actualizado exitosamente',
             'paciente' => $paciente
         ]);
     }
 
-    // NUEVA FUNCIÓN: Borrado Lógico (Soft Delete)
     public function eliminar($id)
     {
         $paciente = Paciente::find($id);
@@ -84,8 +74,8 @@ class PacienteController extends Controller
             return response()->json(['mensaje' => 'Paciente no encontrado'], 404);
         }
 
-        // En lugar de usar $paciente->delete(), hacemos el borrado lógico
         $paciente->estado = 'Inactivo';
+        $paciente->actualizado_por = Auth::id(); // Guardamos quién lo eliminó lógicamente
         $paciente->save();
 
         return response()->json([
@@ -93,27 +83,14 @@ class PacienteController extends Controller
         ]);
     }
 
-    // =========================================================
-    // GENERAR PDF DEL EXPEDIENTE COMPLETO
-    // =========================================================
     public function imprimirExpediente($id)
     {
         try {
             $paciente = \App\Models\Paciente::findOrFail($id);
-            
-            // Traemos el historial de consultas
-            $consultas = \App\Models\Consulta::where('paciente_id', $id)
-                                             ->orderBy('fecha_consulta', 'desc')
-                                             ->get();
-
-            // Traemos los recibos y calculamos la deuda total
-            $facturas = \App\Models\Factura::where('paciente_id', $id)
-                                           ->orderBy('fecha_emision', 'desc')
-                                           ->get();
+            $consultas = \App\Models\Consulta::where('paciente_id', $id)->orderBy('fecha_consulta', 'desc')->get();
+            $facturas = \App\Models\Factura::where('paciente_id', $id)->orderBy('fecha_emision', 'desc')->get();
             
             $deudaTotal = $facturas->sum('saldo_pendiente');
-
-            // Edad calculada
             $edad = 'N/A';
             if($paciente->fecha_nacimiento) {
                 $edad = \Carbon\Carbon::parse($paciente->fecha_nacimiento)->age . ' años';

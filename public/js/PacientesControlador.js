@@ -10,7 +10,11 @@ let pacientesDB = [];
 let miPaginador;
 
 document.addEventListener("DOMContentLoaded", async () => {
-    if (typeof PaginadorTabla === "undefined") return console.error("Falta paginadorTabla.js");
+    if (typeof PaginadorTabla === "undefined") {
+        Alerta.error("Error del sistema", "Falta el componente PaginadorTabla.");
+        return;
+    }
+    
     inicializarPaginador();
     configurarBusqueda();
     configurarTabsModal();
@@ -20,9 +24,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.addEventListener("resize", () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-            inicializarPaginador(); // recalcula items por página
+            if(miPaginador) inicializarPaginador(); 
             const filterEstado = document.getElementById("filterEstado");
-            if (filterEstado) filterEstado.dispatchEvent(new Event('change')); // re-aplica filtro vigente
+            if (filterEstado) filterEstado.dispatchEvent(new Event('change')); 
         }, 200);
     });
 });
@@ -32,9 +36,9 @@ async function cargarPacientesDesdeBD() {
         pacientesDB = await API.get('/api/obtener-pacientes');
         const filterEstado = document.getElementById("filterEstado");
         if (filterEstado) filterEstado.dispatchEvent(new Event('change'));
-        else miPaginador.setData(pacientesDB);
+        else if (miPaginador) miPaginador.setData(pacientesDB);
     } catch (error) {
-        console.error("Error cargando pacientes:", error);
+        Alerta.error("Error de conexión", "No se pudieron cargar los pacientes desde la base de datos.");
     }
 }
 
@@ -103,7 +107,7 @@ function configurarBusqueda() {
             return coincideTexto && coincideEstado;
         });
 
-        miPaginador.setData(filtrados);
+        if(miPaginador) miPaginador.setData(filtrados);
     }
 
     if (searchInput) searchInput.addEventListener("input", aplicarFiltros);
@@ -190,7 +194,6 @@ window.abrirModalEdicion = function (id) {
     form.activo.value = p.estado === 'Activo' ? "1" : "0"; 
     if(p.fecha_nacimiento) form.fecha_nacimiento.value = p.fecha_nacimiento.split('T')[0]; 
 
-    // Activamos la casilla visual de "Es menor" si es 1
     form.es_menor_check.checked = p.es_menor == 1;
     form.responsable_legal.disabled = p.es_menor != 1;
 
@@ -211,7 +214,6 @@ window.eliminarPaciente = async function (id) {
             Alerta.exito("¡Archivado!", "Expediente archivado correctamente.");
             await cargarPacientesDesdeBD();
         } catch (error) {
-            console.error("Error al archivar:", error);
             Alerta.error("Hubo un problema", "No se pudo archivar el expediente.");
         }
     }
@@ -222,7 +224,6 @@ window.imprimirExpediente = function (id) {
     if (!p) return;
     
     Alerta.info("Generando Expediente...", "Abriendo documento en una nueva pestaña.");
-    // En lugar de usar reportes.js, ahora llamamos a nuestra ruta de Laravel
     window.open(`/api/pacientes/${id}/pdf`, '_blank');
 };
 
@@ -241,9 +242,8 @@ window.guardarDatos = async function () {
     delete datosForm.expediente;
     datosForm.estado = parseInt(datosForm.activo) === 1 ? 'Activo' : 'Inactivo';
     
-    // NUEVO: Transformar el estado del Checkbox a 1 o 0 para MySQL
     datosForm.es_menor = form.es_menor_check.checked ? 1 : 0;
-    delete datosForm.es_menor_check; // Limpiamos la variable fantasma
+    delete datosForm.es_menor_check; 
 
     if (!datosForm.fecha_nacimiento) delete datosForm.fecha_nacimiento;
 
@@ -265,8 +265,15 @@ window.guardarDatos = async function () {
         await cargarPacientesDesdeBD();
 
     } catch (error) {
-        console.error("Error al guardar:", error);
-        Alerta.error("Error del servidor", "No se pudo guardar la información.");
+        // Manejo limpio de errores sin consolas asustadizas
+        if (error.status === 422 && error.data && error.data.errors) {
+            const primerCampoConError = Object.keys(error.data.errors)[0];
+            const mensajeError = error.data.errors[primerCampoConError][0];
+            Alerta.error("Datos Inválidos", mensajeError);
+        } else {
+            Alerta.error("Error del servidor", "No se pudo guardar la información.");
+        }
+        
     } finally {
         const btnGuardar = document.getElementById("btnGuardar");
         btnGuardar.innerText = "Guardar";

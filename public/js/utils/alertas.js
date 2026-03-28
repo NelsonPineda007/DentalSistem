@@ -80,12 +80,12 @@
         ══════════════════════════════════════════ */
         .da-modal {
             font-family: var(--da-font) !important;
-            border-radius: 28px !important; /* Bordes un poco más suaves */
+            border-radius: 28px !important; 
             overflow: hidden !important;
             position: relative !important;
-            padding: 40px 0 32px 0 !important; /* Más respiro arriba y abajo */
+            padding: 40px 0 32px 0 !important; 
             width: 90% !important;
-            max-width: 540px !important; /* <--- MÁS ANCHO (Antes 460px) */
+            max-width: 540px !important; 
             border: none !important;
             background: white !important;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
@@ -100,7 +100,6 @@
         .da-modal.da-danger::before { background: linear-gradient(90deg, #ef4444, #f59e0b); }
         .da-modal.da-info-clean::before { background: #3b82f6; } 
 
-        /* Ícono más grande */
         .da-modal .swal2-icon { 
             margin: 0 auto 24px !important; 
             border-width: 3px !important; 
@@ -112,7 +111,6 @@
         .da-modal .swal2-icon.swal2-info { color: #3ea5f6 !important; border-color: #3ea5f6 !important; }
         .da-modal .swal2-icon.swal2-success { color: #10b981 !important; border-color: #10b981 !important; }
 
-        /* Título más imponente */
         .da-modal .swal2-title { 
             font-size: 1.6rem !important; 
             color: #1e293b !important; 
@@ -120,7 +118,6 @@
             font-weight: 800 !important; 
         }
         
-        /* Texto principal más legible */
         .da-modal .swal2-html-container { 
             font-size: 1.05rem !important; 
             color: #475569 !important; 
@@ -129,7 +126,6 @@
             line-height: 1.6 !important;
         }
 
-        /* Contenedor de botones con más separación */
         .da-modal .swal2-actions { 
             margin: 32px 0 0 0 !important; 
             padding: 0 40px !important; 
@@ -139,15 +135,14 @@
             box-sizing: border-box !important;
         }
         
-        /* Botones más grandes y cómodos para hacer clic */
         .da-btn {
             font-family: var(--da-font) !important;
             flex: 1 !important;
             margin: 0 !important;
-            border-radius: 14px !important; /* Botón un poco más redondo */
+            border-radius: 14px !important; 
             font-weight: 700 !important;
-            font-size: 1rem !important; /* Letra de botón más grande */
-            padding: 14px 20px !important; /* Botón más alto */
+            font-size: 1rem !important; 
+            padding: 14px 20px !important; 
             border: none !important;
             cursor: pointer !important;
             transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.2s ease !important;
@@ -156,7 +151,6 @@
         }
         .da-btn:hover { transform: translateY(-2px) !important; }
         
-        /* Estilos de botones */
         .da-btn-cancel { background-color: #f1f5f9 !important; color: #475569 !important; }
         .da-btn-cancel:hover { background-color: #e2e8f0 !important; }
 
@@ -186,7 +180,7 @@ function _toast(cssExtra) {
         showConfirmButton: false,
         timer: 3500,
         scrollbarPadding: false,
-        heightAuto: false,
+        // Eliminado heightAuto: false porque SweetAlert2 no lo permite en Toasts
         customClass: { popup: `da-toast ${cssExtra}` }
     });
 }
@@ -194,7 +188,7 @@ function _toast(cssExtra) {
 function _modalBase(cssExtra) {
     return Swal.mixin({
         scrollbarPadding: false, 
-        heightAuto: false,
+        heightAuto: false, // Aquí sí se queda, es un Modal grande
         buttonsStyling: false,
         reverseButtons: true,
         focusCancel: true,
@@ -207,24 +201,15 @@ function _modalBase(cssExtra) {
 }
 
 window.Alerta = {
-    // ---------------------------------------------------
-    // 1. ALERTAS PEQUEÑAS (TOASTS)
-    // ---------------------------------------------------
     exito: (titulo, mensaje = '') => _toast('da-exito').fire({ icon: 'success', title: titulo, text: mensaje }),
     error: (titulo, mensaje = '') => _toast('da-error').fire({ icon: 'error', title: titulo, text: mensaje }),
     advertencia: (titulo, mensaje = '') => _toast('da-advertencia').fire({ icon: 'warning', title: titulo, text: mensaje }),
     info: (titulo, mensaje = '') => _toast('da-info').fire({ icon: 'info', title: titulo, text: mensaje }),
     
-    // ---------------------------------------------------
-    // 2. ALERTAS GRANDES (MODALES)
-    // ---------------------------------------------------
     modalExito: (titulo, htmlText = '') => _modalBase('').fire({ icon: 'success', title: titulo, html: htmlText, showConfirmButton: true, confirmButtonText: 'Entendido' }),
-    modalError: (titulo, htmlText = '') => _modalBase('da-danger').fire({ icon: 'error', title: titulo, html: htmlText, showConfirmButton: true, confirmButtonText: 'Cerrar', customClass: { confirmButton: 'da-btn da-btn-danger' } }),
+    modalError: (titulo, htmlText = '') => _modalBase('da-danger').fire({ icon: 'error', title: titulo, htmlText: htmlText, showConfirmButton: true, confirmButtonText: 'Cerrar', customClass: { confirmButton: 'da-btn da-btn-danger' } }),
     modalInfo: (titulo, htmlText = '') => _modalBase('da-info-clean').fire({ icon: 'info', title: titulo, html: htmlText, showConfirmButton: true, confirmButtonText: 'De acuerdo' }),
 
-    // ---------------------------------------------------
-    // 3. ALERTAS DE ACCIÓN Y CONFIRMACIÓN
-    // ---------------------------------------------------
     confirmar: async (titulo = '¿Estás seguro?', texto = '', confirmText = 'Sí, proceder', cancelText = 'Cancelar') => {
         const result = await _modalBase('').fire({
             title: titulo, html: texto, icon: 'question', showCancelButton: true, confirmButtonText: confirmText, cancelButtonText: cancelText
@@ -240,9 +225,6 @@ window.Alerta = {
         return result.isConfirmed;
     },
 
-    // ---------------------------------------------------
-    // 4. ALERTA DE ELECCIÓN (La del expediente)
-    // ---------------------------------------------------
     eleccion: async (titulo, htmlText, btnPrimario = 'Sí', btnSecundario = 'No', icono = 'info') => {
         const result = await Swal.fire({
             title: titulo,
@@ -254,7 +236,7 @@ window.Alerta = {
             denyButtonText: btnSecundario,
             reverseButtons: false,     
             scrollbarPadding: false,
-            heightAuto: false,
+            heightAuto: false, // Aquí sí se permite
             buttonsStyling: false,
             customClass: { 
                 popup: 'da-modal da-info-clean', 

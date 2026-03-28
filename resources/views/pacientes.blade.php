@@ -12,7 +12,6 @@
             <p class="text-slate-500 mt-1 font-medium">Gestión y control de expedientes clínicos</p>
         </div>
         
-        {{-- Botón para abrir el modal (Asegúrate de que PacientesControlador.js esté cargado) --}}
         <button onclick="window.openModal('modalPacientes', 'add')" 
             class="bg-blue-800 hover:bg-blue-900 text-white px-6 py-3 rounded-xl shadow-lg shadow-blue-900/20 font-semibold flex items-center gap-2 transition-all active:scale-95">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +78,12 @@
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombres *</label><input type="text" name="nombre" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Apellidos *</label><input type="text" name="apellido" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>
             
-            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">DUI</label><input type="text" name="DUI" placeholder="00000000-0" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">DUI</label>
+                <input type="text" name="DUI" placeholder="00000000-0" maxlength="10" 
+                    oninput="let v = this.value.replace(/[^0-9]/g, ''); if(v.length > 8) { this.value = v.slice(0,8) + '-' + v.slice(8,9); } else { this.value = v; }"
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500">
+            </div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha Nacimiento</label><input type="date" name="fecha_nacimiento" max="{{ date('Y-m-d') }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 hover:border-blue-400 transition-colors cursor-pointer"></div>
             
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Género</label><select name="genero" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500"><option value="">Seleccionar...</option><option>Masculino</option><option>Femenino</option><option>Otro</option></select></div>
@@ -107,8 +111,17 @@
 
         {{-- Tab: Contacto --}}
         <div id="tab-contacto" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono Móvil *</label><input type="tel" name="telefono" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" required></div>
-            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label><input type="email" name="email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono Móvil *</label>
+                {{-- NUEVA MÁSCARA TELEFÓNICA (Conecta con la función JS del final) --}}
+                <input type="tel" name="telefono" placeholder="0000-0000 o +1 000-000-0000" required
+                    oninput="maskPhone(this)"
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 placeholder:text-slate-300">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                <input type="email" name="email" maxlength="100" placeholder="ejemplo@correo.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 placeholder:text-slate-300">
+            </div>
             
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Empresa / Institución</label><input type="text" name="empresa" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500" placeholder="Ej: Universidad Francisco Gavidia"></div>
             <div>
@@ -123,7 +136,13 @@
 
             <div class="md:col-span-2 pt-4 pb-2 border-t border-slate-100 mt-2"><h4 class="text-sm font-bold text-blue-800">Contacto de Emergencia</h4></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre Contacto</label><input type="text" name="contacto_emergencia_nombre" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
-            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono Emergencia</label><input type="tel" name="contacto_emergencia_telefono" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500"></div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono Emergencia</label>
+                {{-- NUEVA MÁSCARA TELEFÓNICA PARA EMERGENCIA --}}
+                <input type="tel" name="contacto_emergencia_telefono" placeholder="0000-0000 o +1 000-000-0000"
+                    oninput="maskPhone(this)"
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-500 placeholder:text-slate-300">
+            </div>
         </div>
 
         {{-- Tab: Ficha Médica --}}
@@ -144,6 +163,41 @@
     'modalTitle' => 'Nuevo Paciente',
     'modalContent' => View::yieldContent('modal_content')
 ])
+
+{{-- MÁSCARA TELEFÓNICA UNIVERSAL (Script) --}}
+<script>
+    function maskPhone(input) {
+        let v = input.value.replace(/[^\d+]/g, ''); // Limpia todo menos números y el signo +
+        
+        // Evitar múltiples signos +
+        if (v.indexOf('+') > 0) {
+            v = v[0] + v.substring(1).replace(/\+/g, '');
+        }
+
+        if (v.startsWith('+')) {
+            // FORMATO USA: +1 000-000-0000
+            let clean = v.substring(1);
+            if (clean.length > 11) clean = clean.substring(0, 11); 
+            
+            let res = '+';
+            if(clean.length > 0) res += clean.substring(0, 1);
+            if(clean.length > 1) res += ' ' + clean.substring(1, 4);
+            if(clean.length > 4) res += '-' + clean.substring(4, 7);
+            if(clean.length > 7) res += '-' + clean.substring(7, 11);
+            
+            input.value = res;
+        } else {
+            // FORMATO EL SALVADOR: 0000-0000
+            v = v.replace(/\+/g, ''); // Si borran el primer número y queda el +, lo quitamos
+            if (v.length > 8) v = v.substring(0, 8);
+            if (v.length > 4) {
+                input.value = v.substring(0, 4) + '-' + v.substring(4, 8);
+            } else {
+                input.value = v;
+            }
+        }
+    }
+</script>
 
 {{-- Scripts --}}
 <script src="{{ asset('js/utils/reportes.js') }}"></script>

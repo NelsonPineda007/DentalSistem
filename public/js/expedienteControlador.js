@@ -1,8 +1,5 @@
 // public/js/expedienteControlador.js
 
-// =========================================================================
-// VARIABLES GLOBALES
-// =========================================================================
 let pagosPaginador;
 let consultasPaginador;
 let consultasDB = [];
@@ -31,15 +28,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// =========================================================================
-// 0. LÓGICA DE BACKEND (FETCH REAL A LARAVEL Y CARGA DE DATOS)
-// =========================================================================
-
 async function cargarCatalogoTratamientos() {
     try {
         catalogoTratamientos = await API.get('/api/obtener-tratamientos');
     } catch (error) {
-        console.error("Error al cargar catálogo de tratamientos:", error);
+        window.Alerta.error("Error de carga", "No se pudo cargar el catálogo de tratamientos.");
     }
 }
 
@@ -48,7 +41,7 @@ async function cargarFacturasPaciente(idPaciente) {
         pagosDB = await API.get(`/api/expediente/${idPaciente}/facturas`);
         if(pagosPaginador) pagosPaginador.setData(pagosDB);
     } catch (error) {
-        console.error("Error al cargar recibos:", error);
+        window.Alerta.error("Error de carga", "No se pudieron cargar los recibos.");
     }
 }
 
@@ -151,15 +144,15 @@ async function cargarDatosPacienteDesdeURL() {
                 }
             }
         } catch (errorFicha) {
-            console.error("Error al cargar el odontograma:", errorFicha);
+            window.Alerta.error("Error", "No se pudo cargar el odontograma.");
         }
 
         await cargarFacturasPaciente(idPaciente);
         await detectarCitaDeHoy(idPaciente);
 
     } catch (error) {
-        console.error("Error cargando paciente:", error);
         document.getElementById("exp-nombre").textContent = "Error al cargar paciente";
+        window.Alerta.error("Error crítico", "No se pudo cargar la información del paciente.");
     }
 }
 
@@ -179,7 +172,6 @@ async function detectarCitaDeHoy(idPaciente) {
         const citaEnProgreso = citas.find(c => c.fecha_cita === hoy && c.estado === 'En progreso');
 
         if (citaPendiente) {
-            // NUEVO: Usamos la función eleccion() de alertas.js que creamos para mantener el estilo
             const quiereVincular = await window.Alerta.eleccion(
                 'Alerta de Cita', 
                 `Este paciente tiene una cita hoy a las <b>${citaPendiente.hora_inicio}</b>.<br><br><b>Motivo:</b> <i>${citaPendiente.motivo_consulta}</i><br><br>¿Deseas vincular tu consulta de hoy a esta cita?`,
@@ -198,9 +190,9 @@ async function detectarCitaDeHoy(idPaciente) {
                         document.getElementById('hc_motivo').value = respuestaBackend.consulta.motivo_consulta || citaPendiente.motivo_consulta;
                     }
                     
-                    Alerta.exito("Enlazado", "La cita está en progreso y el expediente está listo para llenarse.");
+                    window.Alerta.exito("Enlazado", "La cita está en progreso y el expediente está listo para llenarse.");
                 } catch (error) {
-                    console.error("Error al iniciar consulta:", error);
+                    window.Alerta.error("Error", "No se pudo iniciar la consulta vinculada.");
                 }
             }
         } 
@@ -218,17 +210,14 @@ async function detectarCitaDeHoy(idPaciente) {
                     document.getElementById('hc_diagnostico').value = respuestaBackend.consulta.diagnostico || '';
                 }
             } catch (error) {
-                console.error("Error al recuperar borrador de consulta:", error);
+                window.Alerta.error("Error", "No se pudo recuperar el borrador de la consulta.");
             }
         }
     } catch (error) {
-        console.error("Error detectando citas de hoy:", error);
+        window.Alerta.error("Error", "Fallo al verificar las citas de hoy.");
     }
 }
 
-// =========================================================================
-// 1. LÓGICA DE PESTAÑAS (TABS)
-// =========================================================================
 function configurarTabsExpediente() {
     const tabs = document.querySelectorAll(".tab-btn");
     const contents = document.querySelectorAll(".tab-content");
@@ -255,9 +244,6 @@ function configurarTabsExpediente() {
     });
 }
 
-// =========================================================================
-// 2. LÓGICA DE HISTORIAL DE CONSULTAS
-// =========================================================================
 function inicializarPaginadorConsultas() {
     if (!document.getElementById("consultasTableContainer")) return;
     
@@ -310,7 +296,7 @@ window.editarConsulta = function(id) {
     }
 
     document.querySelector('.tab-btn[data-target="tab-historia"]').click();
-    Alerta.info("Modo Edición", "Estás viendo una consulta pasada.");
+    window.Alerta.info("Modo Edición", "Estás viendo una consulta pasada.");
 };
 
 window.nuevaConsulta = function() {
@@ -325,9 +311,6 @@ window.nuevaConsulta = function() {
     document.querySelector('.tab-btn[data-target="tab-historia"]').click();
 };
 
-// =========================================================================
-// 3. LÓGICA DE ODONTOGRAMAS
-// =========================================================================
 const dientesC1 = [18, 17, 16, 15, 14, 13, 12, 11];
 const dientesC2 = [21, 22, 23, 24, 25, 26, 27, 28];
 const dientesC3 = [31, 32, 33, 34, 35, 36, 37, 38];
@@ -467,10 +450,6 @@ function renderizarOdontogramaOperatoria() {
         });
     });
 }
-
-// =========================================================================
-// 4. LÓGICA DE FACTURACIÓN Y PAGOS (POS REAL)
-// =========================================================================
 
 function renderizarBadgesTratamientos() {
     const contenedor = document.getElementById('lista_tratamientos');
@@ -649,16 +628,12 @@ function inicializarPaginadorPagos() {
     });
 }
 
-// =========================================================================
-// 5. LÓGICA DE ABONOS Y GUARDADO DE DATOS
-// =========================================================================
-
 window.abrirModalEdicion = function(facturaId) {
     const fac = pagosDB.find(f => f.id === facturaId);
     if (!fac) return;
 
     if (fac.saldo <= 0) {
-        return Alerta.info("Recibo Pagado", "Este recibo ya no tiene saldo pendiente.");
+        return window.Alerta.info("Recibo Pagado", "Este recibo ya no tiene saldo pendiente.");
     }
 
     document.getElementById('abono_factura_id').value = fac.id;
@@ -694,19 +669,18 @@ window.guardarDatos = async function () {
         const facturaId = formDataAbono.get("factura_id");
         const abono = parseFloat(formDataAbono.get("abono"));
 
-        if (!abono || abono <= 0) return Alerta.advertencia("Monto inválido", "Ingresa cuánto dinero te entregó el paciente.");
+        if (!abono || abono <= 0) return window.Alerta.advertencia("Monto inválido", "Ingresa cuánto dinero te entregó el paciente.");
 
         try {
             await API.post(`/api/expediente/facturas/${facturaId}/abonar`, {
                 abono: abono,
                 metodo_pago: formDataAbono.get("metodo_pago")
             });
-            Alerta.exito("¡Dinero Recibido!", "El saldo del recibo se ha actualizado.");
+            window.Alerta.exito("¡Dinero Recibido!", "El saldo del recibo se ha actualizado.");
             window.closeModal("modalAbono");
             await cargarFacturasPaciente(idPaciente); 
         } catch (error) {
-            console.error("Error al abonar:", error);
-            Alerta.error("Error", "No se pudo registrar el pago.");
+            window.Alerta.error("Error de cobro", "No se pudo registrar el pago.");
         }
         return; 
     }
@@ -719,7 +693,7 @@ window.guardarDatos = async function () {
     const formData = new FormData(form);
 
     if (tratamientosSeleccionados.length === 0) {
-        return Alerta.advertencia("Carrito vacío", "Debes agregar al menos un tratamiento.");
+        return window.Alerta.advertencia("Carrito vacío", "Debes agregar al menos un tratamiento.");
     }
 
     const payload = {
@@ -740,10 +714,10 @@ window.guardarDatos = async function () {
         const idReciboEditando = formData.get("id");
         if(idReciboEditando && idReciboEditando !== "") {
             await API.put(`/api/expediente/facturas/${idReciboEditando}`, payload);
-            Alerta.exito("¡Recibo Actualizado!", "Se han corregido los tratamientos y totales.");
+            window.Alerta.exito("¡Recibo Actualizado!", "Se han corregido los tratamientos y totales.");
         } else {
             await API.post(`/api/expediente/${idPaciente}/facturas`, payload);
-            Alerta.exito("¡Recibo Generado!", "Se ha guardado el recibo y registrado el cobro.");
+            window.Alerta.exito("¡Recibo Generado!", "Se ha guardado el recibo y registrado el cobro.");
         }
         
         window.closeModal("modalVisita");
@@ -751,8 +725,7 @@ window.guardarDatos = async function () {
         await cargarDatosPacienteDesdeURL();
         
     } catch (error) {
-        console.error("Error guardando recibo:", error);
-        Alerta.error("Error de base de datos", "No se pudo generar/actualizar el recibo.");
+        window.Alerta.error("Error de base de datos", "No se pudo generar o actualizar el recibo.");
     }
 };
 
@@ -806,7 +779,7 @@ window.openModal = function (modalID, mode = "add") {
             inputDientes.value = dientesAfectados.size > 0 ? Array.from(dientesAfectados).join(', ') : "";
         }
     } else if (mode === "edit_recibo") {
-        // El título se setea en la función editarRecibo
+        // Título dinámico
     } else {
         document.getElementById("modalTitle").innerText = "Abonar / Editar";
     }
@@ -860,14 +833,23 @@ window.editarRecibo = async function(id) {
             });
         }
 
-        tratamientosSeleccionados = items;
+            // Convertimos el texto de la base de datos a un número real para que Javascript no explote
+        tratamientosSeleccionados = items.map(item => ({
+            id: item.id,
+            nombre: item.nombre,
+            codigo: item.codigo,
+            precio: parseFloat(item.precio)
+        }));
+
         renderizarBadgesTratamientos();
 
         window.openModal('modalVisita', 'edit_recibo');
         
     } catch (error) {
-        console.error(error);
-        Alerta.error("Error", "No se pudo cargar la información del recibo.");
+        let msg = "No se pudo cargar la información del recibo.";
+        if (error.data && error.data.error) msg = error.data.error;
+        window.Alerta.error("Error", msg);
+        console.error("Detalle técnico:", error);
     }
 };
 
@@ -879,15 +861,12 @@ window.closeModal = function (modalID) {
     setTimeout(() => modal.classList.add("hidden"), 300);
 };
 
-// =========================================================================
-// 6. GUARDADO DE ODONTOGRAMA Y GENERACIÓN DE PDF
-// =========================================================================
 window.guardarFichaClinica = async function() {
     const urlParams = new URLSearchParams(window.location.search);
     const idPaciente = urlParams.get('id');
 
     if (!idPaciente) {
-        return Alerta.error("Error de ID", "No se detectó el paciente actual.");
+        return window.Alerta.error("Error de ID", "No se detectó el paciente actual.");
     }
 
     let odontogramaData = {
@@ -950,7 +929,7 @@ window.guardarFichaClinica = async function() {
 
         await API.post(`/api/expediente/${idPaciente}/guardar`, payload);
 
-        Alerta.exito("¡Ficha Guardada!", "Odontograma y consulta registrados exitosamente.");
+        window.Alerta.exito("¡Ficha Guardada!", "Odontograma y consulta registrados exitosamente.");
 
         document.getElementById('hc_consulta_id').value = '';
         document.getElementById('hc_motivo').value = '';
@@ -963,8 +942,7 @@ window.guardarFichaClinica = async function() {
         await cargarDatosPacienteDesdeURL();
 
     } catch (error) {
-        console.error("Error al guardar ficha:", error);
-        Alerta.error("Error del Servidor", "No se pudo guardar la información.");
+        window.Alerta.error("Error del Servidor", "No se pudo guardar la información de la ficha.");
     } finally {
         btn.innerHTML = textoOriginal;
         btn.disabled = false;
@@ -976,14 +954,14 @@ window.imprimirFichaPDF = function() {
     const idPaciente = urlParams.get('id');
 
     if (!idPaciente) {
-        return Alerta.error("Error", "No se detectó el paciente actual.");
+        return window.Alerta.error("Error", "No se detectó el paciente actual.");
     }
     
-    Alerta.info("Generando PDF...", "Abriendo documento en una nueva pestaña.");
+    window.Alerta.info("Generando PDF...", "Abriendo documento en una nueva pestaña.");
     window.open(`/api/expediente/${idPaciente}/ficha/pdf`, '_blank');
 };
 
 window.imprimirFacturaPDF = function(facturaId) {
-    Alerta.info("Generando PDF...", "Abriendo documento en una nueva pestaña.");
+    window.Alerta.info("Generando PDF...", "Abriendo documento en una nueva pestaña.");
     window.open(`/api/expediente/facturas/${facturaId}/pdf`, '_blank');
 };

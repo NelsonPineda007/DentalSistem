@@ -1,3 +1,5 @@
+// public/js/tratamientosControlador.js
+
 const ICONS = {
     edit: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
     trash: `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`
@@ -7,7 +9,10 @@ let tratamientosDB = [];
 let miPaginador;
 
 document.addEventListener("DOMContentLoaded", async () => {
-    if (typeof PaginadorTabla === "undefined") return console.error("Falta paginadorTabla.js");
+    if (typeof PaginadorTabla === "undefined") {
+        Alerta.error("Error del sistema", "Falta el componente PaginadorTabla.");
+        return; 
+    }
 
     await cargarCategorias(); 
     configurarFiltros();
@@ -17,11 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let resizeTimer;
     window.addEventListener("resize", () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            inicializarPaginador();
-            const filterCategoria = document.getElementById("filterCategoria");
-            if (filterCategoria) filterCategoria.dispatchEvent(new Event('change'));
-        }, 200);
+        resizeTimer = setTimeout(inicializarPaginador, 200);
     });
 });
 
@@ -44,7 +45,6 @@ async function cargarCategorias() {
         if (selectForm) selectForm.innerHTML = opcionesForm;
 
     } catch (error) {
-        console.error("Error cargando categorías:", error);
         Alerta.error("Error de Conexión", "No se pudieron cargar las categorías de tratamientos.");
     }
 }
@@ -60,7 +60,7 @@ async function cargarTratamientosDesdeBD() {
             actualizarEstadisticas(tratamientosDB);
         }
     } catch (error) {
-        console.error("Error cargando tratamientos:", error);
+        Alerta.error("Error de Conexión", "No se pudieron cargar los tratamientos.");
     }
 }
 
@@ -93,14 +93,12 @@ function actualizarEstadisticas(datos) {
     const activos = datos.filter(t => t.estado === 'Activo').length;
     const categorias = new Set(datos.filter(t => t.categoria_id).map(t => t.categoria_id)).size;
     
-    // 1. Cálculos de Costos (Promedio y Suma Total)
     let sumaTotalCosto = 0;
     if (total > 0) {
         sumaTotalCosto = datos.reduce((sum, t) => sum + parseFloat(t.costo_base || 0), 0);
     }
     const costoPromedio = total > 0 ? (sumaTotalCosto / total) : 0;
 
-    // 2. Función Helper para simplificar números (K, M, B)
     const formatearSimplificado = (num) => {
         if (num >= 1000000000) return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
         if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
@@ -108,22 +106,15 @@ function actualizarEstadisticas(datos) {
         return num.toFixed(0); 
     };
 
-    // 3. Actualizar DOM Básico
     if(document.getElementById('statTotal')) document.getElementById('statTotal').textContent = total;
     if(document.getElementById('statActivos')) document.getElementById('statActivos').textContent = activos;
     if(document.getElementById('statCategorias')) document.getElementById('statCategorias').textContent = categorias;
     
-    // 4. Actualizar DOM de Costos (Doble línea + Tooltip)
     if(document.getElementById('statCosto')) {
-        // Promedio grande
         document.getElementById('statCosto').textContent = '$' + costoPromedio.toFixed(2);
-        
-        // Suma pequeña simplificada
         if(document.getElementById('statCostoSuma')) {
             document.getElementById('statCostoSuma').textContent = '$' + formatearSimplificado(sumaTotalCosto);
         }
-        
-        // Tooltip exacto
         const tooltipContainer = document.getElementById('contenedorCostoTooltip');
         if (tooltipContainer) {
             const exactoPromedio = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(costoPromedio);
@@ -132,7 +123,6 @@ function actualizarEstadisticas(datos) {
         }
     }
 
-    // 5. Gráficas Sparkline
     if(typeof window.drawSparkline === 'function') {
         window.drawSparkline('sparkTotal', [total-2, total-1, total+1, total-1, total+2, total], '#2563eb', 'rgba(37, 99, 235, 0.2)'); 
         window.drawSparkline('sparkActivos', [activos-1, activos+1, activos-2, activos, activos+1, activos], '#059669', 'rgba(5, 150, 105, 0.2)'); 
@@ -249,7 +239,6 @@ window.eliminarTratamiento = async function (id) {
             Alerta.exito("¡Archivado!", "El tratamiento ha sido ocultado de la lista principal.");
             await cargarTratamientosDesdeBD(); 
         } catch (error) {
-            console.error("Error al archivar:", error);
             Alerta.error("Hubo un problema", "No se pudo archivar el tratamiento.");
         }
     }
@@ -285,7 +274,6 @@ window.guardarDatos = async function () {
         await cargarTratamientosDesdeBD(); 
         
     } catch (error) {
-        console.error("Error al guardar:", error);
         Alerta.error("Error del servidor", "Revisa tu conexión o contacta a soporte.");
     }
 };
