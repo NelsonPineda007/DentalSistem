@@ -19,6 +19,7 @@ class DashboardController extends Controller
         $labelsMovimiento = [];
         $movimientoData = [];
 
+        // Gráfica de últimos 7 días de citas
         for ($i = 6; $i >= 0; $i--) {
             $fecha = Carbon::now('America/El_Salvador')->subDays($i);
             $fechaStr = $fecha->toDateString();
@@ -55,42 +56,43 @@ class DashboardController extends Controller
                              
         $tasaPorcentaje = $totalCitasHoy > 0 ? round(($completadasHoy / $totalCitasHoy) * 100) : 0;
 
-        $hace7Dias = Carbon::now('America/El_Salvador')->subDays(6)->toDateString();
+        // NUEVO: Quitamos el límite de 7 días. Ahora trae el Top 4 histórico.
         $tratamientosTop = DB::table('tratamientos_aplicados')
             ->join('tratamientos', 'tratamientos_aplicados.tratamiento_id', '=', 'tratamientos.id')
-            ->where('tratamientos_aplicados.fecha_aplicacion', '>=', $hace7Dias . ' 00:00:00')
             ->select('tratamientos.nombre', DB::raw('count(*) as cantidad'))
             ->groupBy('tratamientos.nombre')
             ->orderByDesc('cantidad')
             ->limit(4)
             ->get();
 
-        // AUMENTAMOS EL LÍMITE PARA EL MODAL
+        // Lista de Citas para hoy (Incluye el ID)
         $notificacionesHoy = Cita::join('pacientes', 'citas.paciente_id', '=', 'pacientes.id')
             ->where('citas.fecha_cita', $hoy)
             ->whereIn('citas.estado', ['Programada', 'Confirmada', 'En progreso'])
             ->orderBy('citas.hora_inicio')
-            ->select('citas.hora_inicio', 'pacientes.nombre', 'pacientes.apellido')
+            ->select('citas.id', 'citas.hora_inicio', 'pacientes.nombre', 'pacientes.apellido')
             ->limit(20)
             ->get()
             ->map(function($cita) {
                 return [
+                    'id' => $cita->id,
                     'paciente' => $cita->nombre . ' ' . $cita->apellido,
                     'hora' => Carbon::parse($cita->hora_inicio)->format('g:i A')
                 ];
             });
 
-        // AUMENTAMOS EL LÍMITE PARA EL MODAL
+        // Lista de Citas Próximas (Incluye el ID)
         $notificacionesProximas = Cita::join('pacientes', 'citas.paciente_id', '=', 'pacientes.id')
             ->where('citas.fecha_cita', '>', $hoy)
             ->whereIn('citas.estado', ['Programada', 'Confirmada'])
             ->orderBy('citas.fecha_cita')
             ->orderBy('citas.hora_inicio')
-            ->select('citas.fecha_cita', 'citas.hora_inicio', 'pacientes.nombre', 'pacientes.apellido')
+            ->select('citas.id', 'citas.fecha_cita', 'citas.hora_inicio', 'pacientes.nombre', 'pacientes.apellido')
             ->limit(20)
             ->get()
             ->map(function($cita) {
                 return [
+                    'id' => $cita->id,
                     'paciente' => $cita->nombre . ' ' . $cita->apellido,
                     'fecha' => Carbon::parse($cita->fecha_cita)->format('d/m/Y'),
                     'hora' => Carbon::parse($cita->hora_inicio)->format('g:i A')
