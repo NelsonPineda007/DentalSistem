@@ -179,18 +179,16 @@ async function detectarCitaDeHoy(idPaciente) {
         const citaEnProgreso = citas.find(c => c.fecha_cita === hoy && c.estado === 'En progreso');
 
         if (citaPendiente) {
-            const resp = await Swal.fire({
-                title: 'Alerta de Cita',
-                html: `Este paciente tiene una cita hoy a las <b>${citaPendiente.hora_inicio}</b>.<br><br><b>Motivo:</b> <i>${citaPendiente.motivo_consulta}</i><br><br>¿Deseas vincular tu consulta de hoy a esta cita?`,
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonColor: '#1e3a8a',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Sí, vincular cita',
-                cancelButtonText: 'No, hacer consulta libre'
-            });
+            // NUEVO: Usamos la función eleccion() de alertas.js que creamos para mantener el estilo
+            const quiereVincular = await window.Alerta.eleccion(
+                'Alerta de Cita', 
+                `Este paciente tiene una cita hoy a las <b>${citaPendiente.hora_inicio}</b>.<br><br><b>Motivo:</b> <i>${citaPendiente.motivo_consulta}</i><br><br>¿Deseas vincular tu consulta de hoy a esta cita?`,
+                'Sí, vincular cita',
+                'No, hacer consulta libre',
+                'info'
+            );
 
-            if (resp.isConfirmed) {
+            if (quiereVincular) {
                 try {
                     const respuestaBackend = await API.post(`/citas/${citaPendiente.id}/iniciar-consulta`, {});
                     citaActivaId = citaPendiente.id; 
@@ -826,7 +824,7 @@ window.editarRecibo = async function(id) {
         const res = await API.get(`/api/expediente/facturas/detalle/${id}`);
         const fac = res.factura;
         const items = res.items;
-        const dientesGuardados = res.dientes; // <--- AQUÍ RECIBIMOS LOS DIENTES AFECTADOS DEL BACKEND
+        const dientesGuardados = res.dientes; 
 
         document.getElementById("modalTitle").innerText = "Corregir Recibo " + fac.numero;
         const form = document.getElementById('formVisita');
@@ -837,7 +835,6 @@ window.editarRecibo = async function(id) {
         document.querySelector('input[name="descuento"]').value = parseFloat(fac.descuento).toFixed(2);
         document.querySelector('textarea[name="observaciones_factura"]').value = fac.observaciones || "";
 
-        // <--- LÓGICA NUEVA PARA LLENAR EL INPUT DE DIENTES --->
         const inputDientes = document.getElementById('input_dientes_modal');
         if (inputDientes) {
             inputDientes.value = dientesGuardados || "";
@@ -983,7 +980,6 @@ window.imprimirFichaPDF = function() {
     }
     
     Alerta.info("Generando PDF...", "Abriendo documento en una nueva pestaña.");
-    // Ahora Laravel hace el trabajo pesado
     window.open(`/api/expediente/${idPaciente}/ficha/pdf`, '_blank');
 };
 

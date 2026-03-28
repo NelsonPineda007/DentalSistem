@@ -27,7 +27,7 @@
         }
 
         /* ══════════════════════════════════════════
-           2. TOAST (Diseño Blanco / Minimalista)
+           2. TOASTS (Pequeñas arriba a la derecha) - INTACTAS
         ══════════════════════════════════════════ */
         .da-toast {
             font-family: var(--da-font) !important;
@@ -39,18 +39,16 @@
             border-radius: 16px !important;
             backdrop-filter: blur(10px) !important; 
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
-            /* Fondo blanco translúcido para todos */
             background-color: rgba(255, 255, 255, 0.98) !important; 
         }
 
-        /* Solo cambiamos un borde muy sutil según el tipo de alerta */
         .da-toast.da-exito { border: 1px solid rgba(16, 185, 129, 0.3) !important; }
         .da-toast.da-error { border: 1px solid rgba(239, 68, 68, 0.3) !important; }
         .da-toast.da-advertencia { border: 1px solid rgba(217, 119, 6, 0.3) !important; }
+        .da-toast.da-info { border: 1px solid rgba(59, 130, 246, 0.3) !important; }
 
-        /* Textos oscuros y elegantes */
         .da-toast .swal2-title { 
-            color: #0f172a !important; /* Gris muy oscuro */
+            color: #0f172a !important; 
             font-size: 0.9rem !important; 
             margin: 0 0 4px 0 !important; 
             font-weight: 700 !important; 
@@ -58,7 +56,7 @@
             display: block !important;
         }
         .da-toast .swal2-html-container { 
-            color: #475569 !important; /* Gris pizarra para la descripción */
+            color: #475569 !important; 
             font-size: 0.8rem !important; 
             margin: 0 !important; 
             font-weight: 500 !important; 
@@ -66,7 +64,6 @@
             display: block !important;
         }
 
-        /* Ícono del Toast (es lo único que lleva color fuerte) */
         .da-toast .swal2-icon { 
             width: 32px !important; 
             height: 32px !important; 
@@ -76,18 +73,19 @@
         .da-toast.da-exito .swal2-icon { color: #10b981 !important; }
         .da-toast.da-error .swal2-icon { color: #ef4444 !important; }
         .da-toast.da-advertencia .swal2-icon { color: #d97706 !important; }
+        .da-toast.da-info .swal2-icon { color: #3b82f6 !important; }
 
         /* ══════════════════════════════════════════
-           3. MODAL DE CONFIRMACIÓN (Intacto)
+           3. MODALES GRANDES (Mejorados, más anchos y espaciosos)
         ══════════════════════════════════════════ */
         .da-modal {
             font-family: var(--da-font) !important;
-            border-radius: 24px !important;
+            border-radius: 28px !important; /* Bordes un poco más suaves */
             overflow: hidden !important;
             position: relative !important;
-            padding: 24px 0 !important;
+            padding: 40px 0 32px 0 !important; /* Más respiro arriba y abajo */
             width: 90% !important;
-            max-width: 400px !important;
+            max-width: 540px !important; /* <--- MÁS ANCHO (Antes 460px) */
             border: none !important;
             background: white !important;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
@@ -100,30 +98,65 @@
             background: linear-gradient(90deg, #3b82f6, #8b5cf6);
         }
         .da-modal.da-danger::before { background: linear-gradient(90deg, #ef4444, #f59e0b); }
+        .da-modal.da-info-clean::before { background: #3b82f6; } 
 
-        .da-modal .swal2-icon { margin: 10px auto 16px !important; border-width: 2.5px !important; width: 64px !important; height: 64px !important; }
+        /* Ícono más grande */
+        .da-modal .swal2-icon { 
+            margin: 0 auto 24px !important; 
+            border-width: 3px !important; 
+            width: 84px !important; 
+            height: 84px !important; 
+        }
         .da-modal .swal2-icon.swal2-question { color: #2563eb !important; border-color: #2563eb !important; }
         .da-modal .swal2-icon.swal2-warning { color: #d97706 !important; border-color: #d97706 !important; }
+        .da-modal .swal2-icon.swal2-info { color: #3ea5f6 !important; border-color: #3ea5f6 !important; }
+        .da-modal .swal2-icon.swal2-success { color: #10b981 !important; border-color: #10b981 !important; }
 
-        .da-modal .swal2-title { font-size: 1.3rem !important; color: #0f172a !important; padding: 0 24px !important; font-weight: 800 !important; }
-        .da-modal .swal2-html-container { font-size: 0.9rem !important; color: #64748b !important; padding: 10px 24px 0 !important; font-weight: 500 !important; line-height: 1.5 !important;}
-
-        .da-modal .swal2-actions { margin: 24px 0 0 0 !important; padding: 0 24px !important; gap: 12px !important; display: flex !important; width: 100% !important; box-sizing: border-box !important;}
+        /* Título más imponente */
+        .da-modal .swal2-title { 
+            font-size: 1.6rem !important; 
+            color: #1e293b !important; 
+            padding: 0 32px !important; 
+            font-weight: 800 !important; 
+        }
         
+        /* Texto principal más legible */
+        .da-modal .swal2-html-container { 
+            font-size: 1.05rem !important; 
+            color: #475569 !important; 
+            padding: 20px 40px 0 !important; 
+            font-weight: 500 !important; 
+            line-height: 1.6 !important;
+        }
+
+        /* Contenedor de botones con más separación */
+        .da-modal .swal2-actions { 
+            margin: 32px 0 0 0 !important; 
+            padding: 0 40px !important; 
+            gap: 16px !important; 
+            display: flex !important; 
+            width: 100% !important; 
+            box-sizing: border-box !important;
+        }
+        
+        /* Botones más grandes y cómodos para hacer clic */
         .da-btn {
             font-family: var(--da-font) !important;
             flex: 1 !important;
             margin: 0 !important;
-            border-radius: 12px !important;
+            border-radius: 14px !important; /* Botón un poco más redondo */
             font-weight: 700 !important;
-            font-size: 0.95rem !important;
-            padding: 12px 0 !important;
+            font-size: 1rem !important; /* Letra de botón más grande */
+            padding: 14px 20px !important; /* Botón más alto */
             border: none !important;
             cursor: pointer !important;
-            transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.2s ease !important;
+            text-align: center !important;
+            line-height: 1.2 !important;
         }
         .da-btn:hover { transform: translateY(-2px) !important; }
         
+        /* Estilos de botones */
         .da-btn-cancel { background-color: #f1f5f9 !important; color: #475569 !important; }
         .da-btn-cancel:hover { background-color: #e2e8f0 !important; }
 
@@ -133,7 +166,15 @@
         .da-btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626) !important; color: white !important; box-shadow: 0 4px 12px rgba(239,68,68,0.3) !important; }
         .da-btn-danger:hover { box-shadow: 0 6px 16px rgba(239,68,68,0.4) !important; }
 
-        @media (max-width: 380px) { .da-modal .swal2-actions { flex-direction: column-reverse !important; } }
+        .da-btn-secondary { background: #64748b !important; color: white !important; box-shadow: 0 4px 12px rgba(100,116,139,0.3) !important; }
+        .da-btn-secondary:hover { background: #475569 !important; box-shadow: 0 6px 16px rgba(100,116,139,0.4) !important; }
+
+        @media (max-width: 480px) { 
+            .da-modal .swal2-actions { flex-direction: column-reverse !important; padding: 0 24px !important; } 
+            .da-btn { width: 100% !important; flex: none !important;} 
+            .da-modal .swal2-title { font-size: 1.4rem !important; }
+            .da-modal .swal2-html-container { padding: 16px 24px 0 !important; }
+        }
     `;
     document.head.appendChild(style);
 })();
@@ -150,27 +191,77 @@ function _toast(cssExtra) {
     });
 }
 
+function _modalBase(cssExtra) {
+    return Swal.mixin({
+        scrollbarPadding: false, 
+        heightAuto: false,
+        buttonsStyling: false,
+        reverseButtons: true,
+        focusCancel: true,
+        customClass: { 
+            popup: `da-modal ${cssExtra}`, 
+            confirmButton: 'da-btn da-btn-confirm', 
+            cancelButton: 'da-btn da-btn-cancel' 
+        }
+    });
+}
+
 window.Alerta = {
+    // ---------------------------------------------------
+    // 1. ALERTAS PEQUEÑAS (TOASTS)
+    // ---------------------------------------------------
     exito: (titulo, mensaje = '') => _toast('da-exito').fire({ icon: 'success', title: titulo, text: mensaje }),
     error: (titulo, mensaje = '') => _toast('da-error').fire({ icon: 'error', title: titulo, text: mensaje }),
     advertencia: (titulo, mensaje = '') => _toast('da-advertencia').fire({ icon: 'warning', title: titulo, text: mensaje }),
     info: (titulo, mensaje = '') => _toast('da-info').fire({ icon: 'info', title: titulo, text: mensaje }),
     
+    // ---------------------------------------------------
+    // 2. ALERTAS GRANDES (MODALES)
+    // ---------------------------------------------------
+    modalExito: (titulo, htmlText = '') => _modalBase('').fire({ icon: 'success', title: titulo, html: htmlText, showConfirmButton: true, confirmButtonText: 'Entendido' }),
+    modalError: (titulo, htmlText = '') => _modalBase('da-danger').fire({ icon: 'error', title: titulo, html: htmlText, showConfirmButton: true, confirmButtonText: 'Cerrar', customClass: { confirmButton: 'da-btn da-btn-danger' } }),
+    modalInfo: (titulo, htmlText = '') => _modalBase('da-info-clean').fire({ icon: 'info', title: titulo, html: htmlText, showConfirmButton: true, confirmButtonText: 'De acuerdo' }),
+
+    // ---------------------------------------------------
+    // 3. ALERTAS DE ACCIÓN Y CONFIRMACIÓN
+    // ---------------------------------------------------
     confirmar: async (titulo = '¿Estás seguro?', texto = '', confirmText = 'Sí, proceder', cancelText = 'Cancelar') => {
-        const result = await Swal.fire({
-            title: titulo, text: texto, icon: 'question', showCancelButton: true, confirmButtonText: confirmText, cancelButtonText: cancelText, reverseButtons: true, focusCancel: true,
-            scrollbarPadding: false, heightAuto: false,
-            customClass: { popup: 'da-modal', confirmButton: 'da-btn da-btn-confirm', cancelButton: 'da-btn da-btn-cancel' }, buttonsStyling: false
+        const result = await _modalBase('').fire({
+            title: titulo, html: texto, icon: 'question', showCancelButton: true, confirmButtonText: confirmText, cancelButtonText: cancelText
         });
         return result.isConfirmed;
     },
 
     eliminar: async (titulo = '¿Eliminar este registro?', texto = 'Esta acción no se puede deshacer.', confirmText = 'Sí, archivar', cancelText = 'Cancelar') => {
-        const result = await Swal.fire({
-            title: titulo, text: texto, icon: 'warning', showCancelButton: true, confirmButtonText: confirmText, cancelButtonText: cancelText, reverseButtons: true, focusCancel: true,
-            scrollbarPadding: false, heightAuto: false,
-            customClass: { popup: 'da-modal da-danger', confirmButton: 'da-btn da-btn-danger', cancelButton: 'da-btn da-btn-cancel' }, buttonsStyling: false
+        const result = await _modalBase('da-danger').fire({
+            title: titulo, html: texto, icon: 'warning', showCancelButton: true, confirmButtonText: confirmText, cancelButtonText: cancelText,
+            customClass: { popup: 'da-modal da-danger', confirmButton: 'da-btn da-btn-danger', cancelButton: 'da-btn da-btn-cancel' }
         });
         return result.isConfirmed;
+    },
+
+    // ---------------------------------------------------
+    // 4. ALERTA DE ELECCIÓN (La del expediente)
+    // ---------------------------------------------------
+    eleccion: async (titulo, htmlText, btnPrimario = 'Sí', btnSecundario = 'No', icono = 'info') => {
+        const result = await Swal.fire({
+            title: titulo,
+            html: htmlText,
+            icon: icono,
+            showDenyButton: true,      
+            showCancelButton: false,   
+            confirmButtonText: btnPrimario,
+            denyButtonText: btnSecundario,
+            reverseButtons: false,     
+            scrollbarPadding: false,
+            heightAuto: false,
+            buttonsStyling: false,
+            customClass: { 
+                popup: 'da-modal da-info-clean', 
+                confirmButton: 'da-btn da-btn-confirm', 
+                denyButton: 'da-btn da-btn-secondary' 
+            }
+        });
+        return result.isConfirmed; 
     }
 };

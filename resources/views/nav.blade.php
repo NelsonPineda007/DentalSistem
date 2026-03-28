@@ -56,7 +56,6 @@
     <nav class="flex-1 px-6 space-y-2 overflow-y-auto custom-scrollbar">
         <ul class="space-y-4">
 
-            {{-- Enlaces actualizados a rutas de Laravel --}}
             {{-- SOLO LOS ADMINS Y DENTISTAS PUEDEN VER EL DASHBOARD --}}
             @if($userRol === 'Admin' || $userRol === 'Dentista')
             <li>
@@ -72,7 +71,7 @@
             </li>
             @endif
 
-<li>
+            <li>
                 <a href="{{ url('/citas') }}"
                    class="nav-link flex items-center gap-4 px-4 py-3 text-blue-400 font-semibold hover:text-blue-200 hover:bg-blue-900/40 hover:shadow-lg hover:shadow-blue-900/20 rounded-xl transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +83,7 @@
                 </a>
             </li>
 
-<li>
+            <li>
                 <a href="{{ url('/calendar') }}"
                    class="nav-link flex items-center gap-4 px-4 py-3 text-blue-400 font-semibold hover:text-blue-200 hover:bg-blue-900/40 hover:shadow-lg hover:shadow-blue-900/20 rounded-xl transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,38 +122,55 @@
         </ul>
     </nav>
 
-{{-- Usuario y cerrar sesion --}}
-<div class="p-6 border-t border-gray-100 bg-white">
-    
-    <button onclick="window.location.href='{{ url('/perfil') }}'" 
-            class="w-full flex items-center gap-3 mb-6 p-2 rounded-xl hover:bg-blue-50 transition-colors duration-200 group text-left">
+    {{-- Usuario y cerrar sesion --}}
+    <div class="p-6 border-t border-gray-100 bg-white">
         
-        {{-- Avatar reemplazado con lógica, PERO CON TUS MISMAS CLASES DE DISEÑO --}}
-        <div class="w-10 h-10 flex-shrink-0 rounded-full {{ $avatarColor }} shadow-lg shadow-blue-900/30 flex items-center justify-center text-white text-sm font-bold group-hover:scale-105 transition-transform">
-            {{ $iniciales }}
-        </div>
+        <button onclick="window.location.href='{{ url('/perfil') }}'" 
+                class="w-full flex items-center gap-3 mb-6 p-2 rounded-xl hover:bg-blue-50 transition-colors duration-200 group text-left">
+            
+            <div class="w-10 h-10 flex-shrink-0 rounded-full {{ $avatarColor }} shadow-lg shadow-blue-900/30 flex items-center justify-center text-white text-sm font-bold group-hover:scale-105 transition-transform">
+                {{ $iniciales }}
+            </div>
 
-        {{-- Nombres reemplazados con lógica --}}
-        <div>
-            <p class="text-sm font-bold text-blue-800">{{ Auth::user()->nombre }} {{ Auth::user()->apellido }}</p>
-            <p class="text-xs text-blue-400">{{ $userRol }}</p>
-        </div>
-    </button>
-
-    {{-- Formulario de Logout seguro con TU diseño de botón intacto --}}
-    <form action="{{ route('logout') }}" method="POST" class="w-full">
-        @csrf
-        <button type="submit"
-            class="w-full flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-blue-100 py-2.5 px-4 rounded-xl shadow-xl shadow-blue-900/30 transition font-semibold">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
-                </path>
-            </svg>
-            Salir
+            <div>
+                <p class="text-sm font-bold text-blue-800">{{ Auth::user()->nombre }} {{ Auth::user()->apellido }}</p>
+                <p class="text-xs text-blue-400">{{ $userRol }}</p>
+            </div>
         </button>
-    </form>
-</div>
+
+        {{-- CONTENEDOR NUEVO: Botón de Salir (Izquierda) + Botón de Notificaciones (Derecha) --}}
+        <div class="flex items-center gap-2 w-full">
+            
+            {{-- Formulario de Logout (Toma el espacio principal) --}}
+            <form action="{{ route('logout') }}" method="POST" class="flex-1">
+                @csrf
+                <button type="submit"
+                    class="w-full h-11 flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-blue-100 rounded-xl shadow-xl shadow-blue-900/30 transition font-semibold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                        </path>
+                    </svg>
+                    Salir
+                </button>
+            </form>
+
+            {{-- Botón de Notificaciones (Campanita a la derecha) --}}
+            <a href="{{ url('/notificaciones') }}" 
+               class="flex-shrink-0 flex items-center justify-center bg-blue-50 hover:bg-blue-100 text-blue-600 w-11 h-11 rounded-xl transition-colors relative" 
+               title="Ver Notificaciones">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                    </path>
+                </svg>
+                {{-- Puntito de alerta (Indicador visual) --}}
+                <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+            </a>
+
+        </div>
+        
+    </div>
 
 </aside>
 
@@ -165,22 +181,19 @@
         const closeBtn = document.getElementById('closeMobileMenu');
         const sidebar = document.getElementById('mainSidebar');
         const overlay = document.getElementById('mobileOverlay');
-        const mainContent = document.querySelector('main'); // Detecta automáticamente el main de cualquier página
+        const mainContent = document.querySelector('main'); 
 
-        // Evita que la barra superior tape el contenido del Main en celulares
         function adjustMobilePadding() {
             if (window.innerWidth < 768) {
-                if (mainContent) mainContent.classList.add('pt-24'); // Agrega espacio arriba
+                if (mainContent) mainContent.classList.add('pt-24'); 
             } else {
-                if (mainContent) mainContent.classList.remove('pt-24'); // Lo quita en PC
+                if (mainContent) mainContent.classList.remove('pt-24'); 
             }
         }
 
-        // Ejecutar al cargar y al cambiar de tamaño la ventana
         adjustMobilePadding();
         window.addEventListener('resize', adjustMobilePadding);
 
-        // Funciones de apertura y cierre
         function openSidebar() {
             sidebar.classList.remove('-translate-x-full');
             overlay.classList.remove('hidden');

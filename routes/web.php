@@ -14,7 +14,7 @@ use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\CitaController;
 use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\PasswordResetController; // <-- IMPORTACIÓN NUEVA
+use App\Http\Controllers\PasswordResetController;
 
 // ==========================================
 // 1. RUTAS PÚBLICAS (Sin loguearse)
@@ -35,67 +35,39 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // ------------------------------------------
 Route::get('/olvide-mi-password', [PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
 Route::post('/olvide-mi-password', [PasswordResetController::class, 'sendResetLinkEmail'])->name('password.email');
-
 Route::get('/resetear-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
 Route::post('/resetear-password', [PasswordResetController::class, 'reset'])->name('password.update');
 
 
-// 🔴 RUTA SECRETA TEMPORAL (Para generar tu usuario encriptado)
+// 🔴 RUTAS SECRETAS TEMPORALES
 Route::get('/crear-admin-secreto', function () {
-    // Crear rol si no existe
     $rolId = DB::table('roles')->where('nombre', 'Admin')->value('id');
     if (!$rolId) {
-        $rolId = DB::table('roles')->insertGetId([
-            'nombre' => 'Admin',
-            'estado' => 'Activo'
-        ]);
+        $rolId = DB::table('roles')->insertGetId(['nombre' => 'Admin', 'estado' => 'Activo']);
     }
-
-    $existe = User::where('email', 'nelson14pineda@gmail.com')->first();
-    if ($existe) {
-        return "El usuario ya existe. Ve a localhost/ e inicia sesión.";
-    }
-
+    $existe = User::where('email', 'jnlopezjr36@gmail.com')->first();
+    if ($existe) return "El usuario ya existe.";
     User::create([
-        'usuario' => 'NelsonPineda',
-        'nombre' => 'Nelson Daniel',
-        'apellido' => 'Peña Pineda',
-        'email' => 'nelson14pineda@gmail.com',
-        'password_hash' => Hash::make('12345678'), 
-        'rol_id' => $rolId,
-        'estado' => 'Activo'
+        'usuario' => 'Jaime Nelson', 'nombre' => 'Jaime Nelson', 'apellido' => 'Lopez Salinas',
+        'email' => 'jnlopezjr36@gmail.com', 'password_hash' => Hash::make('12345678'), 
+        'rol_id' => $rolId, 'estado' => 'Activo'
     ]);
-
-    return "✅ Administrador creado exitosamente. Ve a localhost/ y entra con: admin@dentalsistem.com / 12345678";
+    return "✅ Administrador creado.";
 });
 
-// 🔴 RUTA SECRETA TEMPORAL 2 (Para probar el bloqueo de Roles)
 Route::get('/crear-recepcionista', function () {
-    // 1. Crear el rol si no existe
     $rolId = DB::table('roles')->where('nombre', 'Recepcionista')->value('id');
     if (!$rolId) {
-        $rolId = DB::table('roles')->insertGetId([
-            'nombre' => 'Recepcionista',
-            'estado' => 'Activo'
-        ]);
+        $rolId = DB::table('roles')->insertGetId(['nombre' => 'Recepcionista', 'estado' => 'Activo']);
     }
-
-    $existe = \App\Models\User::where('email', 'recepcion@dentalsistem.com')->first();
-    if ($existe) {
-        return "El usuario ya existe. Ve a localhost/ e inicia sesión.";
-    }
-
-    \App\Models\User::create([
-        'usuario' => 'recepcion_01',
-        'nombre' => 'Ana',
-        'apellido' => 'García',
-        'email' => 'recepcion@dentalsistem.com',
-        'password_hash' => \Illuminate\Support\Facades\Hash::make('12345678'), 
-        'rol_id' => $rolId,
-        'estado' => 'Activo'
+    $existe = User::where('email', 'recepcion@dentalsistem.com')->first();
+    if ($existe) return "El usuario ya existe.";
+    User::create([
+        'usuario' => 'recepcion_01', 'nombre' => 'Ana', 'apellido' => 'García',
+        'email' => 'recepcion@dentalsistem.com', 'password_hash' => Hash::make('12345678'), 
+        'rol_id' => $rolId, 'estado' => 'Activo'
     ]);
-
-    return "✅ Recepcionista creada exitosamente. Ve a localhost/ y entra con: recepcion@dentalsistem.com / 12345678";
+    return "✅ Recepcionista creada.";
 });
 
 // ==========================================
@@ -107,13 +79,8 @@ Route::middleware(['auth'])->group(function () {
     // 🔒 ZONA DE ALTA SEGURIDAD (Solo Admin y Dentista)
     // ------------------------------------------
     Route::middleware(['role:Admin,Dentista'])->group(function () {
-        
-        // Vista del Dashboard
         Route::get('/dashboard', function () { return view('dashboard'); });
-        
-        // API del Dashboard (Gráficas y finanzas)
         Route::get('/api/dashboard', [DashboardController::class, 'obtenerDatos']);
-        
     });
 
 
@@ -128,6 +95,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/expediente', function () { return view('expediente'); });
     Route::get('/tratamiento', function () { return view('tratamiento'); });
     Route::get('/perfil', function () { return view('perfil'); });
+    
+    // RUTA NUEVA: Vista de Notificaciones
+    Route::get('/notificaciones', function () { return view('notificaciones'); });
 
     // APIS DE PACIENTES
     Route::get('/api/obtener-pacientes', [PacienteController::class, 'obtenerTodos']);
@@ -144,7 +114,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/api/tratamientos/{id}', [TratamientoController::class, 'actualizar']);
     Route::delete('/api/tratamientos/{id}', [TratamientoController::class, 'eliminar']);
 
-    // APIS DE EXPEDIENTE Y RECIBOS (FACTURACIÓN)
+    // APIS DE EXPEDIENTE Y RECIBOS
     Route::post('/api/expediente/{paciente_id}/guardar', [ExpedienteController::class, 'guardarFicha']);
     Route::get('/api/expediente/{paciente_id}', [ExpedienteController::class, 'obtenerFicha']); 
     Route::get('/api/expediente/{paciente_id}/facturas', [ExpedienteController::class, 'obtenerFacturas']);
