@@ -19,7 +19,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     let resizeTimer;
     window.addEventListener("resize", () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(inicializarPaginador, 200);
+        resizeTimer = setTimeout(() => {
+            inicializarPaginador(); // recalcula items por página
+            const filterEstado = document.getElementById("filterEstado");
+            if (filterEstado) filterEstado.dispatchEvent(new Event('change')); // re-aplica filtro vigente
+        }, 200);
     });
 });
 

@@ -17,7 +17,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     let resizeTimer;
     window.addEventListener("resize", () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(inicializarPaginador, 200);
+        resizeTimer = setTimeout(() => {
+            inicializarPaginador();
+            const filterCategoria = document.getElementById("filterCategoria");
+            if (filterCategoria) filterCategoria.dispatchEvent(new Event('change'));
+        }, 200);
     });
 });
 
