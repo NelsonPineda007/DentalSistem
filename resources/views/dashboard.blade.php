@@ -3,12 +3,16 @@
 @include('nav')
 
 {{-- ======================================================= --}}
-{{-- PANTALLA DE BIENVENIDA MINIMALISTA ESTILO iOS (CASCADA NATIVA) --}}
+{{-- PANTALLA DE BIENVENIDA MINIMALISTA ESTILO iOS --}}
 {{-- ======================================================= --}}
 
-{{-- Este script bloquea el parpadeo blanco si ya se vio la animación --}}
+{{-- LA BOMBA NUCLEAR ANTI-CACHÉ (Usando el ID de Sesión de Laravel) --}}
 <script>
-    if (sessionStorage.getItem('haVistoBienvenida')) {
+    // Laravel nos da un ID único que CAMBIA cada vez que haces Login/Logout.
+    const llaveUnica = 'bienvenida_{{ session()->getId() }}';
+    
+    // Si ya vio la animación en ESTA sesión específica, la bloqueamos.
+    if (sessionStorage.getItem(llaveUnica) === 'true') {
         document.documentElement.classList.add('skip-ios-welcome');
     }
 </script>
@@ -117,11 +121,18 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const welcomeScreen = document.getElementById('ios-welcome-screen');
-        if (!welcomeScreen || document.documentElement.classList.contains('skip-ios-welcome')) return;
-
-        sessionStorage.setItem('haVistoBienvenida', 'true');
+        const llaveUnica = 'bienvenida_{{ session()->getId() }}';
         
-        // 3 segundos y se va
+        // Si no existe el elemento o ya tiene la clase skip, abortamos la animación
+        if (!welcomeScreen || document.documentElement.classList.contains('skip-ios-welcome')) {
+            if(welcomeScreen) welcomeScreen.remove();
+            return;
+        }
+
+        // Guardamos en la memoria usando el ID ÚNICO de esta sesión de Laravel
+        sessionStorage.setItem(llaveUnica, 'true');
+        
+        // 3 segundos y se va la animación
         setTimeout(() => {
             welcomeScreen.classList.add('screen-exit');
             setTimeout(() => {
@@ -356,6 +367,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
 <script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/charts.js') }}" defer></script>
+<script src="{{ asset('js/utils/alertas.js') }}"></script>
+<script src="{{ asset('js/NotificacionesControlador.js') }}"></script>
 
 </body>
 </html>

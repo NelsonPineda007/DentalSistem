@@ -184,10 +184,50 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('js/utils/alertas.js') }}"></script>
+<script src="{{ asset('js/NotificacionesControlador.js') }}"></script>
 <script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
 <script src="{{ asset('js/utils/reportes.js') }}"></script>
 <script src="{{ asset('js/CitasControlador.js') }}"></script>
+
+{{-- ======================================================== --}}
+{{-- SCRIPT MÁGICO: ATRAPA EL REDIRECT Y ABRE LA CITA         --}}
+{{-- ======================================================== --}}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Buscamos si la URL trae "?id=..."
+    const params = new URLSearchParams(window.location.search);
+    const citaId = params.get('id');
+
+    if (citaId) {
+        // 2. Limpiamos la URL para que no quede sucia (quitamos el ?id=...)
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        // 3. Esperamos a que la tabla cargue (revisamos cada medio segundo)
+        let intentos = 0;
+        const intervalo = setInterval(() => {
+            // Buscamos cualquier botón en la tabla que al darle clic pase ese ID (ej. onclick="editarCita(5)")
+            const botonEditar = document.querySelector(`button[onclick*="(${citaId})"], button[onclick*="('${citaId}')"]`);
+            
+            if (botonEditar) {
+                botonEditar.click(); // Hacemos clic por ti automáticamente
+                clearInterval(intervalo);
+            } else if (typeof window.editarCita === 'function') {
+                // Si la tabla no lo pinta pero tu función existe, la llamamos directo
+                window.editarCita(citaId);
+                clearInterval(intervalo);
+            } else if (typeof window.cargarCita === 'function') {
+                window.cargarCita(citaId);
+                clearInterval(intervalo);
+            }
+
+            intentos++;
+            // Si pasaron 5 segundos y no encontró nada, dejamos de intentar para no saturar el navegador
+            if (intentos >= 10) clearInterval(intervalo); 
+        }, 500);
+    }
+});
+</script>
 
 </body>
 </html>

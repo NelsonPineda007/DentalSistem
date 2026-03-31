@@ -282,12 +282,6 @@
     'modalContent' => View::yieldContent('modal_content')
 ])
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="{{ asset('js/utils/alertas.js') }}"></script>
-<script src="{{ asset('js/utils/api.js') }}"></script>
-<script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
-<script src="{{ asset('js/expedienteControlador.js') }}"></script>
-
 {{-- MODAL SECUNDARIO: REGISTRAR ABONOS --}}
 @section('modal_abono_content')
 <form id="formAbono" class="flex flex-col gap-4">
@@ -336,5 +330,11 @@
     'modalContent' => View::yieldContent('modal_abono_content')
 ])
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/utils/alertas.js') }}"></script>
+<script src="{{ asset('js/NotificacionesControlador.js') }}"></script>
+<script src="{{ asset('js/utils/api.js') }}"></script>
+<script src="{{ asset('js/utils/paginadorTabla.js') }}"></script>
+<script src="{{ asset('js/expedienteControlador.js') }}"></script>
 </body>
 </html>
