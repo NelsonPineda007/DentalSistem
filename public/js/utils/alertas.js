@@ -29,6 +29,7 @@
             backdrop-filter: blur(4px) !important;
         }
 
+        /* TOASTS NORMALES (Arriba) */
         .da-toast {
             font-family: var(--da-font) !important;
             pointer-events: all !important;
@@ -56,24 +57,20 @@
         .da-toast.da-advertencia .swal2-icon { color: #d97706 !important; }
         .da-toast.da-info .swal2-icon { color: #3b82f6 !important; }
 
+        /* NOTIFICACIONES FLOTANTES NUEVAS (Abajo) */
         .da-noti {
             box-sizing: border-box !important;
             font-family: var(--da-font) !important;
             pointer-events: all !important;
-            width: 360px !important; 
+            width: 380px !important; 
             max-width: 100% !important;
             margin: 0 !important; 
             padding: 16px 20px !important;
-            border-radius: 12px !important;
+            border-radius: 16px !important;
             background-color: #ffffff !important; 
-            box-shadow: none !important; /* Sombra eliminada */
-            border: 1px solid rgba(59, 130, 246, 0.2) !important;
-            border-left: 6px solid #3b82f6 !important; 
-        }
-        
-        .da-noti.da-noti-alerta { 
-            border-left-color: #f59e0b !important; 
-            border-color: rgba(245, 158, 11, 0.2) !important;
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.1) !important; 
+            border: 1px solid transparent !important;
+            border-left-width: 6px !important; 
         }
 
         .da-noti .swal2-title { 
@@ -90,7 +87,7 @@
             margin: 0 !important; 
             font-weight: 500 !important; 
             text-align: left !important;
-            line-height: 1.4 !important;
+            line-height: 1.5 !important;
         }
 
         .da-noti .swal2-icon { 
@@ -103,13 +100,45 @@
             align-items: center !important;
             justify-content: center !important;
         }
+
+        /* COLORES ESPECÍFICOS POR TIPO */
+        .da-noti-cita { border-left-color: #10b981 !important; border-color: rgba(16, 185, 129, 0.2) !important; }
+        .da-noti-cita .swal2-icon { color: #10b981 !important; background: rgba(16, 185, 129, 0.1) !important; }
+        .da-noti-cita .swal2-timer-progress-bar { background: rgba(16, 185, 129, 0.3) !important; height: 4px !important; }
+
+        .da-noti-nota { border-left-color: #3b82f6 !important; border-color: rgba(59, 130, 246, 0.2) !important; }
+        .da-noti-nota .swal2-icon { color: #3b82f6 !important; background: rgba(59, 130, 246, 0.1) !important; }
+        .da-noti-nota .swal2-timer-progress-bar { background: rgba(59, 130, 246, 0.3) !important; height: 4px !important; }
+
+        .da-noti-recordatorio { border-left-color: #f59e0b !important; border-color: rgba(245, 158, 11, 0.2) !important; }
+        .da-noti-recordatorio .swal2-icon { color: #f59e0b !important; background: rgba(245, 158, 11, 0.1) !important; }
+        .da-noti-recordatorio .swal2-timer-progress-bar { background: rgba(245, 158, 11, 0.3) !important; height: 4px !important; }
+
+        /* BOTÓN DE VER MÁS */
+        .da-btn-ver-mas {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            font-size: 0.8rem !important;
+            font-weight: 700 !important;
+            text-decoration: none !important;
+            padding: 6px 14px !important;
+            border-radius: 8px !important;
+            transition: all 0.2s ease !important;
+            margin-top: 12px !important;
+            pointer-events: all !important;
+        }
+
+        .da-noti-cita .da-btn-ver-mas { color: #059669 !important; background: rgba(16, 185, 129, 0.1) !important; }
+        .da-noti-cita .da-btn-ver-mas:hover { background: rgba(16, 185, 129, 0.2) !important; }
         
-        .da-noti:not(.da-noti-alerta) .swal2-icon { color: #3b82f6 !important; background: rgba(59, 130, 246, 0.1) !important; }
-        .da-noti.da-noti-alerta .swal2-icon { color: #f59e0b !important; background: rgba(245, 158, 11, 0.1) !important; }
+        .da-noti-nota .da-btn-ver-mas { color: #2563eb !important; background: rgba(59, 130, 246, 0.1) !important; }
+        .da-noti-nota .da-btn-ver-mas:hover { background: rgba(59, 130, 246, 0.2) !important; }
 
-        .da-noti .swal2-timer-progress-bar { background: rgba(59, 130, 246, 0.3) !important; height: 3px !important; }
-        .da-noti.da-noti-alerta .swal2-timer-progress-bar { background: rgba(245, 158, 11, 0.3) !important; }
+        .da-noti-recordatorio .da-btn-ver-mas { color: #d97706 !important; background: rgba(245, 158, 11, 0.1) !important; }
+        .da-noti-recordatorio .da-btn-ver-mas:hover { background: rgba(245, 158, 11, 0.2) !important; }
 
+        /* MODALES GRANDES */
         .da-modal { font-family: var(--da-font) !important; border-radius: 28px !important; overflow: hidden !important; position: relative !important; padding: 40px 0 32px 0 !important; width: 90% !important; max-width: 540px !important; border: none !important; background: white !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important; }
         .da-modal::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); }
         .da-modal.da-danger::before { background: linear-gradient(90deg, #ef4444, #f59e0b); }
@@ -170,6 +199,29 @@ function _modalBase(cssExtra) {
     });
 }
 
+// Función maestra para las notificaciones flotantes con botón (Ahora incluye urlTab)
+function _alertaFlotante(cssClass, iconType, titulo, subtitulo, urlTab) {
+    const htmlContenido = `
+        <div style="margin-bottom: 4px;">${subtitulo}</div>
+        <a href="/notificaciones?tab=${urlTab}" class="da-btn-ver-mas">
+            Ver más detalles
+            <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+        </a>
+    `;
+    
+    Swal.fire({
+        toast: true,
+        position: 'bottom-end',
+        icon: iconType,
+        title: titulo,
+        html: htmlContenido,
+        showConfirmButton: false,
+        timer: 10000, // 👈 Ahora dura 10 segundos
+        timerProgressBar: true,
+        customClass: { popup: `da-noti ${cssClass}` }
+    });
+}
+
 window.Alerta = {
     exito: (titulo, mensaje = '') => _toast('da-exito').fire({ icon: 'success', title: titulo, text: mensaje }),
     error: (titulo, mensaje = '') => _toast('da-error').fire({ icon: 'error', title: titulo, text: mensaje }),
@@ -195,53 +247,8 @@ window.Alerta = {
         return result.isConfirmed;
     },
 
-    eleccion: async (titulo, htmlText, btnPrimario = 'Sí', btnSecundario = 'No', icono = 'info') => {
-        const result = await Swal.fire({
-            title: titulo,
-            html: htmlText,
-            icon: icono,
-            showDenyButton: true,      
-            showCancelButton: false,   
-            confirmButtonText: btnPrimario,
-            denyButtonText: btnSecundario,
-            reverseButtons: false,     
-            scrollbarPadding: false,
-            heightAuto: false, 
-            buttonsStyling: false,
-            customClass: { 
-                popup: 'da-modal da-info-clean', 
-                confirmButton: 'da-btn da-btn-confirm', 
-                denyButton: 'da-btn da-btn-secondary' 
-            }
-        });
-        return result.isConfirmed; 
-    },
-
-    notificarCita: (titulo, mensaje) => {
-        Swal.fire({
-            toast: true,
-            position: 'bottom-end',
-            icon: 'info',
-            title: titulo,
-            text: mensaje,
-            showConfirmButton: false,
-            timer: 5000, 
-            timerProgressBar: true,
-            customClass: { popup: 'da-noti' }
-        });
-    },
-
-    notificarRecordatorio: (titulo, mensaje) => {
-        Swal.fire({
-            toast: true,
-            position: 'bottom-end',
-            icon: 'warning',
-            title: titulo,
-            text: mensaje,
-            showConfirmButton: false,
-            timer: 5000, 
-            timerProgressBar: true,
-            customClass: { popup: 'da-noti da-noti-alerta' }
-        });
-    }
+    // Nuevas Alertas Específicas (Pasando la pestaña de destino en la URL)
+    notificarCitaFlotante: (titulo, subtitulo) => _alertaFlotante('da-noti-cita', 'success', titulo, subtitulo, 'citas'),
+    notificarNotaFlotante: (titulo, subtitulo) => _alertaFlotante('da-noti-nota', 'info', titulo, subtitulo, 'notas'),
+    notificarRecordatorioFlotante: (titulo, subtitulo) => _alertaFlotante('da-noti-recordatorio', 'warning', titulo, subtitulo, 'recordatorios')
 };

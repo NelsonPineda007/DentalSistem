@@ -127,7 +127,7 @@
 {{-- LLAMADO A LOS SCRIPTS EXTERNOS           --}}
 {{-- ========================================== --}}
 <script src="{{ asset('js/utils/api.js') }}"></script>
-{{-- AQUÍ CONECTAMOS EL NUEVO ARCHIVO JS DE NOTIFICACIONES --}}
+<script src="{{ asset('js/utils/alertas.js') }}"></script>
 <script src="{{ asset('js/NotificacionesControlador.js') }}"></script>
 
 </body>

@@ -44,6 +44,47 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarSelectoresColor();
 
     // ==========================================
+    // UTILIDADES: CONVERSIÓN DE HORA 12H/24H
+    // ==========================================
+    // Convierte "14:30" (de DB) a "02:30 PM" (para mostrar al usuario)
+    function formatearHoraA12H(hora24) {
+        if (!hora24) return '';
+        let partes = hora24.split(':');
+        let h = parseInt(partes[0]);
+        let m = partes[1];
+        let ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12; // Si es 0, lo pasa a 12
+        return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+    }
+
+    // Lee "14:30" (de DB) y llena los inputs visuales del formulario
+    function setHoraVisual(prefijo, hora24) {
+        const inputVisual = document.getElementById(`hora_input_${prefijo}`);
+        const inputOculto = document.getElementById(prefijo === 'evento' ? 'evento-hora' : prefijo === 'rec' ? 'rec-hora' : 'agenda-inline-hora');
+        
+        if (!hora24) {
+            if(inputVisual) inputVisual.value = '';
+            if(inputOculto) inputOculto.value = '';
+            if(window.setAMPM) window.setAMPM(prefijo, 'AM');
+            return;
+        }
+
+        let partes = hora24.split(':');
+        let h = parseInt(partes[0]);
+        let m = partes[1];
+        let ampm = h >= 12 ? 'PM' : 'AM';
+        
+        h = h % 12;
+        h = h ? h : 12; 
+
+        if (inputVisual) inputVisual.value = `${String(h).padStart(2, '0')}:${m}`;
+        if (inputOculto) inputOculto.value = hora24;
+        if (window.setAMPM) window.setAMPM(prefijo, ampm);
+    }
+
+
+    // ==========================================
     // 0. CARGAR DESDE LA BASE DE DATOS
     // ==========================================
     async function cargarEventosDesdeBD() {
@@ -62,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 notas[ev.fecha].push({
                     id: ev.id,
                     titulo: ev.titulo,
-                    hora: ev.hora ? ev.hora.substring(0, 5) : '', 
+                    hora: ev.hora ? ev.hora.substring(0, 5) : '', // Se guarda 14:30 en el JS local
                     detalles: ev.detalles,
                     color: ev.color,
                     tipo: ev.tipo
@@ -144,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (notaEncontrada.tipo === 'Recordatorio') {
             document.getElementById('rec-id').value = notaEncontrada.id;
             document.getElementById('rec-fecha').value = fechaNota;
-            document.getElementById('rec-hora').value = notaEncontrada.hora || '';
+            setHoraVisual('rec', notaEncontrada.hora); // <-- Seteo en 12H visual
             document.getElementById('rec-titulo').value = notaEncontrada.titulo;
             document.getElementById('rec-detalles').value = notaEncontrada.detalles || '';
             document.getElementById('drawer-rec-titulo').textContent = 'Editar Recordatorio';
@@ -245,14 +286,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 badge.className = `${bgClass} w-full px-1 py-0.5 md:p-1.5 rounded-[4px] md:rounded shadow-sm cursor-pointer transition-all flex flex-col shrink-0 text-white overflow-hidden`;
                 
+                // Formateamos para que se vea 12H en el badge visual
+                let horaVisual = formatearHoraA12H(nota.hora); 
+
                 badge.innerHTML = `
                     <div class="flex flex-col w-full pointer-events-none">
                         <span class="text-[8px] md:text-[10px] font-bold leading-tight truncate">${nota.titulo}</span>
-                        ${nota.hora ? `<span class="hidden md:block mt-0.5 text-[8px] bg-black/10 px-1 py-0.5 rounded truncate w-full font-bold">${nota.hora}</span>` : ''}
+                        ${nota.hora ? `<span class="hidden md:block mt-0.5 text-[8px] bg-black/10 px-1 py-0.5 rounded truncate w-full font-bold">${horaVisual}</span>` : ''}
                     </div>
                 `;
                 
-                badge.title = `${nota.titulo}\n${nota.hora || 'Todo el día'} (Doble clic para editar)`;
+                badge.title = `${nota.titulo}\n${horaVisual || 'Todo el día'} (Doble clic para editar)`;
                 badge.draggable = true;
                 badge.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', JSON.stringify({ fecha: fechaFormateada, id: nota.id })); });
 
@@ -288,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 1; i <= faltantes; i++) { crearCeldaMiniDia(i, miniMesActual + 1, miniAnioActual, true); }
     }
 
-function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
+    function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
         let m = mes; let a = anio;
         if (m < 0) { m = 11; a--; }
         if (m > 11) { m = 0; a++; }
@@ -296,17 +340,13 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
         const hoy = new Date();
         const esHoy = dia === hoy.getDate() && m === hoy.getMonth() && a === hoy.getFullYear();
 
-        // 1. Clases base que tienen todos los días
         let clasesDia = 'p-1 flex items-center justify-center cursor-pointer rounded-full transition-colors w-6 h-6 md:w-7 md:h-7 mx-auto';
 
-        // 2. Aplicamos colores estrictamente separados
         if (esMesDif) {
             clasesDia += ' text-slate-300 font-medium';
         } else if (esHoy) {
-            // Si es hoy, SOLO fondo azul y texto blanco
             clasesDia += ' bg-blue-800 text-white hover:bg-blue-900 shadow-md font-bold'; 
         } else {
-            // Si es un día normal del mes, texto gris
             clasesDia += ' text-slate-700 hover:bg-slate-100 font-bold';
         }
 
@@ -340,13 +380,16 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
             if(nota.tipo === 'Recordatorio') { pColor = 'bg-[#eab308]'; } 
             else { pColor = colorPillClasses[nota.color] || 'bg-blue-500'; }
 
+            // Formateamos para que se vea 12H en la tarjeta
+            let horaVisual = formatearHoraA12H(nota.hora); 
+
             card.className = "bg-slate-50 border border-slate-100 rounded-xl p-3 relative overflow-hidden group hover:bg-slate-100 cursor-pointer transition-colors";
             card.innerHTML = `
                 <div class="absolute left-0 top-0 bottom-0 w-1.5 ${pColor}"></div>
                 <div class="pl-2">
                     <div class="flex justify-between items-center mb-1">
                         <span class="font-bold text-slate-800 text-[10px] uppercase tracking-wider">${nota.fecha.split('-')[2]} ${meses[mesActual].substring(0,3)}</span>
-                        <span class="text-[9px] font-bold text-slate-500 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">${nota.hora || 'Todo el día'}</span>
+                        <span class="text-[9px] font-bold text-slate-500 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">${horaVisual || 'Todo el día'}</span>
                     </div>
                     <p class="font-bold text-slate-700 text-xs truncate">${nota.titulo}</p>
                 </div>
@@ -452,8 +495,10 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
                 let cText = isRec ? 'text-amber-900' : (colorTextClasses[nota.color] || colorTextClasses['blue']);
                 let cPill = isRec ? 'bg-[#eab308]' : (colorPillClasses[nota.color] || colorPillClasses['blue']);
 
+                // Formateamos para que se vea 12H en la agenda libro
+                let horaVisual = formatearHoraA12H(nota.hora); 
+
                 card.className = `${cBorder} border rounded-xl p-3 md:p-4 shadow-sm relative group hover:shadow-md transition-all cursor-pointer`;
-                
                 card.innerHTML = `
                     <div class="absolute left-0 top-0 bottom-0 w-2 rounded-l-xl ${cPill}"></div>
                     <div class="pl-2">
@@ -464,7 +509,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
                             </button>
                         </div>
                         <div class="flex items-center gap-2 mt-1.5 md:mt-2 mb-1.5 md:mb-2">
-                            <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded bg-white text-slate-600 border border-slate-200 shadow-sm">${nota.hora || 'Todo el día'}</span>
+                            <span class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded bg-white text-slate-600 border border-slate-200 shadow-sm">${horaVisual || 'Todo el día'}</span>
                             <span class="text-[8px] md:text-[9px] font-black uppercase tracking-wider text-slate-400 bg-white/50 px-2 py-0.5 rounded">${nota.tipo}</span>
                         </div>
                         ${nota.detalles ? `<p class="text-[11px] md:text-xs font-medium text-slate-600 mt-1 line-clamp-2">${nota.detalles}</p>` : ''}
@@ -477,7 +522,6 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
                     }
                 });
 
-                // ELIMINAR DESDE LA LIBRETA (Con SweetAlert nativo)
                 card.querySelector('.btn-delete-agenda').addEventListener('click', async (e) => {
                     e.stopPropagation();
                     if(nota.tipo === 'Cita') {
@@ -509,7 +553,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
         document.getElementById('agenda-form-titulo').textContent = 'Editar Nota';
         document.getElementById('agenda-inline-id').value = nota.id;
         document.getElementById('agenda-inline-fecha').value = fecha;
-        document.getElementById('agenda-inline-hora').value = nota.hora || '';
+        setHoraVisual('agenda', nota.hora); // <-- Seteo en 12H visual
         document.getElementById('agenda-inline-titulo').value = nota.titulo;
         document.getElementById('agenda-inline-detalles').value = nota.detalles || '';
         document.getElementById('agenda-inline-color').value = nota.color || 'blue';
@@ -520,6 +564,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
         document.getElementById('agenda-form-titulo').textContent = 'Nueva Nota';
         document.getElementById('agenda-inline-id').value = '';
         formAgendaInline.reset();
+        setHoraVisual('agenda', ''); // Limpiar la hora y botones visuales
         document.getElementById('agenda-inline-fecha').valueAsDate = new Date();
         document.getElementById('agenda-inline-color').value = 'blue';
         aplicarColorAlSelector('color-selector-agenda', 'blue');
@@ -528,7 +573,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
     const btnLimp = document.getElementById('btn-limpiar-agenda');
     if(btnLimp) btnLimp.addEventListener('click', limpiarFormularioAgendaInline);
 
-    // GUARDAR NOTA DESDE AGENDA (CON FETCH Y ALERTAS)
+    // GUARDAR NOTA DESDE AGENDA
     if(formAgendaInline) {
         formAgendaInline.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -536,7 +581,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
             const data = {
                 titulo: document.getElementById('agenda-inline-titulo').value,
                 fecha: document.getElementById('agenda-inline-fecha').value,
-                hora: document.getElementById('agenda-inline-hora').value,
+                hora: document.getElementById('agenda-inline-hora').value, // Toma la oculta de 24H
                 color: document.getElementById('agenda-inline-color').value,
                 tipo: 'Nota', 
                 detalles: document.getElementById('agenda-inline-detalles').value
@@ -568,6 +613,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
         btnAbrirRecordatorios.addEventListener('click', () => {
             document.getElementById('rec-id').value = '';
             formRecordatorio.reset();
+            setHoraVisual('rec', ''); // Limpiar
             document.getElementById('rec-fecha').valueAsDate = new Date();
             document.getElementById('drawer-rec-titulo').textContent = 'Nuevo Recordatorio';
             
@@ -591,7 +637,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
     document.getElementById('btn-cerrar-drawer').addEventListener('click', cerrarDrawerRecordatorio);
     document.querySelector('.btn-cancelar-drawer').addEventListener('click', cerrarDrawerRecordatorio);
     
-    // GUARDAR RECORDATORIO (CON FETCH Y ALERTAS)
+    // GUARDAR RECORDATORIO
     if(formRecordatorio) {
         formRecordatorio.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -599,7 +645,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
             const data = {
                 titulo: document.getElementById('rec-titulo').value,
                 fecha: document.getElementById('rec-fecha').value,
-                hora: document.getElementById('rec-hora').value,
+                hora: document.getElementById('rec-hora').value, // Lee la de 24H
                 tipo: 'Recordatorio', 
                 detalles: document.getElementById('rec-detalles').value
             };
@@ -629,6 +675,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
     function abrirModalNotaRapida(fechaValue, fechaTexto) {
         document.getElementById('evento-id').value = '';
         formEvento.reset();
+        setHoraVisual('evento', ''); // Limpiar
         document.getElementById('evento-fecha').value = fechaValue;
         document.getElementById('evento-color').value = 'blue';
         aplicarColorAlSelector('color-selector-modal', 'blue');
@@ -651,7 +698,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
     document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModalCentral);
     document.getElementById('btn-cancelar-modal').addEventListener('click', cerrarModalCentral);
     
-    // GUARDAR NOTA RÁPIDA (CON FETCH Y ALERTAS)
+    // GUARDAR NOTA RÁPIDA
     if(formEvento) {
         formEvento.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -659,7 +706,7 @@ function crearCeldaMiniDia(dia, mes, anio, esMesDif) {
             const data = {
                 titulo: document.getElementById('evento-titulo').value,
                 fecha: document.getElementById('evento-fecha').value,
-                hora: document.getElementById('evento-hora').value,
+                hora: document.getElementById('evento-hora').value, // Lee la de 24H
                 color: document.getElementById('evento-color').value,
                 tipo: 'Nota',
                 detalles: document.getElementById('evento-detalles').value
