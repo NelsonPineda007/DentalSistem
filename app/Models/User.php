@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Notifications\CustomResetPassword; // <-- Importación del nuevo correo
+use App\Notifications\CustomResetPassword; // <-- Tu importación del correo intacta
 
 class User extends Authenticatable
 {
@@ -19,17 +19,22 @@ class User extends Authenticatable
     const UPDATED_AT = 'actualizado_en';
 
     // 2. Las columnas exactas de tu SQL
+    // AQUÍ AGREGAMOS 'telefono' Y 'especialidad' PARA QUE EL PERFIL PUEDA GUARDARLOS
     protected $fillable = [
         'usuario',
         'email',
         'password_hash',
         'nombre',
         'apellido',
+        'telefono',         // <-- Agregado para el perfil
+        'especialidad',     // <-- Agregado para el perfil
+        'direccion',        // <-- Agregado por si lo usas en el futuro
+        'numero_licencia',  // <-- Agregado por si lo usas en el futuro
         'rol_id',
         'estado',
     ];
 
-// 3. Ocultamos las credenciales de seguridad
+    // 3. Ocultamos las credenciales de seguridad
     protected $hidden = [
         'password_hash',
         'remember_token',

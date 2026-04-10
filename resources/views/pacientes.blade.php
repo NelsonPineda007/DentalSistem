@@ -206,6 +206,7 @@
 <script src="{{ asset('js/PacientesControlador.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('js/utils/alertas.js') }}"></script>
+<script src="{{ asset('js/NotificacionesControlador.js') }}"></script>
 
 </body>
 </html>

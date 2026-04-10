@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cita; 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Http\Requests\StoreCitaRequest;
 
@@ -12,6 +13,9 @@ class CitaController extends Controller
     public function obtenerCitas()
     {
         $ahora = Carbon::now('America/El_Salvador');
+        $usuario = Auth::user();
+        $rol = DB::table('roles')->where('id', $usuario->rol_id)->value('nombre');
+
         $citasActivas = Cita::whereIn('estado', ['Programada', 'Confirmada', 'En progreso'])->get();
 
         foreach ($citasActivas as $cita) {
@@ -25,7 +29,7 @@ class CitaController extends Controller
             }
         }
 
-        $citas = Cita::join('pacientes', 'citas.paciente_id', '=', 'pacientes.id')
+        $query = Cita::join('pacientes', 'citas.paciente_id', '=', 'pacientes.id')
             ->join('empleados', 'citas.empleado_id', '=', 'empleados.id')
             ->select(
                 'citas.id', 'citas.paciente_id', 'citas.empleado_id',
@@ -34,8 +38,14 @@ class CitaController extends Controller
                 'citas.motivo_consulta as motivo',
                 DB::raw("CONCAT(empleados.nombre, ' ', empleados.apellido) as doctor"),
                 'citas.estado', 'citas.notas'
-            )
-            ->orderByRaw("CASE WHEN citas.estado IN ('En progreso', 'Confirmada', 'Programada') THEN 1 ELSE 2 END ASC")
+            );
+
+        // FILTRO MÁGICO: Si es dentista, solo ve las suyas
+        if ($rol === 'Dentista') {
+            $query->where('citas.empleado_id', $usuario->id);
+        }
+
+        $citas = $query->orderByRaw("CASE WHEN citas.estado IN ('En progreso', 'Confirmada', 'Programada') THEN 1 ELSE 2 END ASC")
             ->orderBy('citas.fecha_cita', 'asc')
             ->orderBy('citas.hora_inicio', 'asc')
             ->get();
@@ -138,13 +148,27 @@ class CitaController extends Controller
     public function obtenerDatosFormulario()
     {
         $pacientes = DB::table('pacientes')->select('id', DB::raw("CONCAT(nombre, ' ', apellido) as nombre_completo"))->where('estado', 'Activo')->get();
-        $doctores = DB::table('empleados')->select('id', DB::raw("CONCAT(nombre, ' ', apellido) as nombre_completo"))->where('estado', 'Activo')->get();
+        $doctores = DB::table('empleados')
+            ->join('roles', 'empleados.rol_id', '=', 'roles.id')
+            ->whereIn('roles.nombre', ['Admin', 'Dentista']) // Nos aseguramos que solo liste doctores, no recepcionistas
+            ->where('empleados.estado', 'Activo')
+            ->select('empleados.id', DB::raw("CONCAT(empleados.nombre, ' ', empleados.apellido) as nombre_completo"))
+            ->get();
+
         return response()->json(['pacientes' => $pacientes, 'doctores' => $doctores]);
     }
 
     public function obtenerCitasPaciente($paciente_id)
     {
-        $citas = Cita::where('paciente_id', $paciente_id)->orderBy('fecha_cita', 'desc')->get();
+        $usuario = Auth::user();
+        $rol = DB::table('roles')->where('id', $usuario->rol_id)->value('nombre');
+        
+        $query = Cita::where('paciente_id', $paciente_id);
+        if ($rol === 'Dentista') {
+            $query->where('empleado_id', $usuario->id);
+        }
+
+        $citas = $query->orderBy('fecha_cita', 'desc')->get();
         return response()->json($citas);
     }
 }

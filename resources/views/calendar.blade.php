@@ -115,10 +115,24 @@
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
+                    {{-- HORA ACTUALIZADA A 12 HRS --}}
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Hora (Opcional)</label>
-                        <input type="time" id="evento-hora" class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-slate-700">
+                        <div class="flex items-center gap-2">
+                            <div class="relative flex-1">
+                                <input type="text" id="hora_input_evento" placeholder="2:30" maxlength="5"
+                                    class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-center font-bold text-slate-700 tracking-wider bg-white transition-colors" 
+                                    oninput="window.formatearHora(this)" onblur="window.validarHora(this); window.sincronizarHora('evento')">
+                            </div>
+                            <div class="flex bg-slate-100 p-1 rounded-xl shrink-0">
+                                <button type="button" id="btn_am_evento" onclick="window.setAMPM('evento', 'AM')" class="px-2 py-1 text-xs font-bold bg-white shadow-sm text-blue-600 rounded-lg transition-all">AM</button>
+                                <button type="button" id="btn_pm_evento" onclick="window.setAMPM('evento', 'PM')" class="px-2 py-1 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-lg transition-all">PM</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="hora_ampm_evento" value="AM">
+                        <input type="hidden" id="evento-hora"> {{-- Input real que lee el JS original --}}
                     </div>
+
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Color</label>
                         <div class="flex gap-2 items-center h-[42px]" id="color-selector-modal">
@@ -173,9 +187,22 @@
                     <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Fecha *</label>
                     <input type="date" id="rec-fecha" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-slate-700 text-sm md:text-base" required>
                 </div>
+                {{-- HORA ACTUALIZADA A 12 HRS --}}
                 <div>
                     <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Hora Exacta *</label>
-                    <input type="time" id="rec-hora" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-slate-700 text-sm md:text-base" required>
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <input type="text" id="hora_input_rec" placeholder="10:00" maxlength="5"
+                                class="w-full px-3 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-center font-bold text-slate-700 text-sm md:text-base tracking-wider bg-white transition-colors" 
+                                oninput="window.formatearHora(this)" onblur="window.validarHora(this); window.sincronizarHora('rec')" required>
+                        </div>
+                        <div class="flex bg-slate-100 p-1 rounded-xl shrink-0">
+                            <button type="button" id="btn_am_rec" onclick="window.setAMPM('rec', 'AM')" class="px-2 py-1.5 text-xs md:text-sm font-bold bg-white shadow-sm text-blue-600 rounded-lg transition-all">AM</button>
+                            <button type="button" id="btn_pm_rec" onclick="window.setAMPM('rec', 'PM')" class="px-2 py-1.5 text-xs md:text-sm font-bold text-slate-500 hover:text-slate-800 rounded-lg transition-all">PM</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="hora_ampm_rec" value="AM">
+                    <input type="hidden" id="rec-hora" required> {{-- Input real oculto --}}
                 </div>
             </div>
             <div>
@@ -235,9 +262,23 @@
                             <label class="block text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Fecha *</label>
                             <input type="date" id="agenda-inline-fecha" class="w-full px-3 md:px-4 py-2 md:py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-slate-700 text-sm md:text-base" required>
                         </div>
+                        
+                        {{-- HORA ACTUALIZADA A 12 HRS --}}
                         <div>
                             <label class="block text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Hora</label>
-                            <input type="time" id="agenda-inline-hora" class="w-full px-3 md:px-4 py-2 md:py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-slate-700 text-sm md:text-base">
+                            <div class="flex items-center gap-2">
+                                <div class="relative flex-1">
+                                    <input type="text" id="hora_input_agenda" placeholder="04:00" maxlength="5"
+                                        class="w-full px-3 py-2 md:py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 text-center font-bold text-slate-700 text-sm md:text-base tracking-wider bg-white transition-colors" 
+                                        oninput="window.formatearHora(this)" onblur="window.validarHora(this); window.sincronizarHora('agenda')">
+                                </div>
+                                <div class="flex bg-slate-100 p-1 rounded-xl shrink-0">
+                                    <button type="button" id="btn_am_agenda" onclick="window.setAMPM('agenda', 'AM')" class="px-2 py-1 md:py-1.5 text-xs md:text-sm font-bold bg-white shadow-sm text-blue-600 rounded-lg transition-all">AM</button>
+                                    <button type="button" id="btn_pm_agenda" onclick="window.setAMPM('agenda', 'PM')" class="px-2 py-1 md:py-1.5 text-xs md:text-sm font-bold text-slate-500 hover:text-slate-800 rounded-lg transition-all">PM</button>
+                                </div>
+                            </div>
+                            <input type="hidden" id="hora_ampm_agenda" value="AM">
+                            <input type="hidden" id="agenda-inline-hora"> {{-- Input real oculto --}}
                         </div>
                     </div>
                     
@@ -269,8 +310,129 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('js/utils/alertas.js') }}"></script>
+<script src="{{ asset('js/NotificacionesControlador.js') }}"></script>
 <script src="{{ asset('js/utils/api.js') }}"></script>
 <script src="{{ asset('js/calendar.js') }}"></script>
+
+{{-- ======================================================== --}}
+{{-- SCRIPT PARA MANEJAR EL FORMATO 12 HORAS (AM/PM) EN LA UI --}}
+{{-- ======================================================== --}}
+{{-- SCRIPT PARA MANEJAR EL FORMATO 12 HORAS (AM/PM) EN LA UI --}}
+{{-- ======================================================== --}}
+{{-- ======================================================== --}}
+{{-- SCRIPT PARA MANEJAR EL FORMATO 12 HORAS (AM/PM) EN LA UI --}}
+{{-- ======================================================== --}}
+<script>
+    // Formatear input de hora visualmente mientras escribe
+    window.formatearHora = function(input) {
+        let val = input.value.replace(/\D/g, ''); // Quita letras y signos
+
+        if (val.length === 0) {
+            input.value = '';
+            window.sincronizarHora(input.id.replace('hora_input_', ''));
+            return;
+        }
+
+        // Si el usuario escribe un "0" de primero, lo ignoramos para que quede natural
+        if (val[0] === '0') {
+            val = val.substring(1);
+        }
+
+        if (val.length === 0) {
+            input.value = '';
+            window.sincronizarHora(input.id.replace('hora_input_', ''));
+            return;
+        }
+
+        let primerDigito = parseInt(val[0]);
+
+        if (primerDigito === 1) {
+            // Si empieza con 1, puede ser 10, 11 o 12 (Permite hasta 4 dígitos: "1230" -> "12:30")
+            if (val.length > 4) val = val.substring(0, 4);
+            if (val.length > 2) {
+                input.value = val.substring(0, 2) + ':' + val.substring(2);
+            } else {
+                input.value = val;
+            }
+        } else {
+            // Si empieza del 2 al 9, es un solo dígito de hora (Permite hasta 3 dígitos: "740" -> "7:40")
+            if (val.length > 3) val = val.substring(0, 3);
+            if (val.length > 1) {
+                input.value = val.substring(0, 1) + ':' + val.substring(1);
+            } else {
+                input.value = val;
+            }
+        }
+        
+        window.sincronizarHora(input.id.replace('hora_input_', ''));
+    };
+
+    // Validar que la hora tenga lógica al quitar el clic
+    window.validarHora = function(input) {
+        let val = input.value;
+        if (val.length === 0) return;
+        
+        let parts = val.split(':');
+        let h = parseInt(parts[0]) || 0;
+        let m = parts[1] ? parseInt(parts[1]) || 0 : 0;
+        
+        if (h === 0) h = 12;
+        if (h > 12) h = 12;
+        if (m > 59) m = 59;
+        
+        // AQUÍ ESTÁ LA MAGIA: Quitamos el "0" extra de la hora (h.toString() en vez de padStart)
+        input.value = h.toString() + ':' + m.toString().padStart(2, '0');
+        window.sincronizarHora(input.id.replace('hora_input_', ''));
+    };
+
+    // Botones de colores para seleccionar AM/PM
+    window.setAMPM = function(prefijo, valor) {
+        document.getElementById('hora_ampm_' + prefijo).value = valor;
+        
+        const btnAM = document.getElementById('btn_am_' + prefijo);
+        const btnPM = document.getElementById('btn_pm_' + prefijo);
+        
+        if (valor === 'AM') {
+            btnAM.className = btnAM.className.replace('text-slate-500 hover:text-slate-800', 'bg-white shadow-sm text-blue-600');
+            btnPM.className = btnPM.className.replace('bg-white shadow-sm text-blue-600', 'text-slate-500 hover:text-slate-800');
+        } else {
+            btnPM.className = btnPM.className.replace('text-slate-500 hover:text-slate-800', 'bg-white shadow-sm text-blue-600');
+            btnAM.className = btnAM.className.replace('bg-white shadow-sm text-blue-600', 'text-slate-500 hover:text-slate-800');
+        }
+        window.sincronizarHora(prefijo);
+    };
+
+    // Guarda la hora en formato 24H "secreto" para la Base de Datos
+    window.sincronizarHora = function(prefijo) {
+        const inputVisible = document.getElementById('hora_input_' + prefijo);
+        const ampm = document.getElementById('hora_ampm_' + prefijo).value;
+        let inputOculto;
+        
+        // Relacionamos los prefijos con los IDs reales
+        if(prefijo === 'evento') inputOculto = document.getElementById('evento-hora');
+        if(prefijo === 'rec') inputOculto = document.getElementById('rec-hora');
+        if(prefijo === 'agenda') inputOculto = document.getElementById('agenda-inline-hora');
+        if(prefijo === 'inicio') inputOculto = document.getElementById('hora_oculta_inicio'); 
+        if(prefijo === 'fin') inputOculto = document.getElementById('hora_oculta_fin');       
+
+        if (!inputVisible || !inputOculto) return;
+
+        if (inputVisible.value.trim() === '') {
+            inputOculto.value = '';
+            return;
+        }
+
+        let parts = inputVisible.value.split(':');
+        let h = parseInt(parts[0]) || 0;
+        let m = parts[1] || '00';
+
+        // Convertimos a 24 horas para la BD
+        if (ampm === 'PM' && h < 12) h += 12;
+        if (ampm === 'AM' && h === 12) h = 0;
+
+        inputOculto.value = h.toString().padStart(2, '0') + ':' + m + ':00';
+    };
+</script>
 
 </body>
 </html>
