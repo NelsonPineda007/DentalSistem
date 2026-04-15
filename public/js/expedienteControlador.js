@@ -159,8 +159,11 @@ async function cargarDatosPacienteDesdeURL() {
 
 async function detectarCitaDeHoy(idPaciente) {
     try {
-        const citas = await API.get(`/api/pacientes/${idPaciente}/citas`);
+        const citasRespuesta = await API.get(`/api/pacientes/${idPaciente}/citas`);
         
+        // Protección: Aseguramos que sea un arreglo aunque la API lo envuelva distinto
+        const citas = Array.isArray(citasRespuesta) ? citasRespuesta : (citasRespuesta.data || []);
+
         citasPacienteDB = citas;
         citas.sort((a, b) => b.id - a.id);
         
@@ -172,20 +175,25 @@ async function detectarCitaDeHoy(idPaciente) {
         const citaEnProgreso = citas.find(c => c.fecha_cita === hoy && c.estado === 'En progreso');
 
         if (citaPendiente) {
-            const quiereVincular = await window.Alerta.eleccion(
-                'Alerta de Cita', 
-                `Este paciente tiene una cita hoy a las <b>${citaPendiente.hora_inicio}</b>.<br><br><b>Motivo:</b> <i>${citaPendiente.motivo_consulta}</i><br><br>¿Deseas vincular tu consulta de hoy a esta cita?`,
-                'Sí, vincular cita',
-                'No, hacer consulta libre',
-                'info'
-            );
+            // FIX: Usamos Swal.fire directo porque window.Alerta.eleccion no existía y rompía el código
+            const result = await Swal.fire({
+                title: 'Cita Detectada',
+                html: `Este paciente tiene una cita hoy a las <b>${citaPendiente.hora_inicio}</b>.<br><br><b>Motivo:</b> <i>${citaPendiente.motivo_consulta}</i><br><br>¿Deseas vincular tu consulta de hoy a esta cita?`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, vincular cita',
+                cancelButtonText: 'No, hacer consulta libre',
+                confirmButtonColor: '#059669', // Verde Esmeralda
+                cancelButtonColor: '#64748b',  // Gris Slate
+                reverseButtons: true
+            });
 
-            if (quiereVincular) {
+            if (result.isConfirmed) {
                 try {
                     const respuestaBackend = await API.post(`/citas/${citaPendiente.id}/iniciar-consulta`, {});
                     citaActivaId = citaPendiente.id; 
                     
-                    if (respuestaBackend.consulta && respuestaBackend.consulta.id) {
+                    if (respuestaBackend && respuestaBackend.consulta && respuestaBackend.consulta.id) {
                         document.getElementById('hc_consulta_id').value = respuestaBackend.consulta.id;
                         document.getElementById('hc_motivo').value = respuestaBackend.consulta.motivo_consulta || citaPendiente.motivo_consulta;
                     }
@@ -200,7 +208,7 @@ async function detectarCitaDeHoy(idPaciente) {
             try {
                 const respuestaBackend = await API.post(`/citas/${citaEnProgreso.id}/iniciar-consulta`, {});
                 
-                if (respuestaBackend.consulta) {
+                if (respuestaBackend && respuestaBackend.consulta) {
                     citaActivaId = citaEnProgreso.id;
                     document.getElementById('hc_consulta_id').value = respuestaBackend.consulta.id;
                     
@@ -214,6 +222,8 @@ async function detectarCitaDeHoy(idPaciente) {
             }
         }
     } catch (error) {
+        // FIX: Imprimimos el error real en la consola por si acaso
+        console.error("ERROR REAL DE JAVASCRIPT:", error);
         window.Alerta.error("Error", "Fallo al verificar las citas de hoy.");
     }
 }

@@ -158,17 +158,29 @@ class CitaController extends Controller
         return response()->json(['pacientes' => $pacientes, 'doctores' => $doctores]);
     }
 
-    public function obtenerCitasPaciente($paciente_id)
+public function obtenerCitasPaciente($paciente_id)
     {
-        $usuario = Auth::user();
-        $rol = DB::table('roles')->where('id', $usuario->rol_id)->value('nombre');
-        
-        $query = Cita::where('paciente_id', $paciente_id);
-        if ($rol === 'Dentista') {
-            $query->where('empleado_id', $usuario->id);
-        }
+        try {
+            $usuario = Auth::user();
+            $rol = DB::table('roles')->where('id', $usuario->rol_id)->value('nombre');
+            
+            // LA SOLUCIÓN: Usamos DB::table('citas') en lugar de Cita::where()
+            // Esto ignora cualquier error de Traits o columnas faltantes en el Modelo Cita.php
+            $query = DB::table('citas')->where('paciente_id', $paciente_id);
+            
+            if ($rol === 'Dentista') {
+                $query->where('empleado_id', $usuario->id);
+            }
 
-        $citas = $query->orderBy('fecha_cita', 'desc')->get();
-        return response()->json($citas);
+            $citas = $query->orderBy('fecha_cita', 'desc')->get();
+            return response()->json($citas);
+            
+        } catch (\Exception $e) {
+            // Mandamos el error exacto de la base de datos por si llega a fallar otra cosa
+            return response()->json([
+                'error' => 'Error SQL: ' . $e->getMessage(), 
+                'linea' => $e->getLine()
+            ], 500);
+        }
     }
 }

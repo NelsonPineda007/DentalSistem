@@ -15,10 +15,11 @@ class ExpedienteController extends Controller
     // =========================================================
     // 1. GUARDAR FICHA Y ODONTOGRAMA (MOMENTO 3)
     // =========================================================
-    public function guardarFicha(StoreFichaRequest $request, $paciente_id)
+public function guardarFicha(StoreFichaRequest $request, $paciente_id)
     {
         $datos = $request->validated(); 
         $ahora = \Carbon\Carbon::now('America/El_Salvador')->format('Y-m-d H:i:s');
+        $fechaHoy = \Carbon\Carbon::now('America/El_Salvador')->format('Y-m-d');
 
         try {
             DB::beginTransaction();
@@ -56,7 +57,7 @@ class ExpedienteController extends Controller
                         'diagnostico' => $historia['diagnostico'] ?? '',
                         'prescripciones' => $historia['prescripciones'] ?? '',
                         'proxima_cita_recomendada' => $proximaCita,
-                        'estado' => 'completada', 
+                        'estado' => 'completada', // 🔥 RESTAURADO
                         'cita_id' => $citaId
                     ]);
                     $consultaGuardadaId = $historia['consulta_id'];
@@ -65,14 +66,14 @@ class ExpedienteController extends Controller
                         'paciente_id' => $paciente_id,
                         'cita_id' => $citaId,
                         'empleado_id' => Auth::id(), 
-                        'fecha_consulta' => $ahora, // 🔥 HORA EXACTA EL SALVADOR
+                        'fecha_consulta' => $fechaHoy, 
                         'motivo_consulta' => $historia['motivo_consulta'] ?? '',
                         'sintomas' => $historia['sintomas'] ?? '',
                         'observaciones' => $historia['observaciones'] ?? '',
                         'diagnostico' => $historia['diagnostico'] ?? '',
                         'prescripciones' => $historia['prescripciones'] ?? '',
                         'proxima_cita_recomendada' => $proximaCita,
-                        'estado' => 'completada'
+                        'estado' => 'completada' // 🔥 RESTAURADO
                     ]);
                 }
             }
@@ -374,7 +375,7 @@ class ExpedienteController extends Controller
         }
     }
 
-    public function iniciarConsultaDesdeCita(Request $request, $citaId)
+public function iniciarConsultaDesdeCita(Request $request, $citaId)
     {
         try {
             $cita = DB::table('citas')->where('id', $citaId)->first();
@@ -385,9 +386,9 @@ class ExpedienteController extends Controller
                     'paciente_id' => $cita->paciente_id,
                     'empleado_id' => Auth::id(),
                     'cita_id' => $cita->id,
-                    'fecha_consulta' => \Carbon\Carbon::now('America/El_Salvador')->format('Y-m-d H:i:s'),
+                    'fecha_consulta' => \Carbon\Carbon::now('America/El_Salvador')->format('Y-m-d'),
                     'motivo_consulta' => $cita->motivo_consulta,
-                    'estado' => 'borrador' 
+                    'estado' => 'borrador' // 🔥 RESTAURADO A TU SQL ORIGINAL
                 ]);
                 $consulta = DB::table('consultas')->where('id', $consultaId)->first();
             }
